@@ -12,6 +12,7 @@
  */
 // todo inserting into tree should be done before this
 
+
 /* Checks if client is ready for bootstrapping, parses TLV format message and writes values to object */
 int on_bootstrap_object_write(lwm2m_server* server, lwm2m_object* object, char* message);
 

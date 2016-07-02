@@ -32,7 +32,7 @@ struct lwm2m_context {
     int is_bootstrap_ready;
 
     // definition of supported objects
-    create_resources create_resources_callback;
+    create_resources* create_resources_callback;
     int default_acl_values;
 };
 

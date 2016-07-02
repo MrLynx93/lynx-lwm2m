@@ -6,9 +6,12 @@ typedef union lwm2m_value lwm2m_value;
 typedef lwm2m_link lwm2m_link;
 
 enum lwm2m_type {
-    INT,
+    INTEGER,
     DOUBLE,
     STRING,
+    OPAQUE,
+    BOOLEAN,
+    NONE,
     LINK
 };
 
