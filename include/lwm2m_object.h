@@ -39,6 +39,8 @@ void lwm2m_delete_server_instances(lwm2m_server *server);
 
 lwm2m_instance *refer_link(lwm2m_link lwm2m_instance);
 
+
+
 struct lwm2m_object_tree {
     lwm2m_object **objects;
 };
@@ -64,6 +66,7 @@ struct lwm2m_object {
     int id;
     bool multiple;
     char* object_urn;
+    bool mandatory;
     lwm2m_instance **instances;
     lwm2m_attributes attributes;
     lwm2m_instance *aco_instance;

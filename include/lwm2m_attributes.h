@@ -3,6 +3,8 @@
 
 #include "lwm2m_common.h"
 
+// TODO utility functions to get specific attribute?
+
 typedef struct lwm2m_attribute lwm2m_attribute;
 typedef struct lwm2m_attributes lwm2m_attributes;
 

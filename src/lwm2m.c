@@ -10,7 +10,44 @@
 
 int lwm2m_get_number_of_servers(lwm2m_context* context) {
     return 1;
+
 }
+
+
+lwm2m_context* lwm2m_create_context();
+
+int main() {
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+void factory_bootstrap(lwm2m_context* context) {
+    lwm2m_server* server = lwm2m_server_new();
+    server->context = context;
+    server->endpoint_client_name = "example_endpoint_client_name";
+
+    lwm2m_object_tree* object_tree = lwm2m_object_tree_new();
+    object_tree->objects = create_standard_objects();
+
+
+}
+
+int lwm2m_start_client(lwm2m_context* context) {
+
+}
+
+
 
 
 
@@ -18,6 +55,7 @@ lwm2m_object** create_standard_objects() {
     // Define security object
     lwm2m_object* security_object = lwm2m_object_new();
     security_object->id = SECURITY_OBJECT_ID;
+    security_object->mandatory = true;
     security_object->multiple = true;
     security_object->object_urn = "urn:oma:lwm2m:oma:0";
     security_object->attributes = lwm2m_attributes_new();
@@ -25,6 +63,7 @@ lwm2m_object** create_standard_objects() {
     // Define server object
     lwm2m_object* server_object = lwm2m_object_new();
     server_object->id = SERVER_OBJECT_ID;
+    server_object->mandatory = true;
     server_object->multiple = true;
     server_object->object_urn = "urn:oma:lwm2m:oma:1";
     server_object->attributes = lwm2m_attributes_new();
@@ -32,6 +71,7 @@ lwm2m_object** create_standard_objects() {
     // Define access control object
     lwm2m_object* access_control_object = lwm2m_object_new();
     access_control_object->id = ACCESS_CONTROL_OBJECT_ID;
+    server_object->mandatory = false;
     access_control_object->multiple = true;
     access_control_object->object_urn = "urn:oma:lwm2m:oma:2";
     access_control_object->attributes = lwm2m_attributes_new();
