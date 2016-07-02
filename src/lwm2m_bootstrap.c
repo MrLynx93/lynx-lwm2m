@@ -1,6 +1,7 @@
 #include "../include/lwm2m_bootstrap.h"
 
 
+// TODO insert object into tree
 int on_bootstrap_object_write(lwm2m_server* server, lwm2m_object* object, char* message) {
     if (!server->context->is_bootstrap_ready) {
         return OPERATION_NOT_ALLOWED;
@@ -30,5 +31,8 @@ int on_bootstrap_delete(lwm2m_server* server, lwm2m_instance* instance) {
 }
 
 int on_bootstrap_finish(lwm2m_server* server) {
+    if (!server->context->is_bootstrap_ready) {
+        return OPERATION_NOT_ALLOWED;
+    }
     server->context->is_bootstrap_ready = false;
 }

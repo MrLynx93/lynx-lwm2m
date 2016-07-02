@@ -31,6 +31,7 @@ int on_resource_read(lwm2m_server* server, lwm2m_resource* resource, char** mess
 }
 
 ///////////////////// WRITE ////////////////////////
+// TODO also sending notification
 
 int on_instance_write(lwm2m_server* server, lwm2m_instance* instance, char* message) {
     int access_error = check_instance_access(server, instance, WRITE)

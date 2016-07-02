@@ -9,6 +9,7 @@
  * All functions return 0 if serialize/deserialize was successful, otherwise it returns PARSE_ERROR
  */
 
+
 ////// SERIALIZE //////
 
 /* Converts object to TLV format and writes output in message */
@@ -37,6 +38,7 @@ int deserialize_lwm2m_resource(lwm2m_resource* resource, char* message);
 
 /* Reads attributes from GET parameters and saves values in attributes */
 int deserialize_lwm2m_attributes(lwm2m_attributes* attributes, char* message);
+
 
 ////// SERIALIZE DISCOVER /////////
 
