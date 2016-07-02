@@ -18,7 +18,7 @@ typedef struct lwm2m_resource_multiple lwm2m_resource_multiple;
 typedef union lwm2m_resource_real lwm2m_resource_real;
 
 lwm2m_object *lwm2m_object_new();
-lwm2m_instance *lwm2m_instance_new();
+lwm2m_instance *lwm2m_instance_new(lwm2m_object* object, int id);
 lwm2m_resource *lwm2m_resource_new(bool multiple);
 
 
@@ -30,6 +30,7 @@ typedef void (*lwm2m_resource_write_callback(lwm2m_resource *resource));
 
 
 typedef void (*lwm2m_resource_execute_callback(lwm2m_resource *resource, char *args));
+
 
 
 /* Removes instance from object */

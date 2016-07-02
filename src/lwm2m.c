@@ -16,32 +16,36 @@ int lwm2m_get_number_of_servers(lwm2m_context* context) {
 
 lwm2m_context* lwm2m_create_context();
 
-int main() {
+void lwm2m_start(lwm2m_context* context) {
+    // TODO create objects
 
 
 
 
 
 
+    // TODO start HTTP/2 etc.
 
+
+}
+
+void lwm2m_factory_bootstrap(lwm2m_context* context, void (*bootstrap_callback(lwm2m_context*))) {
+    bootstrap_callback(context); // this is creating instances (using resources callback)
+    context->is_bootstrap_ready = false;
 }
 
 
 
-
-
-
-
-void factory_bootstrap(lwm2m_context* context) {
-    lwm2m_server* server = lwm2m_server_new();
-    server->context = context;
-    server->endpoint_client_name = "example_endpoint_client_name";
-
-    lwm2m_object_tree* object_tree = lwm2m_object_tree_new();
-    object_tree->objects = create_standard_objects();
-
-
-}
+//void factory_bootstrap(lwm2m_context* context) {
+//    lwm2m_server* server = lwm2m_server_new();
+//    server->context = context;
+//    server->endpoint_client_name = "example_endpoint_client_name";
+//
+//    lwm2m_object_tree* object_tree = lwm2m_object_tree_new();
+//    object_tree->objects = create_standard_objects();
+//
+//
+//}
 
 int lwm2m_start_client(lwm2m_context* context) {
 
