@@ -1,0 +1,5 @@
+notes.txt
+bin/
+*.o
+*.lib
+*.a
