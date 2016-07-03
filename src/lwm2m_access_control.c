@@ -1,7 +1,8 @@
+#include "../include/lwm2m.h"
 #include "../include/lwm2m_access_control.h"
 #include "../include/lwm2m_device_management.h"
 
-int l2m2m_check_object_access_control(lwm2m_server *server, lwm2m_instance *instance) {
+int lwm2m_check_object_access_control(lwm2m_server *server, lwm2m_instance *instance) {
     lwm2m_resource_multiple *acl_resource = lwm2m_get_object_acl_resource(instance);
     lwm2m_resource_single *acl_resource_instance = lwm2m_get_acl_resource_instance(acl_resource, server);
     if (!(acl_resource_instance->value.int_value & CREATE)) {
@@ -11,7 +12,7 @@ int l2m2m_check_object_access_control(lwm2m_server *server, lwm2m_instance *inst
 }
 
 int lwm2m_check_instance_access_control(lwm2m_server *server, lwm2m_instance *instance, int operation) {
-    if (lwm2m_get_number_of_servers(server->context) == 1) {
+    if (server->context->servers->elements == 1) {
         return 0;
     }
 

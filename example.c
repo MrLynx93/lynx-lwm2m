@@ -6,7 +6,7 @@
  * 1. create_objects_callback and create_resources_callback are assigned.
  *    This is a way of defining a custom LWM2M object
  *
- * 2. lwm2m_start is called.
+ * 2. lwm2m_start_client is called.
  *    This starts transport layer and creates lwm2m_object objects according to create_objects_callback
  *    Besides, it creates standard objects like "security", which don't have to be defined by user.
  *
@@ -62,11 +62,13 @@ void perform_bootstrap(lwm2m_context *context);
 
 int main(int argc, char *argv[]) {
     lwm2m_context *context = lwm2m_create_context();
+    context->has_smartcard = false;
     context->create_objects_callback = create_example_objects;
     context->create_resources_callback = create_example_resources;
+    context->factory_bootstrap_callback = perform_factory_bootstrap;
+    context->smartcard_bootstrap_callback = NULL;
 
-    lwm2m_start(context);
-    lwm2m_factory_bootstrap(context, perform_bootstrap);
+    lwm2m_start_client(context);
     // This should not exit, as new threads are created
 }
 
@@ -89,13 +91,13 @@ void switch_light(lwm2m_resource *resource) {
 
 void update_firmwire(lwm2m_resource *resource, char *args) {
     char* version = 1.2; // In reality you would parse it from args
-    // In this place you would call your method
+    // In this place you would start procedure of updating firmwire
 }
 
 
 ///////////////// DEFINITION OF FACTORY BOOTSTRAP ///////////////
 
-void perform_bootstrap(lwm2m_context *context) {
+void perform_factory_bootstrap(lwm2m_context *context) {
     bootstrap_security_object(context);
     bootstrap_server_object(context);
 }

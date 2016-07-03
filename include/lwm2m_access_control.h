@@ -5,7 +5,7 @@
 #include "lwm2m_object.h"
 #include "lwm2m.h
 
-///////////// CHECKING ACCESS CONTROL ///////////
+///////////// CHECKING ACCESS CONTROL ///////////////////
 
 /* Checks if object have an access control for a given LWM2M server (used only for create operation) */
 int l2m2m_check_object_access_control(lwm2m_server *server, lwm2m_instance *instance);

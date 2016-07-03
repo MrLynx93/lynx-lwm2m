@@ -6,9 +6,12 @@
 
 typedef struct lwm2m_register_message lwm2m_register_message;
 
-int on_register(lwm2m_server* server, lwm2m_register_message *register_message);
-int on_deregister(lwm2m_server* server);
+/*
+int on_registered(lwm2m_server* server, lwm2m_register_message *register_message); // (response????)
+int on_deregistered(lwm2m_server* server);*/
 
+/* Tries to register on all servers that has corresponding Server Object instance. Returns number of servers registered */
+int lwm2m_register_on_all_servers(lwm2m_context* context);
 
 struct lwm2m_register_message {
     char* endpoint_client_name;
