@@ -10,7 +10,7 @@
  */
 
 
-////// SERIALIZE //////
+////// SERIALIZE OBJECTS //////
 
 /* Converts object to TLV format and writes output in message */
 int serialize_lwm2m_object(lwm2m_object* object, char** message);
@@ -22,7 +22,7 @@ int serialize_lwm2m_instance(lwm2m_instance* instance, char** message);
 int serialize_lwm2m_resource(lwm2m_resource* resource, char** message);
 
 
-////// DESERIALIZE //////
+////// DESERIALIZE OBJECTS //////
 
 /* Reads object from TLV format and saves values in underlying instances and resources */
 int deserialize_lwm2m_object(lwm2m_object* object, char* message);
@@ -43,12 +43,12 @@ int deserialize_lwm2m_attributes(lwm2m_attributes* attributes, char* message);
 ////// SERIALIZE DISCOVER /////////
 
 /* Creates LWM2M object discover message and writes output in message */
-void deserialize_lwm2m_object_discover(lwm2m_object* object, char** message);
+void serialize_lwm2m_object_discover(lwm2m_object* object, char** message);
 
 /* Creates LWM2M instance discover message and writes output in message */
-void deserialize_lwm2m_instance_discover(lwm2m_instance* instance, char** message);
+void serialize_lwm2m_instance_discover(lwm2m_instance* instance, char** message);
 
 /* Creates LWM2M resource discover message and writes output in message */
-void deserialize_lwm2m_resource_discover(lwm2m_resource* resource, char** message);
+void serialize_lwm2m_resource_discover(lwm2m_resource* resource, char** message);
 
 #endif //LYNX_LWM2M_PARSER_H

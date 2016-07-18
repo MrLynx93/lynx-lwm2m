@@ -5,6 +5,7 @@
 #include "lwm2m_parser.h"
 #include "lwm2m_errors.h"
 #include "lwm2m_parser.h"
+#include "lwm2m.h"
 
 #define READ 1
 #define WRITE 2
@@ -15,7 +16,7 @@
 typedef struct lwm2m_execute_parameter lwm2m_execute_parameter;
 
 /*
- * All functions return error code if some error occurred, in other case returns 0
+ * All functions except discover and write attributes return error code if some error occurred, in other case returns 0
  * List of error codes:
  * - ACCESS_RIGHT_PERMISSION_DENIED - server does not have access control
  * - OPERATION_NOT_SUPPORTED       - resource does not support corresponding operation
@@ -54,6 +55,30 @@ int on_lwm2m_instance_delete(lwm2m_server* server, lwm2m_instance* instance);
 
 /* Checks access control, parses instance from TLV format message and creates new instance in object tree */
 int on_lwm2m_instance_create(lwm2m_server* server, lwm2m_object* object, char* message, int id);
+
+
+/////////// DISCOVER //////////
+
+/* Writes object discover message to message argument (don't need access control) */
+int on_lwm2m_object_discover(lwm2m_server* server, lwm2m_object* object, char** message);
+
+/* Writes instance discover message to message argument (don't need access control) */
+int on_lwm2m_instance_discover(lwm2m_server* server, lwm2m_instance* instance, char** message);
+
+/* Writes resource discover message to message argument (don't need access control) */
+int on_lwm2m_resource_discover(lwm2m_server* server, lwm2m_resource* resource, char** message);
+
+
+/////////// WRITE ATTRIBUTES ///////////
+
+/* Reads message and writes attributes into object */
+int on_lwm2m_object_write_attributes(lwm2m_server* server, lwm2m_object* object, char* message);
+
+/* Reads message and writes attributes into instance */
+int on_lwm2m_instance_write_attributes(lwm2m_server* server, lwm2m_instance* instance, char* message);
+
+/* Reads message and writes attributes into resource */
+int on_lwm2m_resource_write_attributes(lwm2m_server* server, lwm2m_resource* resource, char* message);
 
 
 
