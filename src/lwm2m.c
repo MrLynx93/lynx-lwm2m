@@ -30,15 +30,14 @@ static void start_transport_layer(lwm2m_context *context) {
 }
 
 static int create_object_tree(lwm2m_context *context) {
-    // TODO define lwm2m_map_get and lwm2m_map_put with "elements" property
     lwm2m_node_map *standard_objects = create_standard_objects();
     lwm2m_node_map *user_defined_objects = context->create_objects_callback();
 
-    for (int object_id = 0; object_id < standard_objects->elements; object_id++) {
+    for (int object_id = 0; object_id < standard_objects->size; object_id++) {
         lwm2m_object *object = lwm2m_map_get(standard_objects, object_id);
         lwm2m_map_put(context->object_tree->objects, object_id, object);
     }
-    for (int object_id = 0; object_id < user_defined_objects->elements; object_id++) {
+    for (int object_id = 0; object_id < user_defined_objects->size; object_id++) {
         lwm2m_object *object = lwm2m_map_get(user_defined_objects, object_id);
         lwm2m_map_put(context->object_tree->objects, object_id, object);
     }
