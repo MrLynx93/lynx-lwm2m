@@ -3,6 +3,7 @@
 
 #include "lwm2m_common.h"
 #include "lwm2m_attributes.h"
+#include "map.h"
 
 #define SECURITY_OBJECT_ID 0
 #define SERVER_OBJECT_ID 1
@@ -69,34 +70,35 @@ union lwm2m_node {
 
 struct lwm2m_object {
     int id;
-    bool multiple;
-    char* object_urn;
-    bool mandatory;
-    lwm2m_instance **instances;
+    lwm2m_map* instances;
+
     lwm2m_attributes attributes;
     lwm2m_instance *aco_instance;
+    char* object_urn;
+    bool multiple;
+    bool mandatory;
 };
 
 struct lwm2m_instance {
     int id;
     lwm2m_object *object;
-    lwm2m_resource **resources;
+    lwm2m_map* resources;
+
     lwm2m_attributes attributes;
     lwm2m_instance *aco_instance;
 };
 
 struct lwm2m_resource {
     int id;
-    char* name;
     lwm2m_instance *instance;
+    lwm2m_resource_real resource;
+
+    char* name;
     lwm2m_type type;
     lwm2m_attributes attributes;
     int operations;
     int multiple;
     int mandatory;
-
-    lwm2m_resource_real resource;
-
     lwm2m_resource_read_callback read_callback;
     lwm2m_resource_write_callback write_callback;
     lwm2m_resource_notify_callback notify_callback;
@@ -108,7 +110,7 @@ struct lwm2m_resource_single {
 };
 
 struct lwm2m_resource_multiple {
-    lwm2m_resource_single *instances;
+    lwm2m_map* instances;
 };
 
 union lwm2m_resource_real {

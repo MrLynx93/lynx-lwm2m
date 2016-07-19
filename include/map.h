@@ -1,6 +1,8 @@
 #ifndef LYNX_LWM2M_MAP_H
 #define LYNX_LWM2M_MAP_H
 
+#include "../include/lwm2m_object.h"
+
 typedef struct lwm2m_map lwm2m_map;
 
 typedef struct lwm2m_map {
