@@ -5,12 +5,12 @@
 
 ///////////////////// READ /////////////////////////
 
-int on_object_read(lwm2m_server* server, lwm2m_object* object, char** message) {
+int on_lwm2m_object_read(lwm2m_server* server, lwm2m_object* object, char** message) {
     serialize_lwm2m_object(object, message);
     return 0;
 }
 
-int on_instance_read(lwm2m_server* server, lwm2m_instance* instance, char** message) {
+int on_lwm2m_instance_read(lwm2m_server* server, lwm2m_instance* instance, char** message) {
     int access_error = check_instance_access(server, instance, READ);
     if (access_error) {
         return access_error;
@@ -20,7 +20,7 @@ int on_instance_read(lwm2m_server* server, lwm2m_instance* instance, char** mess
 }
 
 
-int on_resource_read(lwm2m_server* server, lwm2m_resource* resource, char** message) {
+int on_lwm2m_resource_read(lwm2m_server* server, lwm2m_resource* resource, char** message) {
     int access_error = check_resource_access(server, resource, READ);
     if (access_error) {
         return access_error;
@@ -33,8 +33,8 @@ int on_resource_read(lwm2m_server* server, lwm2m_resource* resource, char** mess
 ///////////////////// WRITE ////////////////////////
 // TODO also sending notification
 
-int on_instance_write(lwm2m_server* server, lwm2m_instance* instance, char* message) {
-    int access_error = check_instance_access(server, instance, WRITE)
+int on_lwm2m_instance_write(lwm2m_server* server, lwm2m_instance* instance, char* message) {
+    int access_error = check_instance_access(server, instance, WRITE);
     if (access_error) {
         return access_error;
     }
@@ -42,7 +42,7 @@ int on_instance_write(lwm2m_server* server, lwm2m_instance* instance, char* mess
     return 0;
 }
 
-int on_resource_write(lwm2m_server* server, lwm2m_resource* resource, char* message) {
+int on_lwm2m_resource_write(lwm2m_server* server, lwm2m_resource* resource, char* message) {
     int access_error = check_resource_access(server, resource, WRITE);
     if (access_error) {
         return access_error;
@@ -53,7 +53,7 @@ int on_resource_write(lwm2m_server* server, lwm2m_resource* resource, char* mess
 
 ///////////////////////// DELETE //////////////////////
 
-int on_instance_delete(lwm2m_server* server, lwm2m_instance* instance) {
+int on_lwm2m_instance_delete(lwm2m_server* server, lwm2m_instance* instance) {
     int access_error = check_instance_access(server, resource, DELETE);
     if (access_error) {
         return access_error;
@@ -63,13 +63,14 @@ int on_instance_delete(lwm2m_server* server, lwm2m_instance* instance) {
 
 ///////////////////////// CREATE //////////////////////
 
-int on_instance_create(lwm2m_server* server, lwm2m_object* object, char* message, int id) {
-    int access_error = check_object_access(server, object);
+int on_lwm2m_instance_create(lwm2m_server* server, lwm2m_object* object, char* message, int id) {
+    int access_error = check_object_access(server, object); // todo create aco instance
     if (access_error) {
         return access_error;
     }
     lwm2m_instance *instance = lwm2m_instance_new();
     deserialize_lwm2m_instance(instance, message);
+    instance->aco_instance = lwm2m_instance_create_aco_instance(server, instance);
     instance->id = id;
 }
 
