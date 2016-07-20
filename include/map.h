@@ -25,6 +25,8 @@ lwm2m_node* lwm2m_map_get(lwm2m_map* map, int key);
 /* Removes node from map */
 void lwm2m_map_remove(lwm2m_map* map, int key);
 
+void lwm2m_map_get_keys(int* keys);
+
 /* Frees a map */
 void lwm2m_map_free(lwm2m_map* map);
 

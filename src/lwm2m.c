@@ -5,10 +5,10 @@
 #include "../include/lwm2m_device_management.h"
 
 
-// TODO define lwm2m_map_new
 lwm2m_context *lwm2m_create_context() {
     lwm2m_context *context = (lwm2m_context *) malloc(sizeof(lwm2m_context));
-    context->object_tree = lwm2m_object_tree_new();
+    context->create_standard_resources_callback = create_standard_resources;
+    context->object_tree = lwm2m_map_new();
     context->servers = lwm2m_map_new();
     context->is_bootstrap_ready = true;
     context->is_bootstrapped = false;
@@ -78,7 +78,7 @@ static lwm2m_object **create_standard_objects() {
     return objects;
 }
 
-static lwm2m_resource **create_standard_resources(int object_id) {
+lwm2m_map *create_standard_resources(int object_id) {
     switch (object_id) {
         case SECURITY_OBJECT_ID:
             return create_security_object_resources();
@@ -91,7 +91,7 @@ static lwm2m_resource **create_standard_resources(int object_id) {
 }
 
 static lwm2m_resource **create_security_object_resources() {
-    lwm2m_resource **resources = (lwm2m_resource **) malloc(sizeof(lwm2m_resource *) * 13);
+    lwm2m_map* resources = lwm2m_map_new();
     lwm2m_resource *resource;
 
     resource = lwm2m_resource_new(false);
@@ -99,102 +99,104 @@ static lwm2m_resource **create_security_object_resources() {
     resource->name = "LWM2M Server URI";
     resource->type = STRING;
     resource->mandatory = true;
-    resources[0] = resource;
+    lwm2m_map_put(resources, 0, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 1;
     resource->name = "Bootstrap Server";
     resource->type = BOOLEAN;
     resource->mandatory = true;
-    resources[1] = resource;
+    lwm2m_map_put(resources, 1, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 2;
     resource->name = "Security Mode";
     resource->type = INTEGER;
     resource->mandatory = true;
-    resources[2] = resource;
+    lwm2m_map_put(resources, 2, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 3;
     resource->name = "Public Key or Identity";
     resource->type = OPAQUE;
     resource->mandatory = true;
-    resources[3] = resource;
+    lwm2m_map_put(resources, 3, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 4;
     resource->name = "Server Public Key";
     resource->type = OPAQUE;
     resource->mandatory = true;
-    resources[4] = resource;
+    lwm2m_map_put(resources, 4, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 5;
     resource->name = "Secret Key";
     resource->type = OPAQUE;
     resource->mandatory = true;
-    resources[5] = resource;
+    lwm2m_map_put(resources, 5, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 6;
     resource->name = "SMS Security Mode";
     resource->type = INTEGER;
     resource->mandatory = false;
-    resources[6] = resource;
+    lwm2m_map_put(resources, 6, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 7;
     resource->name = "SMS Key Binding Parameters";
     resource->type = OPAQUE;
     resource->mandatory = false;
-    resources[7] = resource;
+    lwm2m_map_put(resources, 7, resource);
+
 
     resource = lwm2m_resource_new(false);
     resource->id = 8;
     resource->name = "SMS Binding Secret Key(s)";
     resource->type = OPAQUE;
     resource->mandatory = false;
-    resources[8] = resource;
+    lwm2m_map_put(resources, 8, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 9;
     resource->name = "LWM2M Server SMS Number";
     resource->type = STRING;
     resource->mandatory = false;
-    resources[9] = resource;
+    lwm2m_map_put(resources, 9, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 10;
     resource->name = "Short Server ID";
     resource->type = INTEGER;
     resource->mandatory = false;
-    resources[10] = resource;
+    lwm2m_map_put(resources, 10, resource);
+
 
     resource = lwm2m_resource_new(false);
     resource->id = 11;
     resource->name = "Client Hold Off Time";
     resource->type = INTEGER;
     resource->mandatory = false;
-    resources[11] = resource;
+    lwm2m_map_put(resources, 11, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 12;
     resource->name = "Bootstrap Server Account Timeout";
     resource->type = INTEGER;
     resource->mandatory = false;
-    resources[12] = resource;
+    lwm2m_map_put(resources, 12, resource);
 
     // Can be modified only in bootstrap
     for (int i = 0; i < 13; i++) {
-        resources[i]->operations = 0;
+        lwm2m_map_get(resources, i)->resource.operations = 0;
     }
 
     return resources;
 }
 
 static lwm2m_resource **create_server_object_resources() {
-    lwm2m_resource **resources = (lwm2m_resource **) malloc(sizeof(lwm2m_resource *) * 19);
+    lwm2m_map* resources = lwm2m_map_new();
     lwm2m_resource *resource;
 
     resource = lwm2m_resource_new(false);
@@ -203,7 +205,7 @@ static lwm2m_resource **create_server_object_resources() {
     resource->type = INTEGER;
     resource->mandatory = true;
     resource->operations = READ;
-    resources[0] = resource;
+    lwm2m_map_put(resources, 0, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 1;
@@ -211,7 +213,7 @@ static lwm2m_resource **create_server_object_resources() {
     resource->type = INTEGER;
     resource->mandatory = true;
     resource->operations = READ & WRITE;
-    resources[1] = resource;
+    lwm2m_map_put(resources, 1, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 2;
@@ -219,7 +221,7 @@ static lwm2m_resource **create_server_object_resources() {
     resource->type = INTEGER;
     resource->mandatory = false;
     resource->operations = READ & WRITE;
-    resources[2] = resource;
+    lwm2m_map_put(resources, 2, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 3;
@@ -227,7 +229,7 @@ static lwm2m_resource **create_server_object_resources() {
     resource->type = INTEGER;
     resource->mandatory = false;
     resource->operations = READ & WRITE;
-    resources[3] = resource;
+    lwm2m_map_put(resources, 3, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 4;
@@ -235,7 +237,7 @@ static lwm2m_resource **create_server_object_resources() {
     resource->type = NONE;
     resource->mandatory = false;
     resource->operations = EXECUTE;
-    resources[4] = resource;
+    lwm2m_map_put(resources, 4, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 5;
@@ -243,7 +245,7 @@ static lwm2m_resource **create_server_object_resources() {
     resource->type = INTEGER;
     resource->mandatory = false;
     resource->operations = READ & WRITE;
-    resources[5] = resource;
+    lwm2m_map_put(resources, 5, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 6;
@@ -251,7 +253,7 @@ static lwm2m_resource **create_server_object_resources() {
     resource->type = BOOLEAN;
     resource->mandatory = true;
     resource->operations = READ & WRITE;
-    resources[6] = resource;
+    lwm2m_map_put(resources, 6, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 7;
@@ -259,7 +261,7 @@ static lwm2m_resource **create_server_object_resources() {
     resource->type = STRING;
     resource->mandatory = true;
     resource->operations = READ & WRITE;
-    resources[7] = resource;
+    lwm2m_map_put(resources, 7, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 8;
@@ -267,13 +269,13 @@ static lwm2m_resource **create_server_object_resources() {
     resource->type = NONE;
     resource->mandatory = true;
     resource->operations = EXECUTE;
-    resources[8] = resource;
+    lwm2m_map_put(resources, 8, resource);
 
     return resources;
 }
 
-static lwm2m_resource **create_access_control_object_resources() {
-    lwm2m_resource **resources = (lwm2m_resource **) malloc(sizeof(lwm2m_resource *) * 4);
+static lwm2m_map *create_access_control_object_resources() {
+    lwm2m_map* resources = lwm2m_map_new();
     lwm2m_resource *resource;
 
     resource = lwm2m_resource_new(false);
@@ -282,7 +284,7 @@ static lwm2m_resource **create_access_control_object_resources() {
     resource->type = INTEGER;
     resource->mandatory = true;
     resource->operations = READ;
-    resources[0] = resource;
+    lwm2m_map_put(resources, 0, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 1;
@@ -290,7 +292,7 @@ static lwm2m_resource **create_access_control_object_resources() {
     resource->type = INTEGER;
     resource->mandatory = true;
     resource->operations = READ;
-    resources[1] = resource;
+    lwm2m_map_put(resources, 1, resource);
 
     resource = lwm2m_resource_new(true);
     resource->id = 2;
@@ -298,7 +300,7 @@ static lwm2m_resource **create_access_control_object_resources() {
     resource->type = INTEGER;
     resource->mandatory = false;
     resource->operations = READ & WRITE;
-    resources[2] = resource;
+    lwm2m_map_put(resources, 2, resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 3;
@@ -306,7 +308,7 @@ static lwm2m_resource **create_access_control_object_resources() {
     resource->type = INTEGER;
     resource->mandatory = true;
     resource->operations = READ & WRITE;
-    resources[3] = resource;
+    lwm2m_map_put(resources, 3, resource);
 
     return resources;
 }

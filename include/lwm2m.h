@@ -13,10 +13,10 @@ typedef struct lwm2m_server lwm2m_server;
 ///////////////// MAIN CALLBACKS ////////////////////////////
 
 /* Used whenever new LWM2M instance is created to create resources for that instance */
-typedef lwm2m_resource **(lwm2m_create_resources_callback(int object_id));
+typedef lwm2m_map* (lwm2m_create_resources_callback(int object_id));
 
 /* Used to define custom LWM2M objects. Called when client starts and creates object tree */
-typedef lwm2m_object **(lwm2m_create_objects_callback(void));
+typedef lwm2m_map *(lwm2m_create_objects_callback(void));
 
 /* Used in factory bootstrap to bootstrap provide client with LWM2M instances */
 typedef int ((*lwm2m_bootstrap_callback(lwm2m_context *)));
@@ -42,8 +42,8 @@ int lwm2m_start_client(lwm2m_context *context);
 bool has_server_instances(lwm2m_context* context);
 
 struct lwm2m_context {
-    lwm2m_object_tree *object_tree;
-    lwm2m_server **servers;
+    lwm2m_map *servers;
+    lwm2m_map *object_tree;
     lwm2m_bootstrap_state bootstrap_state;
     int has_smartcard;
     int is_bootstrap_ready;
@@ -54,6 +54,8 @@ struct lwm2m_context {
 
     lwm2m_bootstrap_callback *factory_bootstrap_callback;
     lwm2m_bootstrap_callback *smartcard_bootstrap_callback;
+
+    static lwm2m_create_resources_callback *create_standard_resources_callback;
 };
 
 struct lwm2m_server {
