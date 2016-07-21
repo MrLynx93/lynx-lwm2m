@@ -3,6 +3,9 @@
 
 #include "lwm2m_object.h"
 
+#define TEXT_FORMAT 0
+#define TLV_FORMAT 1
+
 #define PARSE_ERROR 1
 
 /*
@@ -20,7 +23,7 @@ int serialize_lwm2m_object(lwm2m_server *server, lwm2m_object* object, char** me
 int serialize_lwm2m_instance(lwm2m_server *server, lwm2m_instance* instance, char** message, int *message_len);
 
 /* Converts resource to proper format and writes output in message */
-int serialize_lwm2m_resource(lwm2m_resource* resource, char** message, int *message_len);
+int serialize_lwm2m_resource(lwm2m_resource* resource, char** message, int *message_len, int format);
 
 
 ////// DESERIALIZE OBJECTS //////
@@ -32,7 +35,7 @@ int deserialize_lwm2m_object(lwm2m_object* object, char* message);
 int deserialize_lwm2m_instance(lwm2m_instance* instance, char* message);
 
 /* Reads resource from proper format and saves values */
-int deserialize_lwm2m_resource(lwm2m_resource* resource, char* message);
+int deserialize_lwm2m_resource(lwm2m_resource* resource, char* message, int format);
 
 
 ////// DESERIALIZE ATTRIBUTES /////

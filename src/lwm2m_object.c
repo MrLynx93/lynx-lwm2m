@@ -96,7 +96,7 @@ static void free_lwm2m_instance(lwm2m_instance *instance) {
     free(instance);
 }
 
-static void free_lwm2m_resource(lwm2m_resource *resource) {
+void free_lwm2m_resource(lwm2m_resource *resource) {
     free(resource->name);
     free(resource);
 }

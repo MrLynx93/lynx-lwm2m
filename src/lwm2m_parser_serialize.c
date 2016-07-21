@@ -3,8 +3,7 @@
 #include "../include/lwm2m_access_control.h"
 #include "../include/lwm2m_device_management.h"
 
-#define TEXT_FORMAT 0
-#define TLV_FORMAT 1
+
 
 //////////////// PUBLIC FUNCTIONS /////////////////
 
@@ -67,7 +66,7 @@ static int serialize_lwm2m_node(
     *message_len = 0;
 
     lwm2m_map nodes = get_nodes(node, type);
-    int *keys = (int *) malloc(nodes);
+    int *keys = (int *) malloc(nodes.size);
     for (int i = 0, id = keys[i]; i < nodes.size; i++) {
         lwm2m_node *node = lwm2m_map_get(nodes, id);
 
