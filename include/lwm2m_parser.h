@@ -7,19 +7,20 @@
 
 /*
  * All functions return 0 if serialize/deserialize was successful, otherwise it returns PARSE_ERROR
+ * Server parameter for serialize functions is needed for checking access control
  */
 
 
 ////// SERIALIZE OBJECTS //////
 
 /* Converts object to TLV format and writes output in message */
-int serialize_lwm2m_object(lwm2m_object* object, char** message);
+int serialize_lwm2m_object(lwm2m_server *server, lwm2m_object* object, char** message, int *message_len);
 
-/* Converts instance to TLV format and writes output in message */
-int serialize_lwm2m_instance(lwm2m_instance* instance, char** message);
+/* Converts instance to TLV format and writes output in message. */
+int serialize_lwm2m_instance(lwm2m_server *server, lwm2m_instance* instance, char** message, int *message_len);
 
 /* Converts resource to proper format and writes output in message */
-int serialize_lwm2m_resource(lwm2m_resource* resource, char** message);
+int serialize_lwm2m_resource(lwm2m_resource* resource, char** message, int *message_len);
 
 
 ////// DESERIALIZE OBJECTS //////

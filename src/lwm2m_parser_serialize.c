@@ -13,11 +13,11 @@ int serialize_lwm2m_instance(lwm2m_server *server, lwm2m_instance *instance, cha
     if (!lwm2m_check_instance_access_control(server, node->instance, READ)) {
         return OPERATION_NOT_SUPPORTED;
     }
-    return serialize_lwm2m_node((lwm2m_node *) instance, INSTANCE, message, message_len);
+    return serialize_lwm2m_node(server, (lwm2m_node *) instance, INSTANCE, message, message_len);
 }
 
-int serialize_lwm2m_object(lwm2m_object *object, char **message, int *message_len) {
-    return serialize_lwm2m_node((lwm2m_node *) object, OBJECT, message, message_len);
+int serialize_lwm2m_object(lwm2m_server *server, lwm2m_object *object, char **message, int *message_len) {
+    return serialize_lwm2m_node(server, (lwm2m_node *) object, OBJECT, message, message_len);
 }
 
 int serialize_lwm2m_resource(lwm2m_resource *resource, char **message, int *message_len, int format) {
