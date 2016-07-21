@@ -55,10 +55,11 @@ struct lwm2m_link {
     int instance_id;
 };
 
-enum {
+enum node_type {
     OBJECT,
     INSTANCE,
-    RESOURCE
+    RESOURCE,
+    RESOURCE_INSTANCE
 };
 
 union lwm2m_node {
@@ -107,6 +108,7 @@ struct lwm2m_resource {
 
 struct lwm2m_resource_single {
     lwm2m_value value;
+    int length; // for string and opaque
 };
 
 struct lwm2m_resource_multiple {
