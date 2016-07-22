@@ -73,7 +73,7 @@ struct lwm2m_object {
     lwm2m_context* context;
     lwm2m_map* instances;
 
-    lwm2m_attributes attributes;
+    lwm2m_string_map attributes;
     lwm2m_instance *aco_instance;
     char* object_urn;
     bool multiple;
@@ -85,7 +85,7 @@ struct lwm2m_instance {
     lwm2m_object *object;
     lwm2m_map* resources;
 
-    lwm2m_attributes attributes;
+    lwm2m_string_map attributes;
     lwm2m_instance *aco_instance;
 };
 
@@ -96,7 +96,7 @@ struct lwm2m_resource {
 
     char* name;
     lwm2m_type type;
-    lwm2m_attributes attributes;
+    lwm2m_string_map attributes;
     int operations;
     bool multiple;
     int mandatory;

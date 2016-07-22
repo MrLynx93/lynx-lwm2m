@@ -12,6 +12,7 @@ lwm2m_attributes* lwm2m_attributes_new();
 
 struct lwm2m_attribute {
     char* name;
+    int name_len;
     int access_mode;
     lwm2m_type type;
     lwm2m_value numeric_value;
