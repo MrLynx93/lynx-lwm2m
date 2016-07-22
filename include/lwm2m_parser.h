@@ -62,7 +62,7 @@ void serialize_lwm2m_resource_discover(lwm2m_resource *resource, char **message)
 char *serialize_lwm2m_value(lwm2m_value value, lwm2m_type type, int format);
 
 /* Returns lwm2m_value from text/tlv message */
-lwm2m_value deserialize_lwm2m_value(char* message, lwm2m_type* type, int format);
+lwm2m_value deserialize_lwm2m_value(char* message, lwm2m_type type, int format);
 
 
 #endif //LYNX_LWM2M_PARSER_H
