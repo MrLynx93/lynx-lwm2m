@@ -27,24 +27,8 @@ int serialize_lwm2m_resource(lwm2m_resource *resource, char **message, int *mess
         return serialize_lwm2m_node((lwm2m_node *) resource, RESOURCE, message, message_len);
     }
     else {
-        lwm2m_resource_single single = resource->resource.single;
-        lwm2m_value value = single.value;
-        switch (resource->type) {
-            case INTEGER:
-                return serialize_int(value.int_value, message, message_len, format);
-            case DOUBLE:
-                return serialize_double(value.double_value, message, message_len, format);
-            case STRING:
-                return serialize_string(value.string_value, single.length, message, message_len, format);
-            case OPAQUE:
-                return serialize_opaque(value.opaque_value, single.length, message, message_len, format);
-            case BOOLEAN:
-                return serialize_boolean(value.bool_value, message, message_len, format);
-            case LINK:
-                return serialize_link(value.link_value, message, message_len, format);
-            default:
-                return OPERATION_NOT_SUPPORTED;
-        }
+        *message = serialize_lwm2m_value(resource->resource.single.value, resource->type, format);
+        *message_len = strlen(*message);
     }
 }
 
@@ -167,33 +151,6 @@ static char *create_length(char *buf, int len) {
         return buf + 3;
     }
     return NULL;
-}
-
-//////////////// SERIALIZE VALUES /////////////////
-
-
-static int serialize_int(int value, char **message, int *message_len, int format) {
-    // TODO
-}
-
-static void serialize_double(int value, char **message, int *message_len, int format) {
-    // TODO
-}
-
-static void serialize_boolean(int value, char **message, int *message_len, int format) {
-    // TODO
-}
-
-static void serialize_link(int value, char **message, int *message_len, int format) {
-    // TODO
-}
-
-static void serialize_string(int value, int value_len, char **message, int *message_len, int format) {
-    // TODO
-}
-
-static void serialize_opaque(int value, int value_len, char **message, int *message_len, int format) {
-    // TODO
 }
 
 //////////////// HELPER FUNCTIONS /////////////////

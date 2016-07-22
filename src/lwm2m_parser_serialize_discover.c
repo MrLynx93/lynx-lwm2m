@@ -149,12 +149,7 @@ static char *create_attributes_string(lwm2m_node *node, lwm2m_node_type type) {
         strcat(";");
         strcat(buf, attribute->name);
         strcat(buf, "=");
-        strcat(buf, serialize_attribute(attribute));
+        strcat(buf, serialize_lwm2m_value(attribute->numeric_value, attribute->type, TEXT_FORMAT));
     }
     return buf;
-}
-
-/* Creates only value ("2.3" for example) */
-static char* serialize_attribute(lwm2m_attribute* attribute) {
-    // todo methods in parser
 }
