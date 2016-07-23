@@ -29,22 +29,22 @@ lwm2m_response *lwm2m_response_new();
 ///////////////////// DEVICE MANAGEMENT //////////////////////
 
 /* Receives a read request from LWM2M server and calls proper functions */
-int receive_read_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
+lwm2m_response receive_read_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
 
 /* Receives a write request from LWM2M server and calls proper functions */
-int receive_write_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
+lwm2m_response receive_write_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
 
 /* Receives a create request from LWM2M server and calls proper functions */
-int receive_create_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
+lwm2m_response receive_create_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
 
 /* Receives a delete request from LWM2M server and calls proper functions */
-int receive_delete_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
+lwm2m_response receive_delete_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
 
 /* Receives a discover request from LWM2M server and calls proper functions */
-int receive_discover_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
+lwm2m_response receive_discover_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
 
 /* Receives a write attributes request from LWM2M server and calls proper functions */
-int receive_write_attributes_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
+lwm2m_response receive_write_attributes_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
 
 // TODO are corresponding send_response functions necessary?
 
@@ -52,16 +52,16 @@ int receive_write_attributes_request(lwm2m_context *context, lwm2m_server_addres
 //////////////////// INFORMATION REPORTING ///////////////////
 
 /* Receives an observe request from LWM2M server and calls proper functions */
-int receive_observe_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
+lwm2m_response receive_observe_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
 
 /* Receives a cancel observation request from LWM2M server and calls proper functions */
-int receive_cancel_observation_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
+lwm2m_response receive_cancel_observation_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
 
 /* Sends an uplink request to LWM2M server with notification */
-int send_notify_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
+lwm2m_request send_notify_request(lwm2m_context *context, lwm2m_server_address *address);
 
 /* Receives a response for the uplink request. This is used for cancelling observation by "reset" message in response to notify */
-int receive_notify_response(lwm2m_context *context, lwm2m_server_address *address, lwm2m_response *response);
+lwm2m_response receive_notify_response(lwm2m_context *context, lwm2m_server_address *address, lwm2m_response *response);
 
 
 /////////////////// REGISTRATION //////////////////////////////
@@ -100,8 +100,10 @@ struct lwm2m_request {
 
 struct lwm2m_response {
     char *endpoint;
+    char* payload;
     int response_code;
     int reset; // for observe cancel
+    int created_instance_id;
 };
 
 

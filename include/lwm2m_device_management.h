@@ -54,7 +54,7 @@ int on_lwm2m_instance_delete(lwm2m_server* server, lwm2m_instance* instance);
 //////////// CREATE ///////////
 
 /* Checks access control, parses instance from TLV format message and creates new instance in object tree */
-int on_lwm2m_instance_create(lwm2m_server* server, lwm2m_object* object, char* message, int id);
+int on_lwm2m_instance_create(lwm2m_server* server, lwm2m_object* object, char* message, int* created_instance_id);
 
 
 /////////// DISCOVER //////////

@@ -65,7 +65,8 @@ int on_lwm2m_instance_delete(lwm2m_server *server, lwm2m_instance *instance) {
 
 ///////////////////////// CREATE //////////////////////
 
-int on_lwm2m_instance_create(lwm2m_server *server, lwm2m_object *object, char *message, int id) {
+int on_lwm2m_instance_create(lwm2m_server *server, lwm2m_object *object, char *message, int *created_instance_id) {
+    // todo server-chosen id is in payload
     int access_error = check_object_access(server, object); // todo create aco instance
     if (access_error) {
         return access_error;
