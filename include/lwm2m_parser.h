@@ -41,7 +41,7 @@ int deserialize_lwm2m_resource(lwm2m_resource *resource, char *message, int form
 ////// DESERIALIZE ATTRIBUTES /////
 
 /* Reads attributes from GET parameters and saves values in attributes */
-int deserialize_lwm2m_attributes(lwm2m_attributes *attributes, char *message);
+lwm2m_map_string *deserialize_lwm2m_attributes(char *message);
 
 
 ////// SERIALIZE DISCOVER /////////

@@ -142,7 +142,7 @@ static char *create_attributes_string(lwm2m_node *node, lwm2m_node_type type) {
         attributes = node->instance.attributes;
     }
 
-    char **attribute_names = (char **) malloc(sizeof(char) * 10 * node);
+    char **attribute_names = (char **) malloc(sizeof(char) * 10 * attributes->size);
     lwm2m_string_map_get_keys(attributes, attribute_names);
     for (int i = 0; i < attributes->size; i++) {
         lwm2m_attribute* attribute = lwm2m_string_map_get(attributes, attribute_names[i]);

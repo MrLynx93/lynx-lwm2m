@@ -39,6 +39,34 @@ int deserialize_lwm2m_resource(lwm2m_resource *resource, char *message, int mess
     }
 }
 
+lwm2m_map_string *deserialize_lwm2m_attributes(char *message) {
+    lwm2m_map_string *parsed_attributes = lwm2m_map_string_new();
+    int current_attribute = 0;
+
+    char* attribute_string;
+    while ((attribute_string = strtok(message, "&")) != NULL) {
+        if (strlen(attribute_string) > 0) {
+            char attribute_copy[10];
+            memcpy(attribute_copy, attribute_string, strlen(attribute));
+            char* attribute_name = strtok(attribute_copy, "=");
+            char* attribute_value_string = strtok(attribute_copy, "=");
+
+            lwm2m_type attribute_type = lwm2m_get_attribute_type(attribute_name);
+            lwm2m_value attribute_value = deserialize_lwm2m_value(attribute_value_string, attribute_type, TEXT_FORMAT);
+
+            lwm2m_attribute attribute = {
+                    .name = attribute_name,
+                    .name_len = strlen(attribute_name),
+                    .type = attribute_type,
+                    .numeric_value = attribute_value
+            };
+            lwm2m_string_map_put(parsed_attributes, attribute_name, attribute);
+        }
+        current_attribute++;
+    }
+    return parsed_attributes;
+}
+
 /////////////////// DESERIALIZE MULTIPLE  ///////////////////////
 
 
