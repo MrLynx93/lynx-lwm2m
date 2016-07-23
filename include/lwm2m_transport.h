@@ -94,7 +94,6 @@ int send_bootstrap_request_request(lwm2m_context *context, lwm2m_server_address 
 struct lwm2m_request {
     char *endpoint;
     char *endpoint_client_name;
-    int instance_id;
     char *payload;
     int reset; // for observe cancel
 };

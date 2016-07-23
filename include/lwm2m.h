@@ -42,7 +42,9 @@ int lwm2m_start_client(lwm2m_context *context);
 bool has_server_instances(lwm2m_context* context);
 
 struct lwm2m_context {
-    lwm2m_map *servers;
+    lwm2m_map *servers; // shortServerId -> server
+    lwm2m_map *server_addresses; // "localhost:234" -> server
+
     lwm2m_map *object_tree;
     lwm2m_bootstrap_state bootstrap_state;
     int has_smartcard;
