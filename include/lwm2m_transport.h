@@ -90,7 +90,10 @@ int receive_bootstrap_finish_request(lwm2m_context *context, lwm2m_server_addres
 /* Sends an uplink request to request bootstrapping from LWM2M server */
 int send_bootstrap_request_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
 
-
+struct lwm2m_server_address {
+    char *address;
+    int port;
+};
 struct lwm2m_request {
     char *endpoint;
     char *endpoint_client_name;

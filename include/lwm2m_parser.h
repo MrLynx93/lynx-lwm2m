@@ -56,6 +56,11 @@ void serialize_lwm2m_instance_discover(lwm2m_instance *instance, char **message)
 void serialize_lwm2m_resource_discover(lwm2m_resource *resource, char **message);
 
 
+////////// SERIALIZE REGISTER //////////////
+
+/* Creates "Objects and instances" message for register operation */
+char *serialize_lwm2m_objects_and_instances(lwm2m_context *context);
+
 ////////// TEXT VALUES /////////
 
 /* Returns text/tlv representation of value */
