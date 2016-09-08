@@ -5,12 +5,12 @@
 
 
 int lwm2m_register_on_all_servers(lwm2m_context *context) {
-    lwm2m_map *server_instances = lwm2m_map_get(context->object_tree, SERVER_OBJECT_ID)->object.instances;
+    lwm2m_map *server_instances = ((lwm2m_object*)lwm2m_map_get(context->object_tree, SERVER_OBJECT_ID)).instances;
     int registered_servers = 0;
 
     int *instances_ids = (int *) malloc(sizeof(int) * server_instances->size);
     for (int i = 0, instance_id = server_instances[i]; i < server_instances->size; i++) {
-        lwm2m_instance *instance = lwm2m_map_get(server_instances, instance_id)->instance;
+        lwm2m_instance *instance = (lwm2m_instance*) lwm2m_map_get(server_instances, instance_id);
         lwm2m_server *server = lwm2m_register(context, instance);
         if (server != NULL) {
             registered_servers++;
@@ -22,12 +22,12 @@ int lwm2m_register_on_all_servers(lwm2m_context *context) {
 
 static lwm2m_server *lwm2m_register(lwm2m_context *context, lwm2m_instance *server_instance) {
     // Get necessary values
-    lwm2m_resource *id_resource = lwm2m_map_get(instance->resources, SHORT_SERVER_ADDRESS_RESOURCE_ID)->resource;
-    lwm2m_resource *lifetime_resource = lwm2m_map_get(server_instance->resources, LIFETIME_RESOURCE_ID)->resource;
-    lwm2m_resource *binding_resource = lwm2m_map_get(server_instance->resources, BINDING_RESOURCE_ID)->resource;
+    lwm2m_resource *id_resource = (lwm2m_resource*) lwm2m_map_get(instance->resources, SHORT_SERVER_ADDRESS_RESOURCE_ID);
+    lwm2m_resource *lifetime_resource = (lwm2m_resource*) lwm2m_map_get(server_instance->resources, LIFETIME_RESOURCE_ID);
+    lwm2m_resource *binding_resource = (lwm2m_resource*) lwm2m_map_get(server_instance->resources, BINDING_RESOURCE_ID);
 
     int short_server_id = id_resource.resource.single.value.int_value;
-    lwm2m_server_address *address = lwm2m_map_get(context->server_addresses, short_server_id);
+    lwm2m_server_address *address = (lwm2m_server_address*) lwm2m_map_get(context->server_addresses, short_server_id);
     char *endpoint_client_name = get_next_endpoint_client_name();
 
 
@@ -56,7 +56,7 @@ static lwm2m_server *lwm2m_register(lwm2m_context *context, lwm2m_instance *serv
     if (error) {
         return NULL;
     }
-    lwm2m_map_put(context->server_addresses, short_server_id, server);
+    lwm2m_map_put(context->server_addresses, short_server_id, (void*)server);
     return server;
 }
 

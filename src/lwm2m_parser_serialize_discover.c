@@ -60,7 +60,7 @@ static char *create_object_string(lwm2m_object *object) {
     int *instance_ids = (int *) malloc(sizeof(int) * object->instances->size);
     lwm2m_map_get_keys(object->instances, instance_ids);
     for (int i = 0, instance_id = instance_ids[i]; i < object->instances->size; i++) {
-        strcat(buf, create_instance_string(lwm2m_map_get(object->instances, instance_id)));
+        strcat(buf, create_instance_string((lwm2m_instance*)lwm2m_map_get(object->instances, instance_id)));
         strcat(buf, ",");
     }
     // Remove last ","
@@ -79,7 +79,7 @@ static char *create_instance_string(lwm2m_instance *instance) {
     int *resource_ids = (int *) malloc(sizeof(int) * instance->resources->size);
     lwm2m_map_get_keys(instance->resources, resource_ids);
     for (int i = 0, resource_id = resource_ids[i]; i < instance->resources->size; i++) {
-        strcat(buf, create_resource_string(lwm2m_map_get(instance->resources, resource_id)));
+        strcat(buf, create_resource_string((lwm2m_resource*)lwm2m_map_get(instance->resources, resource_id)));
         strcat(buf, ",");
     }
     // Remove last ","
@@ -108,7 +108,7 @@ static char *create_instance_string_with_attributes(lwm2m_instance *instance) {
     int *resource_ids = (int *) malloc(sizeof(int) * instance->resources->size);
     lwm2m_map_get_keys(instance->resources, resource_ids);
     for (int i = 0, resource_id = resource_ids[i]; i < instance->resources->size; i++) {
-        strcat(buf, create_resource_string_with_attributes(lwm2m_map_get(instance->resources, resource_id)));
+        strcat(buf, create_resource_string_with_attributes((lwm2m_resource*)lwm2m_map_get(instance->resources, resource_id)));
         strcat(buf, ",");
     }
     // Remove last ","

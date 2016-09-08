@@ -17,15 +17,15 @@ typedef struct lwm2m_map {
 lwm2m_map* lwm2m_map_new();
 
 /* Puts node into map */
-void lwm2m_map_put(lwm2m_map* map, int key, lwm2m_node* value);
+void lwm2m_map_put(lwm2m_map* map, int key, void* value);
 
 /* Gets node from map */
-lwm2m_node* lwm2m_map_get(lwm2m_map* map, int key);
+void* lwm2m_map_get(lwm2m_map* map, int key);
 
 /* Removes node from map */
 void lwm2m_map_remove(lwm2m_map* map, int key);
 
-void lwm2m_map_get_keys(int* keys);
+void lwm2m_map_get_keys(lwm2m_map* map, int* keys);
 
 /* Frees a map */
 void lwm2m_map_free(lwm2m_map* map);

@@ -6,7 +6,7 @@
 static typedef struct element {
     int key;
     int in_use;
-    lwm2m_node *data;
+    void *data;
 } element;
 
 lwm2m_map lwm2m_map_new() {
@@ -17,7 +17,7 @@ lwm2m_map lwm2m_map_new() {
     return map;
 }
 
-void lwm2m_map_put(lwm2m_map *map, int key, lwm2m_node *value) {
+void lwm2m_map_put(lwm2m_map *map, int key, void *value) {
     int index = lwm2m_map_hash(map, key);
     if (index == MAP_FULL) {
         lwm2m_map_rehash(map);
@@ -29,7 +29,7 @@ void lwm2m_map_put(lwm2m_map *map, int key, lwm2m_node *value) {
     map->size++;
 }
 
-lwm2m_node *lwm2m_map_get(lwm2m_map *map, int key) {
+void *lwm2m_map_get(lwm2m_map *map, int key) {
     int curr = hash_int(m, key);
     for (int i = 0; i < map->table_size; i++) {
         if (map->data[curr].key == key && map->data[curr].in_use) {

@@ -107,8 +107,8 @@ static int copy_and_free_all_resources(lwm2m_map *parsed_resources, lwm2m_node *
 
     int *keys = (int *) malloc(parsed_resources->size);
     for (int i = 0, id = keys[i]; i < parsed_resources->size; i++) {
-        lwm2m_resource *real_resource = lwm2m_map_get(subnodes, id)->resource;
-        lwm2m_resource *parsed_resource = lwm2m_map_get(parsed_resources, id)->resource;
+        lwm2m_resource *real_resource = (lwm2m_resource*) lwm2m_map_get(subnodes, id);
+        lwm2m_resource *parsed_resource = (lwm2m_resource*) lwm2m_map_get(parsed_resources, id);
         copy_value(parsed_resource, real_resource);
         free_lwm2m_resource(parsed_resource);
     }

@@ -52,7 +52,7 @@ static int serialize_lwm2m_node(
     lwm2m_map nodes = get_nodes(node, type);
     int *keys = (int *) malloc(nodes.size);
     for (int i = 0, id = keys[i]; i < nodes.size; i++) {
-        lwm2m_node *node = lwm2m_map_get(nodes, id);
+        lwm2m_node *node = (lwm2m_node*) lwm2m_map_get(nodes, id);
 
         if (type == OBJECT && !serialize_lwm2m_instance(server, node->instance, &node_buf, &node_len)) {
             continue; // can fail when server is not owner of instance

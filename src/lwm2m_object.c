@@ -44,14 +44,14 @@ void lwm2m_delete_object(lwm2m_object *object) {
     lwm2m_map *object_tree = instance->object->context->object_tree;
 
     // delete ACO instance associated with object
-    lwm2m_map *aco_instances = lwm2m_map_get(object_tree, ACCESS_CONTROL_OBJECT_ID)->object.instances;
+    lwm2m_map *aco_instances = ((lwm2m_object*)lwm2m_map_get(object_tree, ACCESS_CONTROL_OBJECT_ID))->instances;
     lwm2m_map_remove(aco_instances, object->aco_instance->id);
     free_lwm2m_instance(object->aco_instance);
 
     // delete all instances in object
     int keys[object->instances->size];
     for (int i = 0, instance_id = keys[i]; i < object->instances->size; i++) {
-        lwm2m_instance *instance = lwm2m_map_get(object->instances, instance_id)->instance;
+        lwm2m_instance *instance = (lwm2m_instance*) lwm2m_map_get(object->instances, instance_id);
         lwm2m_delete_instance(instance);
     }
 
@@ -65,7 +65,7 @@ void lwm2m_delete_instance(lwm2m_instance *instance) {
     // if instance is not ACO instance, then delete associated ACO instance
     if (instance->object->id != ACCESS_CONTROL_OBJECT_ID) {
         lwm2m_map *object_tree = instance->object->context->object_tree;
-        lwm2m_map *aco_instances = lwm2m_map_get(object_tree, ACCESS_CONTROL_OBJECT_ID)->object.instances;
+        lwm2m_map *aco_instances = ((lwm2m_object*)lwm2m_map_get(object_tree, ACCESS_CONTROL_OBJECT_ID))->instances;
         lwm2m_map_remove(aco_instances, instance->aco_instance->id);
         free_lwm2m_instance(instance->aco_instance);
     }
@@ -73,7 +73,7 @@ void lwm2m_delete_instance(lwm2m_instance *instance) {
     // delete all resources in instance
     int keys[instance->resources->size];
     for (int i = 0, resource_id = keys[i]; i < instance->resources->size; i++) {
-        lwm2m_resource *resource = lwm2m_map_get(instance->resources, resource_id)->resource;
+        lwm2m_resource *resource = (lwm2m_resource*) lwm2m_map_get(instance->resources, resource_id);
         free_lwm2m_resource(resource);
     }
 
