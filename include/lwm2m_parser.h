@@ -1,7 +1,9 @@
 #ifndef LYNX_LWM2M_PARSER_H
 #define LYNX_LWM2M_PARSER_H
 
+#include "map.h"
 #include "lwm2m_object.h"
+#include "lwm2m_common.h"
 
 #define TEXT_FORMAT 0
 #define TLV_FORMAT 1
@@ -23,25 +25,25 @@ int serialize_lwm2m_object(lwm2m_server *server, lwm2m_object *object, char **me
 int serialize_lwm2m_instance(lwm2m_server *server, lwm2m_instance *instance, char **message, int *message_len);
 
 /* Converts resource to proper format and writes output in message */
-int serialize_lwm2m_resource(lwm2m_resource *resource, char **message, int *message_len, int format);
+int serialize_lwm2m_resource(lwm2m_server* server, lwm2m_resource *resource, char **message, int *message_len, int format);
 
 
 ////// DESERIALIZE OBJECTS //////
 
 /* Reads object from TLV format and saves values in underlying instances and resources */
-int deserialize_lwm2m_object(lwm2m_object *object, char *message);
+int deserialize_lwm2m_object(lwm2m_object *object, char *message, int message_len);
 
 /* Reads instance from TLV format and saves values in underlying resources */
-int deserialize_lwm2m_instance(lwm2m_instance *instance, char *message);
+int deserialize_lwm2m_instance(lwm2m_instance *instance, char *message, int message_len);
 
 /* Reads resource from proper format and saves values */
-int deserialize_lwm2m_resource(lwm2m_resource *resource, char *message, int format);
+int deserialize_lwm2m_resource(lwm2m_resource *resource, char *message, int message_len, int format);
 
 
 ////// DESERIALIZE ATTRIBUTES /////
 
 /* Reads attributes from GET parameters and saves values in attributes */
-lwm2m_map_string *deserialize_lwm2m_attributes(char *message);
+lwm2m_map *deserialize_lwm2m_attributes(char *message);
 
 
 ////// SERIALIZE DISCOVER /////////

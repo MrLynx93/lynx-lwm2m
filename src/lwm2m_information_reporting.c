@@ -1,4 +1,4 @@
-#include "../include/lwm2m_information_reporting.h"
+#include "../include/lwm2m_information_reporting.h"z
 #include <pthread.h>
 
 int on_observe(lwm2m_server* server, lwm2m_resource* resource) {

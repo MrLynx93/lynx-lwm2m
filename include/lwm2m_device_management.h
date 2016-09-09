@@ -1,11 +1,8 @@
 #ifndef LYNX_LWM2M_DEVICE_MANAGEMENT_H
 #define LYNX_LWM2M_DEVICE_MANAGEMENT_H
 
-#include "lwm2m_access_control.h"
-#include "lwm2m_parser.h"
-#include "lwm2m_errors.h"
-#include "lwm2m_parser.h"
-#include "lwm2m.h"
+#include "lwm2m_context.h"
+#include "lwm2m_object.h"
 
 #define READ 1
 #define WRITE 2
@@ -42,7 +39,7 @@ int on_lwm2m_resource_read(lwm2m_server* server, lwm2m_resource* resource, char*
 int on_lwm2m_instance_write(lwm2m_server* server, lwm2m_instance* instance, char* message);
 
 /* Checks access control, parses message in proper format and fills values in resource */
-int on_lwm2m_resource_write(lwm2m_server* server, lwm2m_instance* resource, char* message);
+int on_lwm2m_resource_write(lwm2m_server* server, lwm2m_resource* resource, char* message);
 
 
 //////////// DELETE ///////////

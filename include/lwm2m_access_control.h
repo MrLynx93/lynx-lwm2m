@@ -1,9 +1,8 @@
 #ifndef LYNX_LWM2M_ACCESS_CONTROL_H
 #define LYNX_LWM2M_ACCESS_CONTROL_H
 
-#include "context.h"
 #include "lwm2m_object.h"
-#include "lwm2m.h
+#include "lwm2m_context.h"
 
 ///////////// CHECKING ACCESS CONTROL ///////////////////
 
@@ -28,7 +27,7 @@ lwm2m_resource_multiple* lwm2m_get_object_acl_resource(lwm2m_object* object);
 lwm2m_resource_multiple* lwm2m_get_instance_acl_resource(lwm2m_instance* instance);
 
 /* Returns ACL resource instance from ACL multiple resource for a given server */
-l2m2m_resource_single *lwm2m_get_acl_resource_instance(lwm2m_resource_multiple *acl_resource, lwm2m_server *server);
+lwm2m_resource_single *lwm2m_get_acl_resource_instance(lwm2m_resource_multiple *acl_resource, lwm2m_server *server);
 
 /* Returns a default ACL resource instance which is defined at global level (context) */
 lwm2m_resource_single *get_default_acl_resource_instance(lwm2m_context *context);

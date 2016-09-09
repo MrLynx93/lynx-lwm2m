@@ -1,6 +1,8 @@
 #ifndef LYNX_LWM2M_LWM2M_COMMON_H
 #define LYNX_LWM2M_LWM2M_COMMON_H
 
+#include <stdbool.h>
+
 typedef enum lwm2m_type lwm2m_type;
 typedef union lwm2m_value lwm2m_value;
 typedef struct lwm2m_link lwm2m_link;
@@ -13,6 +15,11 @@ enum lwm2m_type {
     BOOLEAN,
     NONE,
     LINK
+};
+
+struct lwm2m_link {
+    int object_id;
+    int instance_id;
 };
 
 union lwm2m_value {

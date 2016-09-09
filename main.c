@@ -1,4 +1,4 @@
-#include "include/lwm2m_object.h"
+#include "include/lwm2m.h"
 
 
 lwm2m_object_tree* build_object_tree() {

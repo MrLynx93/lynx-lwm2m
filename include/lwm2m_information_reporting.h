@@ -1,8 +1,8 @@
 #ifndef LYNX_LWM2M_INFORMATION_REPORTING_H
 #define LYNX_LWM2M_INFORMATION_REPORTING_H
 
+#include "lwm2m_context.h"
 #include "lwm2m_object.h"
-#include "lwm2m.h"
 
 typedef struct lwm2m_observe_session lwm2m_observe_session;
 
@@ -39,5 +39,6 @@ struct observe_session {
     lwm2m_node_type node_type;
     lwm2m_node *node;
 };
+
 
 #endif //LYNX_LWM2M_INFORMATION_REPORTING_H

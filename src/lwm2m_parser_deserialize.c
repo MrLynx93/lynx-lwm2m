@@ -1,12 +1,23 @@
 #include "../include/lwm2m_parser.h"
+#include "../include/lwm2m_object.h"
 #include "../include/lwm2m_errors.h"
-#include <bool.h>
+#include "../include/lwm2m_attributes.h"
+#include <stdbool.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
 
 #define OBJECT_INSTANCE_TYPE    0b00000000
 #define RESOURCE_INSTANCE_TYPE  0b01000000
 #define MULTIPLE_RESOURCE_TYPE  0b10000000
 #define RESOURCE_TYPE           0b11000000
 
+static lwm2m_map *deserialize_lwm2m_node(lwm2m_node *node, char *message, int message_len);
+static int copy_and_free_all_resources(lwm2m_map *parsed_resources, lwm2m_node *node, lwm2m_node_type node_type);
+static void copy_value(lwm2m_resource *source, lwm2m_resource *destination);
+static char *read_header(char *buf, int *identifier_length, int *value_length, int *length_of_length, int *type);
+static char *read_identifier(char *buf, int *id, int identifier_length);
+static char *read_length(char *buf, int length_of_length, int *value_length);
 
 //////////////// PUBLIC FUNCTIONS /////////////////
 
@@ -25,7 +36,7 @@ int deserialize_lwm2m_instance(lwm2m_instance *instance, char *message, int mess
 
 int deserialize_lwm2m_resource(lwm2m_resource *resource, char *message, int message_len, int format) {
     if (resource->multiple) {
-        lwm2m_map *parsed_resources = deserialize_lwm2m_node((lwm2m_node *) parsed_resource, message, message, message_len);
+        lwm2m_map *parsed_resources = deserialize_lwm2m_node((lwm2m_node *) resource, message, message_len);
         if (parsed_resources == NULL) {
             return OPERATION_NOT_SUPPORTED;
         }
@@ -39,28 +50,28 @@ int deserialize_lwm2m_resource(lwm2m_resource *resource, char *message, int mess
     }
 }
 
-lwm2m_map_string *deserialize_lwm2m_attributes(char *message) {
-    lwm2m_map_string *parsed_attributes = lwm2m_map_string_new();
+lwm2m_map *deserialize_lwm2m_attributes(char *message) {
+    lwm2m_map *parsed_attributes = lwm2m_map_new();
     int current_attribute = 0;
 
-    char* attribute_string;
+    char *attribute_string;
     while ((attribute_string = strtok(message, "&")) != NULL) {
         if (strlen(attribute_string) > 0) {
             char attribute_copy[10];
-            memcpy(attribute_copy, attribute_string, strlen(attribute));
-            char* attribute_name = strtok(attribute_copy, "=");
-            char* attribute_value_string = strtok(attribute_copy, "=");
+            memcpy(attribute_copy, attribute_string, strlen(attribute_string));
+            char *attribute_name = strtok(attribute_copy, "=");
+            char *attribute_value_string = strtok(attribute_copy, "=");
 
             lwm2m_type attribute_type = lwm2m_get_attribute_type(attribute_name);
             lwm2m_value attribute_value = deserialize_lwm2m_value(attribute_value_string, attribute_type, TEXT_FORMAT);
 
-            lwm2m_attribute attribute = {
-                    .name = attribute_name,
-                    .name_len = strlen(attribute_name),
-                    .type = attribute_type,
-                    .numeric_value = attribute_value
-            };
-            lwm2m_string_map_put(parsed_attributes, attribute_name, attribute);
+            lwm2m_attribute* attribute = (lwm2m_attribute*) malloc(sizeof(lwm2m_attribute));
+            attribute->name = attribute_name;
+            attribute->name_len = strlen(attribute_name);
+            attribute->type = attribute_type;
+            attribute->numeric_value = attribute_value;
+
+            lwm2m_map_put_string(parsed_attributes, attribute_name, attribute);
         }
         current_attribute++;
     }
@@ -87,7 +98,8 @@ static lwm2m_map *deserialize_lwm2m_node(lwm2m_node *node, char *message, int me
     while (curr_buf < message + message_len) {
         curr_buf = read_header(curr_buf, &identifier_length, &value_length, &length_of_length, &type);
         curr_buf = read_identifier(curr_buf, &id, identifier_length);
-        curr_buf = read_length(curr_buf, length_of_length, &value_length); // either reads length or leaves length from header
+        curr_buf = read_length(curr_buf, length_of_length,
+                               &value_length); // either reads length or leaves length from header
 
         lwm2m_resource *parsed_resource = lwm2m_resource_new(type == MULTIPLE_RESOURCE_TYPE ? true : false);
         // TOODO get type of resource
@@ -107,8 +119,8 @@ static int copy_and_free_all_resources(lwm2m_map *parsed_resources, lwm2m_node *
 
     int *keys = (int *) malloc(parsed_resources->size);
     for (int i = 0, id = keys[i]; i < parsed_resources->size; i++) {
-        lwm2m_resource *real_resource = (lwm2m_resource*) lwm2m_map_get(subnodes, id);
-        lwm2m_resource *parsed_resource = (lwm2m_resource*) lwm2m_map_get(parsed_resources, id);
+        lwm2m_resource *real_resource = (lwm2m_resource *) lwm2m_map_get(subnodes, id);
+        lwm2m_resource *parsed_resource = (lwm2m_resource *) lwm2m_map_get(parsed_resources, id);
         copy_value(parsed_resource, real_resource);
         free_lwm2m_resource(parsed_resource);
     }
@@ -118,22 +130,22 @@ static int copy_and_free_all_resources(lwm2m_map *parsed_resources, lwm2m_node *
 
 static void copy_value(lwm2m_resource *source, lwm2m_resource *destination) {
     destination->resource.single.value = source->resource.single.value;
-    if (resource->type == STRING || resource->type == OPAQUE) {
+    if (source->type == STRING || source->type == OPAQUE) {
         destination->resource.single.length = source->resource.single.length;
     }
 }
 
 static char *read_header(char *buf, int *identifier_length, int *value_length, int *length_of_length, int *type) {
-    *type = buf & 0b11000000;
-    *identifier_length = buf & 0b00100000 ? 16 : 8;
-    *length_of_length = buf & 0b00011000;
-    *value_length = buf & 0b00000111;
+    *type = *buf & 0b11000000;
+    *identifier_length = *buf & 0b00100000 ? 16 : 8;
+    *length_of_length = *buf & 0b00011000;
+    *value_length = *buf & 0b00000111;
     return buf + 1;
 }
 
 static char *read_identifier(char *buf, int *id, int identifier_length) {
     if (identifier_length == 8) {
-        *id = (int) buf;
+        *id = (int) buf[0];
         return buf + 1;
     }
     if (identifier_length == 16) {
@@ -147,7 +159,7 @@ static char *read_identifier(char *buf, int *id, int identifier_length) {
 
 static char *read_length(char *buf, int length_of_length, int *value_length) {
     if (length_of_length == 8) {
-        *value_length = (int) buf;
+        *value_length = (int) buf[0];
         return buf + 1;
     }
     if (length_of_length == 16) {

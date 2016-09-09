@@ -1,10 +1,9 @@
 #ifndef LYNX_LWM2M_BOOTSTRAP_H
 #define LYNX_LWM2M_BOOTSTRAP_H
 
-#include "lwm2m.h"
-#include "lwm2m_parser.h"
+#include "lwm2m_context.h"
+#include "lwm2m_object.h"
 
-typedef enum lwm2m_bootstrap_state lwm2m_bootstrap_state;
 /*
  * All functions return 0 if operation was performed correctly otherwise it returns error code
  * List of error codes:
@@ -39,15 +38,5 @@ int lwm2m_wait_for_server_bootstrap(lwm2m_context *context);
 /* Starts client initiated bootstrap */
 int lwm2m_bootstrap_client_initiated(lwm2m_context *context);
 
-
-enum lwm2m_bootstrap_state {
-    STARTED,
-    BOOTSTRAPPED_BY_SMARTCARD,
-    FACTORY_BOOTSTRAPPED,
-    REGISTERING,
-    WAITING_FOR_SERVER_BOOTSTRAP,
-    CLIENT_INITIATED_BOOTSTRAPPING,
-    BOOTSTRAPPED
-};
 
 #endif //LYNX_LWM2M_BOOTSTRAP_H

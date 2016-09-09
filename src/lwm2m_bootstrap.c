@@ -1,5 +1,6 @@
 #include "../include/lwm2m_bootstrap.h"
 #include "../include/lwm2m_register.h"
+#include <stddef.h>
 
 #define BOOTSTRAP_FAILED 1
 

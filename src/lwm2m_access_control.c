@@ -2,17 +2,22 @@
 #include "../include/lwm2m_access_control.h"
 #include "../include/lwm2m_device_management.h"
 #include "../include/map.h"
+#include <stddef.h>
 
 #define SECURITY_OBJECT_ID 0
 #define ACCESS_CONTROL_OBJECT_ID 2
 #define ACL_RESOURCE_ID 2
 #define ACO_RESOURCE_ID 3
 
+#define OBJECT_ID_RESOURCE_ID 0
+#define INSTANCE_ID_RESOURCE_ID 1
+#define ACO_RESOURCE_ID 3
+
 ///////////// CHECKING ACCESS CONTROL ///////////////////
 
 
 int lwm2m_check_object_access_control(lwm2m_server *server, lwm2m_instance *instance) {
-    lwm2m_resource_multiple *acl_resource = lwm2m_get_object_acl_resource(instance);
+    lwm2m_resource_multiple *acl_resource = lwm2m_get_instance_acl_resource(instance); // TODO check if instance or object
     lwm2m_resource_single *acl_resource_instance = lwm2m_get_acl_resource_instance(acl_resource, server);
     if (!(acl_resource_instance->value.int_value & CREATE)) {
         return ACCESS_RIGHT_PERMISSON_DENIED;
@@ -21,7 +26,7 @@ int lwm2m_check_object_access_control(lwm2m_server *server, lwm2m_instance *inst
 }
 
 int lwm2m_check_instance_access_control(lwm2m_server *server, lwm2m_instance *instance, int operation) {
-    if (server->context->servers->elements == 1) {
+    if (server->context->servers->size == 1) {
         return 0;
     }
 
@@ -54,7 +59,7 @@ int lwm2m_check_resource_operation_supported(lwm2m_resource *resource, int opera
 }
 
 lwm2m_object *lwm2m_get_aco_object(lwm2m_context* context) {
-    return (lwm2m_object*) lwm2m_map_get(context->object_tree->objects, ACCESS_CONTROL_OBJECT_ID);
+    return (lwm2m_object*) lwm2m_map_get(context->object_tree, ACCESS_CONTROL_OBJECT_ID);
 }
 
 lwm2m_resource_multiple* lwm2m_get_object_acl_resource(lwm2m_object* object) {
@@ -93,7 +98,7 @@ lwm2m_instance *lwm2m_object_create_aco_instance(lwm2m_server* server, lwm2m_obj
     ((lwm2m_resource*)lwm2m_map_get(aco_instance->resources, INSTANCE_ID_RESOURCE_ID))->resource.single.value.int_value = 0;
     ((lwm2m_resource*)lwm2m_map_get(aco_instance->resources, ACO_RESOURCE_ID))->resource.single.value.int_value = server->short_server_id;
     // TODO setting default ACL resource instances
-    return instance;
+    return aco_instance;
 }
 
 lwm2m_instance *lwm2m_instance_create_aco_instance(lwm2m_server* server, lwm2m_instance* instance) {
@@ -101,7 +106,7 @@ lwm2m_instance *lwm2m_instance_create_aco_instance(lwm2m_server* server, lwm2m_i
     aco_instance->resources = server->context->create_standard_resources_callback(ACCESS_CONTROL_OBJECT_ID);
     ((lwm2m_resource*)lwm2m_map_get(aco_instance->resources, OBJECT_ID_RESOURCE_ID))->resource.single.value.int_value = instance->object->id;
     ((lwm2m_resource*)lwm2m_map_get(aco_instance->resources, INSTANCE_ID_RESOURCE_ID))->resource.single.value.int_value = instance->id;
-    ((lwm2m_resource*)lwm2m_map_get(aco_instance->resources, ACO_RESOURCE_ID)->resource.single.value.int_value = server->short_server_id;
+    ((lwm2m_resource*)lwm2m_map_get(aco_instance->resources, ACO_RESOURCE_ID))->resource.single.value.int_value = server->short_server_id;
     // TODO setting default ACL resource instances
-    return instance;
+    return aco_instance;
 }
