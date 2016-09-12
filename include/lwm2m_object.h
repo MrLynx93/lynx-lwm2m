@@ -104,7 +104,7 @@ struct lwm2m_resource {
 
     char* name;
     lwm2m_type type;
-    lwm2m_map attributes;
+    lwm2m_map *attributes;
     int operations;
     bool multiple;
     int mandatory;

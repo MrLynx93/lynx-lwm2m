@@ -3,7 +3,16 @@
 #include "../include/lwm2m_attributes.h"
 #include "../include/lwm2m_bootstrap.h"
 #include "../include/lwm2m_device_management.h"
+#include <stddef.h>
+#include <stdlib.h>
 
+static void start_transport_layer(lwm2m_context *context);
+static int create_object_tree(lwm2m_context *context);
+static lwm2m_map *create_standard_objects();
+static lwm2m_map *create_security_object_resources();
+static lwm2m_map *create_server_object_resources();
+static lwm2m_map *create_access_control_object_resources();
+static lwm2m_map *create_standard_resources(int object_id);
 
 lwm2m_context *lwm2m_create_context() {
     lwm2m_context *context = (lwm2m_context *) malloc(sizeof(lwm2m_context));
@@ -15,7 +24,7 @@ lwm2m_context *lwm2m_create_context() {
 }
 
 int lwm2m_start_client(lwm2m_context *context) {
-    int error = lwm2m_bootstrap(lwm2m_context *context);
+    int error = lwm2m_bootstrap(context);
     if (error) {
         return error;
     }
@@ -30,22 +39,22 @@ static void start_transport_layer(lwm2m_context *context) {
 }
 
 static int create_object_tree(lwm2m_context *context) {
-    lwm2m_node_map *standard_objects = create_standard_objects();
-    lwm2m_node_map *user_defined_objects = context->create_objects_callback();
+    lwm2m_map *standard_objects = create_standard_objects();
+    lwm2m_map *user_defined_objects = context->create_objects_callback();
 
     for (int object_id = 0; object_id < standard_objects->size; object_id++) {
         lwm2m_object *object = (lwm2m_object*) lwm2m_map_get(standard_objects, object_id);
-        lwm2m_map_put(context->object_tree->objects, object_id, (void*)object);
+        lwm2m_map_put(context->object_tree, object_id, (void*)object);
     }
     for (int object_id = 0; object_id < user_defined_objects->size; object_id++) {
         lwm2m_object *object = (lwm2m_object*) lwm2m_map_get(user_defined_objects, object_id);
-        lwm2m_map_put(context->object_tree->objects, object_id, (void*)object);
+        lwm2m_map_put(context->object_tree, object_id, (void*)object);
     }
 }
 
 ////////////////// PREDEFINED OBJECTS ////////////////////
 
-static lwm2m_object **create_standard_objects() {
+static lwm2m_map *create_standard_objects() {
     // Define security object
     lwm2m_object *security_object = lwm2m_object_new();
     security_object->id = SECURITY_OBJECT_ID;
@@ -71,14 +80,14 @@ static lwm2m_object **create_standard_objects() {
     access_control_object->attributes = lwm2m_attributes_new();
 
     // Create list with objects (todo map?)
-    lwm2m_object **objects = malloc(sizeof(lwm2m_object *) * 3);
-    objects[0] = security_object;
-    objects[1] = server_object;
-    objects[2] = access_control_object;
+    lwm2m_map *objects = lwm2m_map_new();
+    lwm2m_map_put(objects, 0, security_object);
+    lwm2m_map_put(objects, 1, server_object);
+    lwm2m_map_put(objects, 2, access_control_object);
     return objects;
 }
 
-lwm2m_map *create_standard_resources(int object_id) {
+static lwm2m_map *create_standard_resources(int object_id) {
     switch (object_id) {
         case SECURITY_OBJECT_ID:
             return create_security_object_resources();
@@ -90,7 +99,7 @@ lwm2m_map *create_standard_resources(int object_id) {
     return NULL;
 }
 
-static lwm2m_resource **create_security_object_resources() {
+static lwm2m_map *create_security_object_resources() {
     lwm2m_map* resources = lwm2m_map_new();
     lwm2m_resource *resource;
 
@@ -195,7 +204,7 @@ static lwm2m_resource **create_security_object_resources() {
     return resources;
 }
 
-static lwm2m_resource **create_server_object_resources() {
+static lwm2m_map *create_server_object_resources() {
     lwm2m_map* resources = lwm2m_map_new();
     lwm2m_resource *resource;
 

@@ -1,8 +1,17 @@
 #include "../include/lwm2m_bootstrap.h"
 #include "../include/lwm2m_register.h"
+#include "../include/lwm2m_context.h"
+#include "../include/lwm2m_errors.h"
+#include "../include/lwm2m_parser.h"
 #include <stddef.h>
+#include <string.h>
 
 #define BOOTSTRAP_FAILED 1
+
+// TODO move
+bool has_server_instances(lwm2m_context *context) {
+    return false;
+}
 
 ///////////// CALLBACKS ////////////////////
 
@@ -11,21 +20,21 @@ int on_bootstrap_object_write(lwm2m_server *server, lwm2m_object *object, char *
     if (!server->context->is_bootstrap_ready) {
         return OPERATION_NOT_ALLOWED;
     }
-    deserialize_lwm2m_object(object, message);
+    deserialize_lwm2m_object(object, message, strlen(message));
 }
 
 int on_bootstrap_instance_write(lwm2m_server *server, lwm2m_instance *instance, char *message) {
     if (!server->context->is_bootstrap_ready) {
         return OPERATION_NOT_ALLOWED;
     }
-    deserialize_lwm2m_instance(instance, message);
+    deserialize_lwm2m_instance(instance, message, strlen(message)); // TODO check
 }
 
 int on_bootstrap_resource_write(lwm2m_server *server, lwm2m_resource *resource, char *message) {
     if (!server->context->is_bootstrap_ready) {
         return OPERATION_NOT_ALLOWED;
     }
-    deserialize_lwm2m_resource(resource, message);
+    deserialize_lwm2m_resource(resource, message, strlen(message), TLV_FORMAT); // TODO check format
 }
 
 int on_bootstrap_delete(lwm2m_server *server, lwm2m_instance *instance) {
@@ -72,7 +81,7 @@ int lwm2m_bootstrap(lwm2m_context *context) {
             return 0;
         }
         else {
-            if (lwm2m_boostrap_client_initiated(context)) {
+            if (lwm2m_bootstrap_client_initiated(context)) {
                 context->bootstrap_state = BOOTSTRAPPED;
                 return 0;
             }
@@ -87,7 +96,7 @@ int lwm2m_bootstrap(lwm2m_context *context) {
             return 0;
         }
         else {
-            if (lwm2m_boostrap_client_initiated(context)) {
+            if (lwm2m_bootstrap_client_initiated(context)) {
                 context->bootstrap_state = BOOTSTRAPPED;
                 return 0;
             }

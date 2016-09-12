@@ -7,7 +7,7 @@
 ///////////// CHECKING ACCESS CONTROL ///////////////////
 
 /* Checks if object have an access control for a given LWM2M server (used only for create operation) */
-int lwm2m_check_object_access_control(lwm2m_server *server, lwm2m_instance *instance);
+int lwm2m_check_object_access_control(lwm2m_server *server, lwm2m_object *object);
 
 /* Checks if instance have an access control for a given LWM2M server and operation */
 int lwm2m_check_instance_access_control(lwm2m_server *server, lwm2m_instance *instance, int operation);
@@ -30,7 +30,7 @@ lwm2m_resource_multiple* lwm2m_get_instance_acl_resource(lwm2m_instance* instanc
 lwm2m_resource_single *lwm2m_get_acl_resource_instance(lwm2m_resource_multiple *acl_resource, lwm2m_server *server);
 
 /* Returns a default ACL resource instance which is defined at global level (context) */
-lwm2m_resource_single *get_default_acl_resource_instance(lwm2m_context *context);
+lwm2m_resource_single *get_default_acl_resource_instance(lwm2m_context *context, lwm2m_instance* instance); // TODO why instance is needed
 
 //////////// OTHERS ////////////////////////////////////
 

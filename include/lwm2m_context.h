@@ -4,10 +4,7 @@
 #include "map.h"
 
 
-char *itoa(int number) {
-//    sprintf(s, "%ld", number);
-    return "aa";
-} // TODO implement
+char *itoa(int number);
 
 typedef struct lwm2m_context lwm2m_context;
 typedef struct lwm2m_server lwm2m_server;
