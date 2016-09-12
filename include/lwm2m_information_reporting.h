@@ -33,6 +33,9 @@ int on_cancel_lwm2m_resource_observation(lwm2m_server *server, lwm2m_resource *r
 
 ///////////////// START OBSERVING //////////////
 
+/* Checks numeric conditions of resource to notify (used in LWM2M write operation */
+int should_notify(lwm2m_resource *resource, lwm2m_value previous_value);
+
 
 struct observe_session {
     lwm2m_server *server;
