@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+lwm2m_type lwm2m_get_attribute_type(char *attribute_name) {
+    return INTEGER;
+}
+
 lwm2m_attribute* lwm2m_create_attribute(char* name, int name_len, int access_mode, lwm2m_type type) {
     lwm2m_attribute *attribute = (lwm2m_attribute*) malloc(sizeof(lwm2m_attribute));
     attribute->access_mode = access_mode;

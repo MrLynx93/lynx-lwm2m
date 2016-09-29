@@ -11,8 +11,6 @@
 
 typedef struct lwm2m_attribute lwm2m_attribute;
 
-lwm2m_map* lwm2m_attributes_new();
-
 int lwm2m_check_attribute_access(lwm2m_attribute *attribute, int operation);
 
 lwm2m_type lwm2m_get_attribute_type(char *attribute_name);

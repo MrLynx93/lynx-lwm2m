@@ -152,83 +152,98 @@ lwm2m_response receive_discover_request(lwm2m_context *context, lwm2m_server_add
     return response;
 }
 
-lwm2m_response receive_write_attributes_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request) {
-    lwm2m_server *server = resolve_lwm2m_server(context, address);
-    lwm2m_object *object = resolve_lwm2m_object(context, request);
-    lwm2m_instance *instance = resolve_lwm2m_instance(context, request);
-    lwm2m_resource *resource = resolve_lwm2m_resource(context, request);
-
-    int error;
-    if (resource != NULL) {
-        error = on_lwm2m_resource_write_attributes(server, resource, request->payload);
-    }
-    if (instance != NULL) {
-        error = on_lwm2m_instance_write_attributes(server, instance, request->payload);
-    }
-    if (object != NULL) {
-        error = on_lwm2m_object_write_attributes(server, object, request->payload);
-    }
-
-    lwm2m_response response;
-    response.endpoint = request->endpoint;
-    response.reset = 0;
-    response.response_code = error ? error : SUCCESS;
-    return response;
-}
+//lwm2m_response receive_write_attributes_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request) {
+//    lwm2m_server *server = resolve_lwm2m_server(context, address);
+//    lwm2m_object *object = resolve_lwm2m_object(context, request);
+//    lwm2m_instance *instance = resolve_lwm2m_instance(context, request);
+//    lwm2m_resource *resource = resolve_lwm2m_resource(context, request);
+//
+//    int error;
+//    if (resource != NULL) {
+//        error = on_lwm2m_resource_write_attributes(server, resource, request->payload);
+//    }
+//    if (instance != NULL) {
+//        error = on_lwm2m_instance_write_attributes(server, instance, request->payload);
+//    }
+//    if (object != NULL) {
+//        error = on_lwm2m_object_write_attributes(server, object, request->payload);
+//    }
+//
+//    lwm2m_response response;
+//    response.endpoint = request->endpoint;
+//    response.reset = 0;
+//    response.response_code = error ? error : SUCCESS;
+//    return response;
+//}
 
 
 //////////////////// INFORMATION REPORTING ///////////////////
 
 
-lwm2m_response receive_observe_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request) {
-    lwm2m_server *server = resolve_lwm2m_server(context, address);
-    lwm2m_object *object = resolve_lwm2m_object(context, request);
-    lwm2m_instance *instance = resolve_lwm2m_instance(context, request);
-    lwm2m_resource *resource = resolve_lwm2m_resource(context, request);
+//lwm2m_response receive_observe_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request) {
+//    lwm2m_server *server = resolve_lwm2m_server(context, address);
+//    lwm2m_object *object = resolve_lwm2m_object(context, request);
+//    lwm2m_instance *instance = resolve_lwm2m_instance(context, request);
+//    lwm2m_resource *resource = resolve_lwm2m_resource(context, request);
+//
+//    int error;
+//    if (resource != NULL) {
+//        error = on_lwm2m_resource_observe(server, resource);
+//    }
+//    if (instance != NULL) {
+//        error = on_lwm2m_instance_observe(server, instance);
+//    }
+//    if (object != NULL) {
+//        error = on_lwm2m_object_observe(server, object);
+//    }
+//
+//    lwm2m_response response;
+//    response.endpoint = request->endpoint;
+//    response.reset = 0;
+//    response.response_code = error ? error : SUCCESS;
+//    return response;
+//}
 
-    int error;
-    if (resource != NULL) {
-        error = on_lwm2m_resource_observe(server, resource);
-    }
-    if (instance != NULL) {
-        error = on_lwm2m_instance_observe(server, instance);
-    }
-    if (object != NULL) {
-        error = on_lwm2m_object_observe(server, object);
-    }
+//lwm2m_response receive_cancel_observation_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request) {
+//    lwm2m_server *server = resolve_lwm2m_server(context, address);
+//    lwm2m_object *object = resolve_lwm2m_object(context, request);
+//    lwm2m_instance *instance = resolve_lwm2m_instance(context, request);
+//    lwm2m_resource *resource = resolve_lwm2m_resource(context, request);
+//
+//    int error;
+//    if (resource != NULL) {
+//        error = on_cancel_lwm2m_resource_observation(server, resource);
+//    }
+//    if (instance != NULL) {
+//        error = on_cancel_lwm2m_instance_observation(server, instance);
+//    }
+//    if (object != NULL) {
+//        error = on_cancel_lwm2m_object_observation(server, object);
+//    }
+//
+//    lwm2m_response response;
+//    response.endpoint = request->endpoint;
+//    response.reset = 0;
+//    response.response_code = error ? error : SUCCESS;
+//}
+//
+//lwm2m_request send_notify_request(lwm2m_context *context, lwm2m_server_address *address) {
+//    // TODO what here?
+//}
 
-    lwm2m_response response;
-    response.endpoint = request->endpoint;
-    response.reset = 0;
-    response.response_code = error ? error : SUCCESS;
+
+
+lwm2m_server_address *lwm2m_server_address_new() {
+    lwm2m_server_address *address = (lwm2m_server_address *) malloc(sizeof(lwm2m_server_address));
+    return address;
+}
+lwm2m_request *lwm2m_request_new() {
+    lwm2m_request *request = (lwm2m_request *) malloc(sizeof(lwm2m_request));
+    return request;
+}
+lwm2m_response *lwm2m_response_new() {
+    lwm2m_response *response = (lwm2m_response *) malloc(sizeof(lwm2m_response));
     return response;
-}
-
-lwm2m_response receive_cancel_observation_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request) {
-    lwm2m_server *server = resolve_lwm2m_server(context, address);
-    lwm2m_object *object = resolve_lwm2m_object(context, request);
-    lwm2m_instance *instance = resolve_lwm2m_instance(context, request);
-    lwm2m_resource *resource = resolve_lwm2m_resource(context, request);
-
-    int error;
-    if (resource != NULL) {
-        error = on_cancel_lwm2m_resource_observation(server, resource);
-    }
-    if (instance != NULL) {
-        error = on_cancel_lwm2m_instance_observation(server, instance);
-    }
-    if (object != NULL) {
-        error = on_cancel_lwm2m_object_observation(server, object);
-    }
-
-    lwm2m_response response;
-    response.endpoint = request->endpoint;
-    response.reset = 0;
-    response.response_code = error ? error : SUCCESS;
-}
-
-lwm2m_request send_notify_request(lwm2m_context *context, lwm2m_server_address *address) {
-    // TODO what here?
 }
 
 ////////////////// PRIVATE /////////////////

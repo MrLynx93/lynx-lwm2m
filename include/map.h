@@ -34,6 +34,7 @@ void* lwm2m_map_get(lwm2m_map* map, int key);
 /* Gets node from map. String is the key */
 void* lwm2m_map_get_string(lwm2m_map* map, char* key);
 
+
 /* Removes node from map */
 void lwm2m_map_remove(lwm2m_map* map, int key);
 

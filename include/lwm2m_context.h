@@ -20,7 +20,7 @@ typedef lwm2m_map *(lwm2m_create_resources_callback(int object_id));
 typedef lwm2m_map *(lwm2m_create_objects_callback(void));
 
 /* Used in factory bootstrap to bootstrap provide client with LWM2M instances */
-typedef int ((*lwm2m_bootstrap_callback(lwm2m_context *)));
+typedef int (lwm2m_bootstrap_callback)(lwm2m_context *);
 
 
 /////////// DEVICE MANAGEMENT ////////////

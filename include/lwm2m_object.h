@@ -4,6 +4,7 @@
 #include "map.h"
 #include "lwm2m_context.h"
 #include "lwm2m_common.h"
+#include "lwm2m_attributes.h"
 #include <stdbool.h>
 
 #define SECURITY_OBJECT_ID 0
@@ -24,13 +25,19 @@ typedef union lwm2m_resource_real lwm2m_resource_real;
 
 
 /* This callback is executed BEFORE read operation is performed to update value inside resource */
-typedef void (*lwm2m_resource_read_callback(lwm2m_resource *resource));
+typedef void (lwm2m_resource_read_callback) (lwm2m_resource *resource);
 
 /* This callback is executed AFTER write operation to perform any action due to changing value */
-typedef void (*lwm2m_resource_write_callback(lwm2m_resource *resource));
+typedef void (lwm2m_resource_write_callback(lwm2m_resource *resource));
 
 
-typedef void (*lwm2m_resource_execute_callback(lwm2m_resource *resource, char *args));
+typedef void (lwm2m_resource_execute_callback(lwm2m_resource *resource, char *args));
+
+
+lwm2m_resource* lwm2m_map_get_resource(lwm2m_map* map, int key);
+lwm2m_instance* lwm2m_map_get_instance(lwm2m_map* map, int key);
+lwm2m_object* lwm2m_map_get_object(lwm2m_map* map, int key);
+lwm2m_attribute *lwm2m_map_get_attribute(lwm2m_map *map, char *key);
 
 
 lwm2m_object *lwm2m_object_new();

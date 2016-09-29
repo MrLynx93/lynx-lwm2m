@@ -119,17 +119,17 @@ int on_lwm2m_resource_discover(lwm2m_server *server, lwm2m_resource *resource, c
 //////////////////// WRITE ATTRIBUTES ////////////////////
 
 
-int on_lwm2m_object_write_attributes(lwm2m_server *server, lwm2m_object *object, char *message) {
-    return on_lwm2m_node_write_attributes(server, (lwm2m_node*) object, OBJECT, message);
-}
-
-int on_lwm2m_instance_write_attributes(lwm2m_server *server, lwm2m_instance *instance, char *message) {
-    return on_lwm2m_node_write_attributes(server, (lwm2m_node*) instance, INSTANCE, message);
-}
-
-int on_lwm2m_resource_write_attributes(lwm2m_server *server, lwm2m_resource *resource, char *message) {
-    return on_lwm2m_node_write_attributes(server, (lwm2m_node*) resource, RESOURCE, message);
-}
+//int on_lwm2m_object_write_attributes(lwm2m_server *server, lwm2m_object *object, char *message) {
+//    return on_lwm2m_node_write_attributes(server, (lwm2m_node*) object, OBJECT, message);
+//}
+//
+//int on_lwm2m_instance_write_attributes(lwm2m_server *server, lwm2m_instance *instance, char *message) {
+//    return on_lwm2m_node_write_attributes(server, (lwm2m_node*) instance, INSTANCE, message);
+//}
+//
+//int on_lwm2m_resource_write_attributes(lwm2m_server *server, lwm2m_resource *resource, char *message) {
+//    return on_lwm2m_node_write_attributes(server, (lwm2m_node*) resource, RESOURCE, message);
+//}
 
 
 ///////////////////////// PRIVATE /////////////////////
@@ -158,44 +158,44 @@ static int check_resource_access(lwm2m_server *server, lwm2m_resource *resource,
     return 0;
 }
 
-static int on_lwm2m_node_write_attributes(lwm2m_server *server, lwm2m_node *node, lwm2m_type type, char *message) {
-    lwm2m_map *parsed_attributes = deserialize_lwm2m_attributes(message);
-    lwm2m_map *attributes = get_node_attributes(node, type);
+//static int on_lwm2m_node_write_attributes(lwm2m_server *server, lwm2m_node *node, lwm2m_type type, char *message) {
+//    lwm2m_map *parsed_attributes = deserialize_lwm2m_attributes(message);
+//    lwm2m_map *attributes = get_node_attributes(node, type);
+//
+//    char **attribute_names = (char **) malloc(sizeof(char) * 10 * parsed_attributes->size);
+//    lwm2m_map_get_keys_string(parsed_attributes, attribute_names);
+//    for (int i = 0; i < parsed_attributes->size; i++) {
+//        lwm2m_attribute *parsed_attribute = (lwm2m_attribute *) lwm2m_map_get_string(parsed_attributes,
+//                                                                                     attribute_names[i]);
+//        lwm2m_attribute *attribute = (lwm2m_attribute *) lwm2m_map_get_string(attributes, attribute_names[i]);
+//
+//        if (!is_notify_attribute(parsed_attribute->name)) {
+//            return STRANGE_ERROR;
+//        }
+//        int error = lwm2m_check_attribute_access(parsed_attribute, READ);
+//        if (error) {
+//            return error;
+//        }
+//
+//        if (attribute == NULL) {
+//            lwm2m_map_put_string(attributes, attribute_names[i], parsed_attribute);
+//        }
+//        else {
+//            attribute->numeric_value = parsed_attribute->numeric_value;
+//        }
+//    }
+//    return 0;
+//}
 
-    char **attribute_names = (char **) malloc(sizeof(char) * 10 * parsed_attributes->size);
-    lwm2m_map_get_keys_string(parsed_attributes, attribute_names);
-    for (int i = 0; i < parsed_attributes->size; i++) {
-        lwm2m_attribute *parsed_attribute = (lwm2m_attribute *) lwm2m_map_get_string(parsed_attributes,
-                                                                                     attribute_names[i]);
-        lwm2m_attribute *attribute = (lwm2m_attribute *) lwm2m_map_get_string(attributes, attribute_names[i]);
-
-        if (!is_notify_attribute(parsed_attribute->name)) {
-            return STRANGE_ERROR;
-        }
-        int error = lwm2m_check_attribute_access(parsed_attribute, READ);
-        if (error) {
-            return error;
-        }
-
-        if (attribute == NULL) {
-            lwm2m_map_put_string(attributes, attribute_names[i], parsed_attribute);
-        }
-        else {
-            attribute->numeric_value = parsed_attribute->numeric_value;
-        }
-    }
-    return 0;
-}
-
-static lwm2m_map *get_node_attributes(lwm2m_node *node, lwm2m_type type) {
-    if (type == OBJECT) {
-        return node->object.attributes;
-    }
-    if (type == INSTANCE) {
-        return node->instance.attributes;
-    }
-    if (type == RESOURCE) {
-        return node->resource.attributes;
-    }
-    return NULL;
-}
+//static lwm2m_map *get_node_attributes(lwm2m_node *node, lwm2m_type type) {
+//    if (type == OBJECT) {
+//        return node->object.attributes;
+//    }
+//    if (type == INSTANCE) {
+//        return node->instance.attributes;
+//    }
+//    if (type == RESOURCE) {
+//        return node->resource.attributes;
+//    }
+//    return NULL;
+//}

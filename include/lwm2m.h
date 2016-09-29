@@ -2,7 +2,11 @@
 #define LYNX_LWM2M_LWM2M_H
 
 #include "lwm2m_context.h"
+#include "lwm2m_object.h"
+#include "lwm2m_attributes.h"
+#include "lwm2m_device_management.h"
 #include <stdbool.h>
+#include <stdlib.h>
 
 //// todo fix this
 //typedef enum lwm2m_bootstrap_state {

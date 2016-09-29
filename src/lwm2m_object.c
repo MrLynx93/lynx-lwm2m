@@ -22,8 +22,9 @@ lwm2m_object *lwm2m_object_new() {
     return (lwm2m_object *) malloc(sizeof(lwm2m_object));
 }
 
-lwm2m_instance *lwm2m_instance_new(lwm2m_object *object) {
+lwm2m_instance *lwm2m_instance_new_with_id(lwm2m_object *object, int id) {
     lwm2m_instance *instance = (lwm2m_instance *) malloc(sizeof(lwm2m_instance));
+    instance->id = id;
 
     if (is_standard_object(object->id)) {
         instance->resources = object->context->create_standard_resources_callback(object->id);
@@ -32,13 +33,13 @@ lwm2m_instance *lwm2m_instance_new(lwm2m_object *object) {
         instance->resources = object->context->create_resources_callback(object->id);
     }
     instance->object = object;
+    lwm2m_map_put(object->instances, instance->id, instance);
     return instance;
 }
 
-lwm2m_instance *lwm2m_instance_new_with_id(lwm2m_object *object, int id) {
-    lwm2m_instance *instance = lwm2m_instance_new(object);
-    instance->id = id;
-    return instance;
+lwm2m_instance *lwm2m_instance_new(lwm2m_object *object) {
+    int newId = 6; // TODO
+    return lwm2m_instance_new_with_id(object, newId);
 }
 
 lwm2m_resource *lwm2m_resource_new(bool multiple) {

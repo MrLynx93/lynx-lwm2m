@@ -1,5 +1,6 @@
 #include "../include/map.h"
 #include <stdlib.h>
+#include <lwm2m_object.h>
 #include <string.h>
 
 #define INITIAL_SIZE 1024
@@ -20,6 +21,24 @@ lwm2m_map *lwm2m_map_new() {
     return map;
 }
 
+void lwm2m_map_get_keys(lwm2m_map *map, int *keys) {
+    int index = 0;
+    for (int i = 0; i < INITIAL_SIZE; i++) {
+        if (map->data->data != NULL) {
+            keys[index] = map->data->key;
+        }
+    }
+}
+
+void lwm2m_map_get_keys_string(lwm2m_map *map, char **keys) {
+    int index = 0;
+    for (int i = 0; i < INITIAL_SIZE; i++) {
+        if (map->data->data != NULL) {
+            keys[index] = map->data->key_string;
+        }
+    }
+}
+
 void lwm2m_map_put(lwm2m_map *map, int key, void *value) {
     int index = lwm2m_map_hash(map, key);
     if (index == MAP_FULL) {
@@ -35,7 +54,7 @@ void lwm2m_map_put(lwm2m_map *map, int key, void *value) {
 void lwm2m_map_put_string(lwm2m_map *map, char *key, void *value) {
     int index = lwm2m_map_hash_string(map, key);
     if (index == MAP_FULL) {
-        lwm2m_map_rehash(map);
+        lwm2m_map_rehash_string(map);
         index = lwm2m_map_hash_string(map, key);
     }
     map->data[index].data = value;
@@ -45,7 +64,7 @@ void lwm2m_map_put_string(lwm2m_map *map, char *key, void *value) {
 }
 
 void *lwm2m_map_get(lwm2m_map *map, int key) {
-    int curr = (int) hash_int(map, key);
+    int curr = hash_int(map, key);
     for (int i = 0; i < map->table_size; i++) {
         if (map->data[curr].key == key && map->data[curr].in_use) {
             return map->data[curr].data;
@@ -53,6 +72,18 @@ void *lwm2m_map_get(lwm2m_map *map, int key) {
         curr = (curr + 1) % map->table_size;
     }
     return NULL;
+}
+
+lwm2m_resource *lwm2m_map_get_resource(lwm2m_map *map, int key) {
+    return (lwm2m_resource*) lwm2m_map_get(map, key);
+}
+
+lwm2m_instance *lwm2m_map_get_instance(lwm2m_map *map, int key) {
+    return (lwm2m_instance *) lwm2m_map_get(map, key);
+}
+
+lwm2m_object *lwm2m_map_get_object(lwm2m_map *map, int key) {
+    return (lwm2m_object *) lwm2m_map_get(map, key);
 }
 
 void *lwm2m_map_get_string(lwm2m_map *map, char *key) {
@@ -64,6 +95,10 @@ void *lwm2m_map_get_string(lwm2m_map *map, char *key) {
         curr = (curr + 1) % map->table_size;
     }
     return NULL;
+}
+
+lwm2m_attribute *lwm2m_map_get_attribute(lwm2m_map *map, char *key) {
+    return (lwm2m_attribute *) lwm2m_map_get_string(map, key);
 }
 
 void lwm2m_map_remove(lwm2m_map *map, int key) {

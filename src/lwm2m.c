@@ -2,11 +2,12 @@
 #include "../include/lwm2m_object.h"
 #include "../include/lwm2m_attributes.h"
 #include "../include/lwm2m_bootstrap.h"
+#include "lwm2m_transport_mqtt.h"
 #include "../include/lwm2m_device_management.h"
+#include "lwm2m_transport.h"
 #include <stddef.h>
 #include <stdlib.h>
 
-static void start_transport_layer(lwm2m_context *context);
 static int create_object_tree(lwm2m_context *context);
 static lwm2m_map *create_standard_objects();
 static lwm2m_map *create_security_object_resources();
@@ -14,6 +15,10 @@ static lwm2m_map *create_server_object_resources();
 static lwm2m_map *create_access_control_object_resources();
 static lwm2m_map *create_standard_resources(int object_id);
 
+lwm2m_server *lwm2m_server_new() {
+    lwm2m_server *server = (lwm2m_server *) malloc(sizeof(server));
+    return server;
+}
 lwm2m_context *lwm2m_create_context() {
     lwm2m_context *context = (lwm2m_context *) malloc(sizeof(lwm2m_context));
     context->create_standard_resources_callback = create_standard_resources;
@@ -24,19 +29,14 @@ lwm2m_context *lwm2m_create_context() {
 }
 
 int lwm2m_start_client(lwm2m_context *context) {
-    int error = lwm2m_bootstrap(context);
-    if (error) {
-        return error;
-    }
+//    int error = lwm2m_bootstrap(context);
+//    if (error) {
+//        return error;
+//    }
     start_transport_layer(context);
 }
 
 /////////////////////// PRIVATE ///////////////////////////
-
-
-static void start_transport_layer(lwm2m_context *context) {
-    // TODO all HTTP/2 magic
-}
 
 static int create_object_tree(lwm2m_context *context) {
     lwm2m_map *standard_objects = create_standard_objects();
@@ -61,7 +61,7 @@ static lwm2m_map *create_standard_objects() {
     security_object->mandatory = true;
     security_object->multiple = true;
     security_object->object_urn = "urn:oma:lwm2m:oma:0";
-    security_object->attributes = lwm2m_attributes_new();
+    security_object->attributes = lwm2m_map_new();
 
     // Define server object
     lwm2m_object *server_object = lwm2m_object_new();
@@ -69,7 +69,7 @@ static lwm2m_map *create_standard_objects() {
     server_object->mandatory = true;
     server_object->multiple = true;
     server_object->object_urn = "urn:oma:lwm2m:oma:1";
-    server_object->attributes = lwm2m_attributes_new();
+    server_object->attributes = lwm2m_map_new();
 
     // Define access control object
     lwm2m_object *access_control_object = lwm2m_object_new();
@@ -77,7 +77,7 @@ static lwm2m_map *create_standard_objects() {
     server_object->mandatory = false;
     access_control_object->multiple = true;
     access_control_object->object_urn = "urn:oma:lwm2m:oma:2";
-    access_control_object->attributes = lwm2m_attributes_new();
+    access_control_object->attributes = lwm2m_map_new();
 
     // Create list with objects (todo map?)
     lwm2m_map *objects = lwm2m_map_new();
