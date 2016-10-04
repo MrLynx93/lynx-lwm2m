@@ -1,69 +1,63 @@
 #include "lwm2m_transport_mqtt.h"
-#include <paho/MQTTClient.h>
 #include <stdbool.h>
-
-#define READ_BUFFER_SIZE 100
-#define SEND_BUFFER_SIZE 100
-#define COMMAND_TIMEOUT 500
-#define MQTT_YIELD_TIME 100
+#include <paho/MQTTClient.h>
+#include <paho/MQTTAsync.h>
 
 static char *get_address(lwm2m_context *context);
-static int get_port(lwm2m_context *context);
 static char *get_client_id(lwm2m_context *pContext);
 
 
-void on_bootstrap_message(MessageData* data)
-{
-    printf("Message arrived on topic %s: %s\n", data->topicName->lenstring.data, (char *) data->message->payload);
-}
 
-char* bootstrap_topic(lwm2m_context* context) {
-    char* buf = (char*) malloc(sizeof(char) * 100);
-    strcat(buf, get_client_id(context));
-    strcat(buf, "/+/b");
-    return buf;
-}
+void on_connection_lost(void* context, char* cause) {}
+
+void on_delivery_complete(void* context, MQTTAsync_token token) {}
+
+int on_message(void* context, char* topicName, int topicLen, MQTTAsync_message* message) { return 0;}
+
+
 
 int start_transport_layer(lwm2m_context *context) {
-    unsigned char sendbuf[SEND_BUFFER_SIZE], readbuf[READ_BUFFER_SIZE];
-    MQTTClient mqttClient;
-    Network network;
+    MQTTAsync client;
     int res;
 
-    // Set MQTT Connect data
-    MQTTPacket_connectData connectData = MQTTPacket_connectData_initializer;
-    connectData.clientID.cstring = get_client_id(context);
-    connectData.MQTTVersion = 4; // 3.1.1
-
-    // Init structures
-    NetworkInit(&network);
-    MQTTClientInit(&mqttClient, &network, COMMAND_TIMEOUT, sendbuf, SEND_BUFFER_SIZE, readbuf, READ_BUFFER_SIZE);
-
-    // Connect
-    if (!(res = NetworkConnect(&network, get_address(context), get_port(context)))) {
+//    Connect
+    if ((res = MQTTAsync_create(&client, get_address(context), get_client_id(context), MQTTCLIENT_PERSISTENCE_NONE, NULL))) {
         return res;
     }
-    if (!(res = MQTTConnect(&mqttClient, &connectData))) {
+    if ((res = MQTTAsync_setCallbacks(client, context, on_connection_lost, on_message, on_delivery_complete))) {
         return res;
     }
 
-    // Subscribe to important topics
-    MQTTSubscribe(&mqttClient, bootstrap_topic(context), QOS0, on_bootstrap_message);
+    MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
+    conn_opts.keepAliveInterval = 10;
+    conn_opts.cleansession = 1;
+    conn_opts.onSuccess = NULL;
+    conn_opts.onFailure = NULL;
+    conn_opts.context = client;
+    res = MQTTAsync_connect(client, &conn_opts);
 
-    // Run
+
+    MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+    opts.onSuccess = NULL;
+    opts.onFailure = NULL;
+    opts.context = client;
+    res = MQTTAsync_subscribe(client, "br/", 0, &opts);
+
     while(true) {
-        MQTTYield(&mqttClient, MQTT_YIELD_TIME);
+//        MQTTYield(&mqttClient, MQTT_YIELD_TIME);
+        continue;
     }
+    return 0;
 }
 
 static char *get_client_id(lwm2m_context *context) {
     return "lynx"; // TODO implement
 }
 
-static int get_port(lwm2m_context *context) {
-    return 1883; // TODO implement
-}
+//static int get_port(lwm2m_context *context) {
+//    return 1883; // TODO implement
+//}
 
 static char *get_address(lwm2m_context *context) {
-    return "broker.hivemq.com"; // TODO implement
+    return "broker.hivemq.com:1883"; // TODO implement
 }

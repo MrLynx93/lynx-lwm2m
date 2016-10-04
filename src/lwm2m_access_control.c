@@ -1,21 +1,9 @@
-#include "../include/lwm2m.h"
-#include "../include/lwm2m_access_control.h"
-#include "../include/lwm2m_device_management.h"
-#include "../include/map.h"
-#include "../include/lwm2m_errors.h"
-#include <stddef.h>
+#include "lwm2m.h"
+#include "lwm2m_object.h"
+#include "lwm2m_access_control.h"
 
-#define SECURITY_OBJECT_ID 0
-#define ACCESS_CONTROL_OBJECT_ID 2
-#define ACL_RESOURCE_ID 2
-#define ACO_RESOURCE_ID 3
-
-#define OBJECT_ID_RESOURCE_ID 0
-#define INSTANCE_ID_RESOURCE_ID 1
-#define ACO_RESOURCE_ID 3
 
 ///////////// CHECKING ACCESS CONTROL ///////////////////
-
 
 int lwm2m_check_object_access_control(lwm2m_server *server, lwm2m_object *object) { // TODO what to do here
 //    TODO

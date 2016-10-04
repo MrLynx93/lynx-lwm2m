@@ -1,14 +1,38 @@
 #ifndef LYNX_LWM2M_TRANSPORT_H
 #define LYNX_LWM2M_TRANSPORT_H
 
-#include "lwm2m_context.h"
+#include "lwm2m.h"
 
-typedef struct lwm2m_server_address lwm2m_server_address;
-typedef struct lwm2m_request lwm2m_request;
-typedef struct lwm2m_response lwm2m_response;
+///////////////// SERVER ADDRESS /////////////////////
+
+typedef struct lwm2m_server_address {
+    char *address;
+    int port;
+} lwm2m_server_address;
 
 lwm2m_server_address *lwm2m_server_address_new();
+
+///////////////// REQUEST /////////////////////
+
+typedef struct lwm2m_request {
+    char *endpoint;
+    char *endpoint_client_name;
+    char *payload;
+    int reset; // for observe cancel
+} lwm2m_request;
+
 lwm2m_request *lwm2m_request_new();
+
+///////////////// RESPONSE /////////////////////
+
+typedef struct lwm2m_response {
+    char *endpoint;
+    char *payload;
+    int response_code;
+    int reset; // for observe cancel
+    int created_instance_id;
+} lwm2m_response;
+
 lwm2m_response *lwm2m_response_new();
 
 /*
@@ -47,9 +71,6 @@ lwm2m_response receive_discover_request(lwm2m_context *context, lwm2m_server_add
 lwm2m_response receive_write_attributes_request(lwm2m_context *context, lwm2m_server_address *address,
                                                 lwm2m_request *request);
 
-// TODO are corresponding send_response functions necessary?
-
-
 //////////////////// INFORMATION REPORTING ///////////////////
 
 /* Receives an observe request from LWM2M server and calls proper functions */
@@ -60,7 +81,7 @@ lwm2m_response receive_cancel_observation_request(lwm2m_context *context, lwm2m_
                                                   lwm2m_request *request);
 
 /* Sends an uplink request to LWM2M server with notification */
-lwm2m_request send_notify_request(lwm2m_context *context, lwm2m_server_address *address);
+int send_notify_request(lwm2m_context *context, lwm2m_server_address *address);
 
 /* Receives a response for the uplink request. This is used for cancelling observation by "reset" message in response to notify */
 lwm2m_response receive_notify_response(lwm2m_context *context, lwm2m_server_address *address, lwm2m_response *response);
@@ -90,28 +111,7 @@ int receive_bootstrap_delete_request(lwm2m_context *context, lwm2m_server_addres
 int receive_bootstrap_finish_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
 
 /* Sends an uplink request to request bootstrapping from LWM2M server */
-int send_bootstrap_request_request(lwm2m_context *context, lwm2m_server_address *address, lwm2m_request *request);
-
-
-struct lwm2m_server_address {
-    char *address;
-    int port;
-};
-
-struct lwm2m_request {
-    char *endpoint;
-    char *endpoint_client_name;
-    char *payload;
-    int reset; // for observe cancel
-};
-
-struct lwm2m_response {
-    char *endpoint;
-    char *payload;
-    int response_code;
-    int reset; // for observe cancel
-    int created_instance_id;
-};
+int send_bootstrap_request_request(lwm2m_context *context, lwm2m_server* server);
 
 
 #endif //LYNX_LWM2M_TRANSPORT_H

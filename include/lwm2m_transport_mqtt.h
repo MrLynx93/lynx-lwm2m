@@ -1,4 +1,4 @@
-#include "lwm2m_context.h"
+#include "lwm2m.h"
 
 #ifndef PROJECT_LWM2M_TRANSPORT_MQTT_H
 #define PROJECT_LWM2M_TRANSPORT_MQTT_H

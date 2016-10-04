@@ -1,7 +1,7 @@
 #ifndef LYNX_LWM2M_BOOTSTRAP_H
 #define LYNX_LWM2M_BOOTSTRAP_H
 
-#include "lwm2m_context.h"
+#include "lwm2m.h"
 #include "lwm2m_object.h"
 
 /*

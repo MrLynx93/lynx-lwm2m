@@ -2,129 +2,182 @@
 #define LYNX_LWM2M_LWM2M_OBJECT_H
 
 #include "map.h"
-#include "lwm2m_context.h"
-#include "lwm2m_common.h"
-#include "lwm2m_attributes.h"
+
 #include <stdbool.h>
 
+// Security object
 #define SECURITY_OBJECT_ID 0
+
+// Server object
 #define SERVER_OBJECT_ID 1
+#define SHORT_SERVER_ID_RESOURCE_ID 0
+#define LIFETIME_RESOURCE_ID 1
+#define BINDING_RESOURCE_ID 7
+
+// Access control object
 #define ACCESS_CONTROL_OBJECT_ID 2
+#define OBJECT_ID_RESOURCE_ID 0
+#define INSTANCE_ID_RESOURCE_ID 1
+#define ACL_RESOURCE_ID 2
+#define ACO_RESOURCE_ID 3
 
-typedef struct lwm2m_object_tree lwm2m_object_tree;
+/////////////// TYPES /////////////////////////
 
-typedef union lwm2m_node lwm2m_node;
 typedef struct lwm2m_object lwm2m_object;
 typedef struct lwm2m_instance lwm2m_instance;
 typedef struct lwm2m_resource lwm2m_resource;
-typedef enum lwm2m_node_type lwm2m_node_type;
+typedef struct lwm2m_context lwm2m_context;
 
-typedef struct lwm2m_resource_single lwm2m_resource_single;
-typedef struct lwm2m_resource_multiple lwm2m_resource_multiple;
-typedef union lwm2m_resource_real lwm2m_resource_real;
+typedef enum lwm2m_type {
+    INTEGER,
+    DOUBLE,
+    STRING,
+    OPAQUE,
+    BOOLEAN,
+    NONE,
+    LINK
+} lwm2m_type;
 
+typedef struct lwm2m_link {
+    int object_id;
+    int instance_id;
+} lwm2m_link;
+
+typedef union lwm2m_value {
+    double double_value;
+    int int_value;
+    bool bool_value;
+    lwm2m_link link_value;
+    char* opaque_value;
+    char* string_value;
+} lwm2m_value;
+
+////////////// ATTRIBUTE //////////////////////
+
+typedef struct lwm2m_attribute {
+    char* name;
+    int name_len;
+    int access_mode;
+    lwm2m_type type;
+    lwm2m_value numeric_value;
+} lwm2m_attribute;
+
+/* Definition of general attribute value types */
+lwm2m_type lwm2m_get_attribute_type(char *attribute_name);
+
+/* Definition of general attribute types */
+bool is_notify_attribute(char* attribute_name);
+
+/////////////// CALLBACKS ///////////////////
 
 /* This callback is executed BEFORE read operation is performed to update value inside resource */
-typedef void (lwm2m_resource_read_callback) (lwm2m_resource *resource);
+typedef void (lwm2m_resource_read_callback)(lwm2m_resource *resource);
 
 /* This callback is executed AFTER write operation to perform any action due to changing value */
 typedef void (lwm2m_resource_write_callback(lwm2m_resource *resource));
 
-
+// TODO
 typedef void (lwm2m_resource_execute_callback(lwm2m_resource *resource, char *args));
 
-
-lwm2m_resource* lwm2m_map_get_resource(lwm2m_map* map, int key);
-lwm2m_instance* lwm2m_map_get_instance(lwm2m_map* map, int key);
-lwm2m_object* lwm2m_map_get_object(lwm2m_map* map, int key);
-lwm2m_attribute *lwm2m_map_get_attribute(lwm2m_map *map, char *key);
-
-
-lwm2m_object *lwm2m_object_new();
-lwm2m_instance *lwm2m_instance_new(lwm2m_object* object);
-lwm2m_instance *lwm2m_instance_new_with_id(lwm2m_object* object, int id);
-lwm2m_resource *lwm2m_resource_new(bool multiple);
-void free_lwm2m_resource(lwm2m_resource *resource);
-
-lwm2m_instance *refer_link(lwm2m_link lwm2m_instance);
-
-///// CALLBACKS
-
-/* Removes object from tree together with instances and access control instance. This can be called only in bootstrap interface */
-void lwm2m_delete_object(lwm2m_object *object);
-
-/* Removes instance from object together with resources and access control instance */
-void lwm2m_delete_instance(lwm2m_instance *instance);
-
-
-
-struct lwm2m_object_tree {
-    lwm2m_map* objects;
-};
-
-enum lwm2m_node_type {
-    OBJECT,
-    INSTANCE,
-    RESOURCE,
-    RESOURCE_INSTANCE
-};
+////////////// LWM2M OBJECT //////////////////////
 
 struct lwm2m_object {
     int id;
-    lwm2m_context* context;
-    lwm2m_map* instances;
-
-    lwm2m_map* attributes;
+    lwm2m_context *context;
+    lwm2m_map *instances;
+    lwm2m_map *attributes;
     lwm2m_instance *aco_instance;
-    char* object_urn;
+    char *object_urn;
     bool multiple;
     bool mandatory;
 };
 
+/* Constructor */
+lwm2m_object *lwm2m_object_new();
+
+/* Removes object from tree together with instances and access control instance. This can be called only in bootstrap interface */
+void lwm2m_delete_object(lwm2m_object *object);
+
+
+////////////// LWM2M INSTANCE //////////////////////
+
 struct lwm2m_instance {
     int id;
     lwm2m_object *object;
-    lwm2m_map* resources;
-
+    lwm2m_map *resources;
     lwm2m_map *attributes;
     lwm2m_instance *aco_instance;
 };
 
-struct lwm2m_resource_single {
+/* Constructor */
+lwm2m_instance *lwm2m_instance_new(lwm2m_object *object);
+
+/* Constructor */
+lwm2m_instance *lwm2m_instance_new_with_id(lwm2m_object *object, int id);
+
+/* Removes instance from object together with resources and access control instance */
+void lwm2m_delete_instance(lwm2m_instance *instance);
+
+lwm2m_instance *refer_link(lwm2m_link link);
+
+////////////// LWM2M RESOURCE //////////////////////
+
+typedef struct lwm2m_resource_single {
     lwm2m_value value;
     int length; // for string and opaque
-};
+} lwm2m_resource_single;
 
-struct lwm2m_resource_multiple {
-    lwm2m_map* instances;
-};
+typedef struct lwm2m_resource_multiple {
+    lwm2m_map *instances;
+} lwm2m_resource_multiple;
 
-union lwm2m_resource_real {
+typedef union lwm2m_resource_real {
     lwm2m_resource_single single;
     lwm2m_resource_multiple multiple;
-};
+} lwm2m_resource_real;
 
 struct lwm2m_resource {
     int id;
     lwm2m_instance *instance;
     lwm2m_resource_real resource;
-
-    char* name;
+    char *name;
     lwm2m_type type;
     lwm2m_map *attributes;
     int operations;
     bool multiple;
     int mandatory;
-    lwm2m_resource_read_callback* read_callback;
-    lwm2m_resource_write_callback* write_callback;
-//    lwm2m_resource_notify_callback* notify_callback; TODO why do we need this?
-    lwm2m_resource_execute_callback* execute_callback;
+    lwm2m_resource_read_callback *read_callback;
+    lwm2m_resource_write_callback *write_callback;
+    lwm2m_resource_execute_callback *execute_callback;
 };
 
-union lwm2m_node {
+/* Constructor */
+lwm2m_resource *lwm2m_resource_new(bool multiple);
+
+/////////////// NODE ///////////////////
+
+typedef union lwm2m_node {
     lwm2m_object object;
     lwm2m_instance instance;
     lwm2m_resource resource;
-};
+} lwm2m_node;
+
+typedef enum lwm2m_node_type {
+    OBJECT,
+    INSTANCE,
+    RESOURCE,
+    RESOURCE_INSTANCE
+} lwm2m_node_type;
+
+/////////////// MAP UTILITY FUNCTIONS ////////////////
+
+lwm2m_resource *lwm2m_map_get_resource(lwm2m_map *map, int key);
+
+lwm2m_instance *lwm2m_map_get_instance(lwm2m_map *map, int key);
+
+lwm2m_object *lwm2m_map_get_object(lwm2m_map *map, int key);
+
+lwm2m_attribute *lwm2m_map_get_attribute(lwm2m_map *map, char *key);
+
 
 #endif //LYNX_LWM2M_LWM2M_OBJECT_H

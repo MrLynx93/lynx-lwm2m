@@ -1,14 +1,12 @@
 #ifndef LYNX_LWM2M_PARSER_H
 #define LYNX_LWM2M_PARSER_H
 
-#include "map.h"
+#include "lwm2m.h"
 #include "lwm2m_object.h"
-#include "lwm2m_common.h"
 
 #define TEXT_FORMAT 0
 #define TLV_FORMAT 1
 
-#define PARSE_ERROR 1
 
 /*
  * All functions return 0 if serialize/deserialize was successful, otherwise it returns PARSE_ERROR

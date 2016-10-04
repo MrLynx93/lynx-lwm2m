@@ -1,4 +1,4 @@
-#include <lwm2m.h>
+#include <lwm2m_client.h>
 
 /*
  * This example shows creating LWM2M client, which supports example object.
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
     context->has_smartcard = false;
     context->create_objects_callback = create_example_objects;
     context->create_resources_callback = create_example_resources;
-    context->factory_bootstrap_callback = perform_factory_bootstrap;
+    context->factory_bootstrap_callback = NULL;
     context->smartcard_bootstrap_callback = NULL;
 
     lwm2m_start_client(context);

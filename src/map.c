@@ -1,6 +1,5 @@
-#include "../include/map.h"
+#include "map.h"
 #include <stdlib.h>
-#include <lwm2m_object.h>
 #include <string.h>
 
 #define INITIAL_SIZE 1024
@@ -74,18 +73,6 @@ void *lwm2m_map_get(lwm2m_map *map, int key) {
     return NULL;
 }
 
-lwm2m_resource *lwm2m_map_get_resource(lwm2m_map *map, int key) {
-    return (lwm2m_resource*) lwm2m_map_get(map, key);
-}
-
-lwm2m_instance *lwm2m_map_get_instance(lwm2m_map *map, int key) {
-    return (lwm2m_instance *) lwm2m_map_get(map, key);
-}
-
-lwm2m_object *lwm2m_map_get_object(lwm2m_map *map, int key) {
-    return (lwm2m_object *) lwm2m_map_get(map, key);
-}
-
 void *lwm2m_map_get_string(lwm2m_map *map, char *key) {
     int curr = (int) hash_string(map, key);
     for (int i = 0; i < map->table_size; i++) {
@@ -95,10 +82,6 @@ void *lwm2m_map_get_string(lwm2m_map *map, char *key) {
         curr = (curr + 1) % map->table_size;
     }
     return NULL;
-}
-
-lwm2m_attribute *lwm2m_map_get_attribute(lwm2m_map *map, char *key) {
-    return (lwm2m_attribute *) lwm2m_map_get_string(map, key);
 }
 
 void lwm2m_map_remove(lwm2m_map *map, int key) {

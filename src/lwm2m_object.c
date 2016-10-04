@@ -1,55 +1,44 @@
-#include <stdlib.h>
-
-#include "../include/lwm2m_context.h"
-#include "../include/lwm2m_object.h"
-#include "../include/lwm2m_parser.h"
-#include "../include/lwm2m_errors.h"
+#include "lwm2m_object.h"
+#include "lwm2m.h"
+#include "map.h"
 
 
-static void free_lwm2m_object(lwm2m_object *object);
-static void free_lwm2m_instance(lwm2m_instance *instance);
-static bool is_standard_object(int object_id);
+///////////// FREE MEMORY /////////////////
 
-void free_lwm2m_resource(lwm2m_resource *resource) {
+static void free_lwm2m_object(lwm2m_object *object) {
+    free(object->object_urn);
+    free(object->instances);
+    free(object);
+}
+
+static void free_lwm2m_instance(lwm2m_instance *instance) {
+    free(instance->resources);
+    free(instance);
+}
+
+static void free_lwm2m_resource(lwm2m_resource *resource) {
     free(resource->name);
     free(resource);
 }
 
-/////////////////// CREATE ////////////////////
-
-
-lwm2m_object *lwm2m_object_new() {
-    return (lwm2m_object *) malloc(sizeof(lwm2m_object));
+static bool is_standard_object(int object_id) {
+    return
+            object_id == SERVER_OBJECT_ID ||
+            object_id == SECURITY_OBJECT_ID ||
+            object_id == ACCESS_CONTROL_OBJECT_ID;
 }
 
-lwm2m_instance *lwm2m_instance_new_with_id(lwm2m_object *object, int id) {
-    lwm2m_instance *instance = (lwm2m_instance *) malloc(sizeof(lwm2m_instance));
-    instance->id = id;
+////////////// ATTRIBUTE //////////////////////
 
-    if (is_standard_object(object->id)) {
-        instance->resources = object->context->create_standard_resources_callback(object->id);
-    }
-    else {
-        instance->resources = object->context->create_resources_callback(object->id);
-    }
-    instance->object = object;
-    lwm2m_map_put(object->instances, instance->id, instance);
-    return instance;
+lwm2m_type lwm2m_get_attribute_type(char *attribute_name) {
+    // TODO implement
 }
 
-lwm2m_instance *lwm2m_instance_new(lwm2m_object *object) {
-    int newId = 6; // TODO
-    return lwm2m_instance_new_with_id(object, newId);
+bool is_notify_attribute(char* attribute_name) {
+    // TODO implement
 }
 
-lwm2m_resource *lwm2m_resource_new(bool multiple) {
-    lwm2m_resource *resource = (lwm2m_resource *) malloc(sizeof(lwm2m_resource));
-    resource->multiple = multiple;
-    return resource;
-}
-
-/////////////////// DELETE ////////////////////
-
+////////////// LWM2M OBJECT //////////////////////
 
 void lwm2m_delete_object(lwm2m_object *object) {
     lwm2m_map *object_tree = object->context->object_tree;
@@ -71,6 +60,32 @@ void lwm2m_delete_object(lwm2m_object *object) {
     free_lwm2m_object(object);
 }
 
+lwm2m_object *lwm2m_object_new() {
+    return (lwm2m_object *) malloc(sizeof(lwm2m_object));
+}
+
+
+////////////// LWM2M INSTANCE //////////////////////
+
+lwm2m_instance *lwm2m_instance_new_with_id(lwm2m_object *object, int id) {
+    lwm2m_instance *instance = (lwm2m_instance *) malloc(sizeof(lwm2m_instance));
+    instance->id = id;
+
+    if (is_standard_object(object->id)) {
+        instance->resources = object->context->create_standard_resources_callback(object->id);
+    }
+    else {
+        instance->resources = object->context->create_resources_callback(object->id);
+    }
+    instance->object = object;
+    lwm2m_map_put(object->instances, instance->id, instance);
+    return instance;
+}
+
+lwm2m_instance *lwm2m_instance_new(lwm2m_object *object) {
+    int newId = 6; // TODO
+    return lwm2m_instance_new_with_id(object, newId);
+}
 
 void lwm2m_delete_instance(lwm2m_instance *instance) {
     // if instance is not ACO instance, then delete associated ACO instance
@@ -93,23 +108,30 @@ void lwm2m_delete_instance(lwm2m_instance *instance) {
     free_lwm2m_instance(instance);
 }
 
-/////////////////// FREE ////////////////////
 
+////////////// LWM2M RESOURCE //////////////////////
 
-static void free_lwm2m_object(lwm2m_object *object) {
-    free(object->object_urn);
-    free(object->instances);
-    free(object);
+lwm2m_resource *lwm2m_resource_new(bool multiple) {
+    lwm2m_resource *resource = (lwm2m_resource *) malloc(sizeof(lwm2m_resource));
+    resource->multiple = multiple;
+    return resource;
 }
 
-static void free_lwm2m_instance(lwm2m_instance *instance) {
-    free(instance->resources);
-    free(instance);
+
+/////////////// MAP UTILITY FUNCTIONS ////////////////
+
+lwm2m_resource *lwm2m_map_get_resource(lwm2m_map *map, int key) {
+    return (lwm2m_resource*) lwm2m_map_get(map, key);
 }
 
-static bool is_standard_object(int object_id) {
-    return
-            object_id == SERVER_OBJECT_ID ||
-            object_id == SECURITY_OBJECT_ID ||
-            object_id == ACCESS_CONTROL_OBJECT_ID;
+lwm2m_instance *lwm2m_map_get_instance(lwm2m_map *map, int key) {
+    return (lwm2m_instance *) lwm2m_map_get(map, key);
+}
+
+lwm2m_object *lwm2m_map_get_object(lwm2m_map *map, int key) {
+    return (lwm2m_object *) lwm2m_map_get(map, key);
+}
+
+lwm2m_attribute *lwm2m_map_get_attribute(lwm2m_map *map, char *key) {
+    return (lwm2m_attribute *) lwm2m_map_get_string(map, key);
 }
