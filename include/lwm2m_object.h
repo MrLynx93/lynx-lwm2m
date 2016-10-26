@@ -5,6 +5,11 @@
 
 #include <stdbool.h>
 
+
+#define ATTR_READ 1
+#define ATTR_WRITE 1
+#define ATTR_DELETE 1
+
 // Security object
 #define SECURITY_OBJECT_ID 0
 
@@ -61,6 +66,8 @@ typedef struct lwm2m_attribute {
     lwm2m_type type;
     lwm2m_value numeric_value;
 } lwm2m_attribute;
+
+lwm2m_attribute *new_int_attribute(char* name, int value, int access_mode);
 
 /* Definition of general attribute value types */
 lwm2m_type lwm2m_get_attribute_type(char *attribute_name);

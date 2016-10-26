@@ -80,17 +80,26 @@ static lwm2m_server *lwm2m_register(lwm2m_context *context, lwm2m_instance *serv
 }
 
 int lwm2m_register_on_all_servers(lwm2m_context *context) {
-    lwm2m_map *server_instances = ((lwm2m_object*)lwm2m_map_get(context->object_tree, SERVER_OBJECT_ID))->instances;
+    // TODO send requests
+    lwm2m_map *server_instances = ((lwm2m_object *) lwm2m_map_get(context->object_tree, SERVER_OBJECT_ID))->instances;
     int registered_servers = 0;
 
     int *instances_ids = (int *) malloc(sizeof(int) * server_instances->size);
     for (int i = 0; i < server_instances->size; i++) {
         int instance_id = instances_ids[i];
-        lwm2m_instance *instance = (lwm2m_instance*) lwm2m_map_get(server_instances, instance_id);
+        lwm2m_instance *instance = (lwm2m_instance *) lwm2m_map_get(server_instances, instance_id);
         lwm2m_server *server = lwm2m_register(context, instance);
         if (server != NULL) {
             registered_servers++;
         }
     }
     return registered_servers;
+}
+
+int lwm2m_wait_for_registration(lwm2m_context *context) {
+    return 0; // TODO implement
+}
+
+bool registered_any_server(lwm2m_context *context) {
+    return true; // TODO implement
 }

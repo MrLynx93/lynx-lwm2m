@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 #define READ 1
 #define WRITE 2
@@ -30,12 +31,10 @@ char *itoa(int number);
 
 typedef enum lwm2m_state {
     STARTED,
-    BOOTSTRAPPED_BY_SMARTCARD,
-    FACTORY_BOOTSTRAPPED,
+    WAITING_FOR_BOOTSTRAP,
+    BOOTSTRAPPED,
     REGISTERING,
-    WAITING_FOR_SERVER_BOOTSTRAP,
-    CLIENT_INITIATED_BOOTSTRAPPING,
-    BOOTSTRAPPED
+    REGISTERED
 } lwm2m_state;
 
 /////////// CALLBACKS (DEFINITION OF OBJETS) ///////////
@@ -66,6 +65,14 @@ typedef struct lwm2m_context {
     /* Used bootstrap to provide client with LWM2M instances */
     int (*factory_bootstrap_callback)(struct lwm2m_context *);
     int (*smartcard_bootstrap_callback)(struct lwm2m_context *);
+
+
+    char* broker_address;
+    char* client_id;
+    pthread_mutex_t* register_mutex;
+    pthread_mutex_t* bootstrap_mutex;
+    pthread_cond_t* register_finished_condition;
+    pthread_cond_t* bootstrap_finished_condition;
 
 } lwm2m_context;
 

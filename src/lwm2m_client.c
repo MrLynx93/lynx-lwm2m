@@ -277,14 +277,19 @@ static lwm2m_map *create_standard_resources(int object_id) {
 static int create_object_tree(lwm2m_context *context) {
     lwm2m_map *standard_objects = create_standard_objects();
     lwm2m_map *user_defined_objects = context->create_objects_callback();
+    int keys[standard_objects->size + user_defined_objects->size];
 
-    for (int object_id = 0; object_id < standard_objects->size; object_id++) {
-        lwm2m_object *object = (lwm2m_object*) lwm2m_map_get(standard_objects, object_id);
-        lwm2m_map_put(context->object_tree, object_id, (void*)object);
+    lwm2m_map_get_keys(standard_objects, keys);
+    for (int i = 0; i < standard_objects->size; i++) {
+        lwm2m_object *object = (lwm2m_object*) lwm2m_map_get(standard_objects, keys[i]);
+        object->context = context;
+        lwm2m_map_put(context->object_tree, keys[i], (void*)object);
     }
-    for (int object_id = 0; object_id < user_defined_objects->size; object_id++) {
-        lwm2m_object *object = (lwm2m_object*) lwm2m_map_get(user_defined_objects, object_id);
-        lwm2m_map_put(context->object_tree, object_id, (void*)object);
+    lwm2m_map_get_keys(user_defined_objects, keys);
+    for (int i = 0; i < user_defined_objects->size; i++) {
+        lwm2m_object *object = (lwm2m_object*) lwm2m_map_get(user_defined_objects, keys[i]);
+        object->context = context;
+        lwm2m_map_put(context->object_tree, keys[i], (void*)object);
     }
     return 0;
 }
@@ -302,6 +307,8 @@ lwm2m_context *lwm2m_create_context() {
 }
 
 int lwm2m_start_client(lwm2m_context *context) {
+    create_object_tree(context);
+
     int error = lwm2m_bootstrap(context);
     if (error) {
         return error;

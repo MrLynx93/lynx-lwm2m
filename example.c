@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
     context->has_smartcard = false;
     context->create_objects_callback = create_example_objects;
     context->create_resources_callback = create_example_resources;
-    context->factory_bootstrap_callback = NULL;
+    context->factory_bootstrap_callback = perform_factory_bootstrap;
     context->smartcard_bootstrap_callback = NULL;
 
     lwm2m_start_client(context);
@@ -139,9 +139,10 @@ lwm2m_map *create_example_objects() {
     example_object->attributes = lwm2m_map_new();
 
     // Set object's minimum period attribute to 10 sec
-    lwm2m_map_get_attribute(example_object->attributes, "pmin")->numeric_value.int_value = 10;
+    lwm2m_attribute *pmin_attribute = new_int_attribute("pmin", 10, ATTR_READ | ATTR_WRITE);
+    lwm2m_map_put_string(example_object->attributes, "pmin", pmin_attribute);
 
-    lwm2m_map_put(objects, example_object->id, example_object);
+    lwm2m_map_put(objects, example_object->id, (void*) example_object);
     return objects;
 }
 

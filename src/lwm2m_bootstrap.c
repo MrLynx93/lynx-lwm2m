@@ -52,6 +52,7 @@ int lwm2m_wait_for_server_bootstrap(lwm2m_context *context) {
 }
 
 int lwm2m_bootstrap_client_initiated(lwm2m_context *context) {
+    // TODO
     return 0; // todo
 }
 
@@ -61,47 +62,39 @@ int lwm2m_bootstrap(lwm2m_context *context) {
 
     if (context->has_smartcard && context->smartcard_bootstrap_callback != NULL) {
         if (context->smartcard_bootstrap_callback(context)) {
-            context->state = BOOTSTRAPPED_BY_SMARTCARD;
+            context->state = BOOTSTRAPPED;
         }
-    }
-    else if (context->factory_bootstrap_callback != NULL) {
+    } else if (context->factory_bootstrap_callback != NULL) {
         if (context->factory_bootstrap_callback(context)) {
-            context->state = FACTORY_BOOTSTRAPPED;
+            context->state = BOOTSTRAPPED;
         }
     }
-    if (context->state != BOOTSTRAPPED_BY_SMARTCARD && context->state != FACTORY_BOOTSTRAPPED) {
-        return -1;
+
+    if (context->state != BOOTSTRAPPED || !has_server_instances(context)) {
+        // Server initiated bootstrap
+        int res = lwm2m_wait_for_server_bootstrap(context);
+        if (res != 0) {
+            // Client initiated bootstrap
+            res = lwm2m_bootstrap_client_initiated(context);
+            if (res != 0) {
+                return -1;
+            }
+            context->state = WAITING_FOR_BOOTSTRAP;
+            res = lwm2m_wait_for_server_bootstrap(context);
+            if (res != 0) {
+                return -1;
+            }
+        }
     }
 
     if (has_server_instances(context)) {
-        int registered_servers = lwm2m_register_on_all_servers(context);
-        context->is_bootstrap_ready = true;
-
-        if (registered_servers > 0) {
-            context->state = BOOTSTRAPPED;
+        context->state = REGISTERING;
+        lwm2m_register_on_all_servers(context);
+        lwm2m_wait_for_registration(context);
+        if (registered_any_server(context)) {
+            context->state = REGISTERED;
             return 0;
         }
-        else {
-            if (lwm2m_bootstrap_client_initiated(context)) {
-                context->state = BOOTSTRAPPED;
-                return 0;
-            }
-            return -1;
-        }
     }
-    else {
-        context->is_bootstrap_ready = true;
-        context->state = WAITING_FOR_SERVER_BOOTSTRAP;
-        if (lwm2m_wait_for_server_bootstrap(context)) {
-            context->state = BOOTSTRAPPED;
-            return 0;
-        }
-        else {
-            if (lwm2m_bootstrap_client_initiated(context)) {
-                context->state = BOOTSTRAPPED;
-                return 0;
-            }
-            return -1;
-        }
-    }
+    return -1;
 }

@@ -30,6 +30,18 @@ static bool is_standard_object(int object_id) {
 
 ////////////// ATTRIBUTE //////////////////////
 
+lwm2m_attribute *new_int_attribute(char* name, int int_value, int access_mode) {
+    lwm2m_value value;
+    value.int_value = int_value;
+
+    lwm2m_attribute *attribute = (lwm2m_attribute*) malloc(sizeof(lwm2m_attribute));
+    attribute->numeric_value = value;
+    attribute->access_mode = access_mode;
+    attribute->name = name;
+    attribute->type = INTEGER;
+    return attribute;
+}
+
 lwm2m_type lwm2m_get_attribute_type(char *attribute_name) {
     // TODO implement
 }

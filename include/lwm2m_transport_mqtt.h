@@ -5,5 +5,8 @@
 
 int start_transport_layer(lwm2m_context *context);
 
+/**
+ * operation/objectID/clientID/serverID/
+ */
 
 #endif //PROJECT_LWM2M_TRANSPORT_MQTT_H
