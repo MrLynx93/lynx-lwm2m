@@ -1,7 +1,8 @@
 #include "lwm2m_client.h"
 #include "lwm2m_transport_mqtt.h"
+#include "lwm2m_register.h"
 #include "lwm2m_bootstrap.h"
-
+#include "scheduler.h"
 
 ////////////////// PREDEFINED OBJECTS ////////////////////
 
@@ -283,12 +284,14 @@ static int create_object_tree(lwm2m_context *context) {
     for (int i = 0; i < standard_objects->size; i++) {
         lwm2m_object *object = (lwm2m_object*) lwm2m_map_get(standard_objects, keys[i]);
         object->context = context;
+        object->instances = lwm2m_map_new();
         lwm2m_map_put(context->object_tree, keys[i], (void*)object);
     }
     lwm2m_map_get_keys(user_defined_objects, keys);
     for (int i = 0; i < user_defined_objects->size; i++) {
         lwm2m_object *object = (lwm2m_object*) lwm2m_map_get(user_defined_objects, keys[i]);
         object->context = context;
+        object->instances = lwm2m_map_new();
         lwm2m_map_put(context->object_tree, keys[i], (void*)object);
     }
     return 0;
@@ -302,16 +305,32 @@ lwm2m_context *lwm2m_create_context() {
     context->create_standard_resources_callback = create_standard_resources;
     context->object_tree = lwm2m_map_new();
     context->servers = lwm2m_map_new();
+    context->update_tasks = lwm2m_map_new();
     context->is_bootstrap_ready = true;
     context->is_bootstrapped = false;
+    return context;
+}
+
+void deregister(lwm2m_server *server) {
+    deregister_on_server(server->context, server);
 }
 
 int lwm2m_start_client(lwm2m_context *context) {
     create_object_tree(context);
+    int error;
 
-    int error = lwm2m_bootstrap(context);
-    if (error) {
+    if ((error = lwm2m_bootstrap(context)) != 0) {
         return error;
     }
-    return start_transport_layer(context);
+
+    context->scheduler = (lwm2m_scheduler *) malloc(sizeof(lwm2m_scheduler));
+    scheduler_start(context->scheduler);
+
+    if ((error = start_transport_layer(context)) != 0) {
+        return error;
+    }
+    if ((error = lwm2m_register(context)) != 0) {
+        return error;
+    }
+    return 0;
 }

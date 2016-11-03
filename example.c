@@ -1,5 +1,5 @@
 #include <lwm2m_client.h>
-
+#include <unistd.h>
 /*
  * This example shows creating LWM2M client, which supports example object.
  * What is happening:
@@ -56,6 +56,8 @@
 
 #define SECURITY_MODE_NOSEC 3
 
+#define SHORT_SERVER_ID 123
+
 lwm2m_map *create_example_objects();
 lwm2m_map *create_example_resources(int object_id);
 int perform_factory_bootstrap(lwm2m_context *context);
@@ -67,9 +69,18 @@ int main(int argc, char *argv[]) {
     context->create_resources_callback = create_example_resources;
     context->factory_bootstrap_callback = perform_factory_bootstrap;
     context->smartcard_bootstrap_callback = NULL;
+    context->client_id = "lynx";
+    context->broker_address = "tcp://localhost:1883";
+    context->endpoint_client_name = "lynx_ep";
 
     lwm2m_start_client(context);
     // This should not exit, as new threads are created
+
+    while(1) {
+        sleep(30);
+        lwm2m_server *server = lwm2m_map_get(context->servers, 123);
+        deregister(server);
+    }
 }
 
 
@@ -97,6 +108,29 @@ void update_firmwire(lwm2m_resource *resource, char *args) {
 
 ///////////////// DEFINITION OF FACTORY BOOTSTRAP ///////////////
 
+void bootstrap_custom_object(lwm2m_context *context) {
+    lwm2m_link self_link;
+    self_link.object_id = 123;
+    self_link.instance_id = 0;
+
+    lwm2m_map *multiple_string = lwm2m_map_new();
+    lwm2m_map_put(multiple_string, 0, "string1");
+    lwm2m_map_put(multiple_string, 1, "string2");
+
+    lwm2m_object *example_object = lwm2m_map_get(context->object_tree, 123);
+    lwm2m_instance *example_instance = lwm2m_instance_new_with_id(example_object, 0);
+    lwm2m_map_get_resource(example_instance->resources, 0)->resource.single.value.int_value = 80;
+    lwm2m_map_get_resource(example_instance->resources, 1)->resource.single.value.double_value = 0.5;
+    lwm2m_map_get_resource(example_instance->resources, 2)->resource.single.value.string_value = "example";
+    lwm2m_map_get_resource(example_instance->resources, 3)->resource.single.value.bool_value = false;
+    lwm2m_map_get_resource(example_instance->resources, 4)->resource.single.value.opaque_value = "opaque";
+
+    lwm2m_map_get_resource(example_instance->resources, 6)->resource.single.value.link_value = self_link;
+//    TODO allow NULL for valueslwm2m_map_get_resource(example_instance->resources, 7)->resource.single.
+    lwm2m_map_get_resource(example_instance->resources, 8)->resource.multiple.instances = multiple_string;
+    lwm2m_map_get_resource(example_instance->resources, 8)->resource.single.value.string_value = "readonlyString";
+}
+
 void bootstrap_security_object(lwm2m_context *context) {
     lwm2m_object *security_object = lwm2m_map_get(context->object_tree, 0);
     lwm2m_instance *security_instance = lwm2m_instance_new_with_id(security_object, 0);
@@ -111,8 +145,8 @@ void bootstrap_security_object(lwm2m_context *context) {
 void bootstrap_server_object(lwm2m_context *context) {
     lwm2m_object *server_object = lwm2m_map_get(context->object_tree, 1);
     lwm2m_instance *server_instance = lwm2m_instance_new_with_id(server_object, 0);
-    lwm2m_map_get_resource(server_instance->resources, 0)->resource.single.value.int_value = 1;
-    lwm2m_map_get_resource(server_instance->resources, 1)->resource.single.value.int_value = 60;
+    lwm2m_map_get_resource(server_instance->resources, 0)->resource.single.value.int_value = SHORT_SERVER_ID;
+    lwm2m_map_get_resource(server_instance->resources, 1)->resource.single.value.int_value = 20;
     lwm2m_map_get_resource(server_instance->resources, 2)->resource.single.value.int_value = 10;
     lwm2m_map_get_resource(server_instance->resources, 2)->resource.single.value.int_value = 30;
     lwm2m_map_get_resource(server_instance->resources, 6)->resource.single.value.bool_value = false;
@@ -123,6 +157,7 @@ void bootstrap_server_object(lwm2m_context *context) {
 int perform_factory_bootstrap(lwm2m_context *context) {
     bootstrap_security_object(context);
     bootstrap_server_object(context);
+    bootstrap_custom_object(context);
     return 0; // success
 }
 

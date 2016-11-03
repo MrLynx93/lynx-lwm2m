@@ -2,11 +2,16 @@
 #define LYNX_LWM2M_LWM2M_CONTEXT_H
 
 #include "map.h"
+#include "scheduler.h"
+#include "lwm2m_object.h"
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <stdio.h>
+#include <paho/MQTTClient.h>
+#include <paho/MQTTAsync.h>
 
 #define READ 1
 #define WRITE 2
@@ -47,6 +52,13 @@ typedef lwm2m_map *(lwm2m_create_objects_callback(void));
 
 /////////////////// CONTEXT /////////////////////////
 
+typedef struct lwm2m_register_data {
+    char *endpoint_client_name;
+    char *binding_mode;
+    int lifetime;
+    char *object_and_instances;
+} lwm2m_register_data;
+
 typedef struct lwm2m_context {
     lwm2m_map *servers; // shortServerId -> server
     lwm2m_map *server_addresses; // "localhost:234" -> server
@@ -69,9 +81,19 @@ typedef struct lwm2m_context {
 
     char* broker_address;
     char* client_id;
-    pthread_mutex_t* register_mutex;
+    char* endpoint_client_name;
+
+    lwm2m_scheduler *scheduler;
+
+    MQTTAsync *mqtt_client;
+
+    pthread_mutex_t register_mutex;
+    pthread_cond_t register_finished_condition;
+    int registered_servers_num;
+
+    lwm2m_map *update_tasks;
+
     pthread_mutex_t* bootstrap_mutex;
-    pthread_cond_t* register_finished_condition;
     pthread_cond_t* bootstrap_finished_condition;
 
 } lwm2m_context;
@@ -79,15 +101,9 @@ typedef struct lwm2m_context {
 typedef struct lwm2m_server {
     int short_server_id;
     lwm2m_context *context;
+    lwm2m_register_data last_update_data;
+    lwm2m_instance *server_instance;
 
-    // Registration data
-    char *endpoint_client_name;
-    int lifetime;
-    char *lwm2m_version;
-    char *binding_mode;
-    int sms_number;
-    char *objects_and_instances;
 } lwm2m_server;
-
 
 #endif //LYNX_LWM2M_LWM2M_CONTEXT_H

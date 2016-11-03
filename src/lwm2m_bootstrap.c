@@ -1,10 +1,10 @@
 #include "lwm2m.h"
 #include "lwm2m_bootstrap.h"
-#include "lwm2m_register.h"
 #include "lwm2m_parser.h"
 
 static bool has_server_instances(lwm2m_context *context) {
-    return false; // TODO implement
+    lwm2m_object *server_object = lwm2m_map_get_object(context->object_tree, SERVER_OBJECT_ID);
+    return server_object->instances->size > 0;
 }
 
 ///////////// CALLBACKS ////////////////////
@@ -61,16 +61,16 @@ int lwm2m_bootstrap(lwm2m_context *context) {
     context->is_bootstrap_ready = false;
 
     if (context->has_smartcard && context->smartcard_bootstrap_callback != NULL) {
-        if (context->smartcard_bootstrap_callback(context)) {
+        if (context->smartcard_bootstrap_callback(context) == 0 && has_server_instances(context)) {
             context->state = BOOTSTRAPPED;
         }
     } else if (context->factory_bootstrap_callback != NULL) {
-        if (context->factory_bootstrap_callback(context)) {
+        if (context->factory_bootstrap_callback(context) == 0 && has_server_instances(context)) {
             context->state = BOOTSTRAPPED;
         }
     }
 
-    if (context->state != BOOTSTRAPPED || !has_server_instances(context)) {
+    if (context->state != BOOTSTRAPPED) {
         // Server initiated bootstrap
         int res = lwm2m_wait_for_server_bootstrap(context);
         if (res != 0) {
@@ -86,15 +86,5 @@ int lwm2m_bootstrap(lwm2m_context *context) {
             }
         }
     }
-
-    if (has_server_instances(context)) {
-        context->state = REGISTERING;
-        lwm2m_register_on_all_servers(context);
-        lwm2m_wait_for_registration(context);
-        if (registered_any_server(context)) {
-            context->state = REGISTERED;
-            return 0;
-        }
-    }
-    return -1;
+    return 0;
 }
