@@ -55,6 +55,13 @@ char *generate_token() {
     return token;
 }
 
+void perform_bootstrap_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
+    int message_len;
+    char *topic_str = serialize_topic(topic);
+    char *message = serialize_request(request, &message_len);
+    publish(context, topic_str, message, message_len);
+}
+
 void perform_deregister_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
     int message_len;
     char *topic_str = serialize_topic(topic);
@@ -82,6 +89,7 @@ void handle_deregister_response(lwm2m_context *context, lwm2m_topic topic, lwm2m
     lwm2m_server *server = lwm2m_map_get(context->servers, atoi(topic.server_id));
     on_server_deregister(server, response.response_code);
 }
+
 void handle_register_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response response) {
     lwm2m_server *server = lwm2m_map_get(context->servers, atoi(topic.server_id));
     on_server_register(server, response.response_code);

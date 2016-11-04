@@ -1,3 +1,4 @@
+#include <lwm2m_transport.h>
 #include "lwm2m.h"
 #include "lwm2m_bootstrap.h"
 #include "lwm2m_parser.h"
@@ -48,12 +49,33 @@ int on_bootstrap_finish(lwm2m_server *server) {
 ///////////// OTHER ///////////////////////
 
 int lwm2m_wait_for_server_bootstrap(lwm2m_context *context) {
-    return 0; // todo
+    pthread_mutex_lock(&context->bootstrap_mutex);
+    while (context->state == WAITING_FOR_BOOTSTRAP || context->state == STARTED) {
+        pthread_cond_wait(&context->bootstrap_finished_condition, &context->bootstrap_mutex);
+    }
+    pthread_mutex_unlock(&context->bootstrap_mutex);
+
+    return context->state == BOOTSTRAPPED;
 }
 
-int lwm2m_bootstrap_client_initiated(lwm2m_context *context) {
-    // TODO
-    return 0; // todo
+int initiate_bootstrap(lwm2m_context *context) {
+    lwm2m_topic topic = {
+            .operation = LWM2M_OPERATION_DEREGISTER,
+            .type = "req",
+            .token = generate_token(),
+            .client_id = context->client_id,
+//            .server_id = TODO server_id from security object
+            .object_id = -1,
+            .instance_id = -1,
+            .resource_id = -1,
+    };
+
+    lwm2m_request request = {
+            .content_type = CONTENT_TYPE_NO_FORMAT,
+            .payload = "",
+            .payload_len = 0
+    };
+    perform_bootstrap_request(context, topic, request);
 }
 
 int lwm2m_bootstrap(lwm2m_context *context) {
@@ -74,11 +96,8 @@ int lwm2m_bootstrap(lwm2m_context *context) {
         // Server initiated bootstrap
         int res = lwm2m_wait_for_server_bootstrap(context);
         if (res != 0) {
-            // Client initiated bootstrap
-            res = lwm2m_bootstrap_client_initiated(context);
-            if (res != 0) {
-                return -1;
-            }
+            // Client initiated bootstrap TODO check response of bootstrap request
+            initiate_bootstrap(context);
             context->state = WAITING_FOR_BOOTSTRAP;
             res = lwm2m_wait_for_server_bootstrap(context);
             if (res != 0) {

@@ -308,6 +308,9 @@ lwm2m_context *lwm2m_create_context() {
     context->update_tasks = lwm2m_map_new();
     context->is_bootstrap_ready = true;
     context->is_bootstrapped = false;
+
+    context->bootstrap_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+    context->bootstrap_finished_condition = (pthread_cond_t) PTHREAD_COND_INITIALIZER;
     return context;
 }
 
@@ -319,6 +322,7 @@ int lwm2m_start_client(lwm2m_context *context) {
     create_object_tree(context);
     int error;
 
+    // TODO another session for transport and bootstrap - how to handle clients/+ topic?
     if ((error = lwm2m_bootstrap(context)) != 0) {
         return error;
     }

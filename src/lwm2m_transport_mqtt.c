@@ -1,3 +1,5 @@
+#include <paho/MQTTAsync.h>
+#include <paho/MQTTClient.h>
 #include "lwm2m.h"
 #include "lwm2m_transport_mqtt.h"
 
@@ -83,6 +85,20 @@ static lwm2m_response parse_response(char *payload, int payload_len) {
     return response;
 }
 
+static void publish_connected(lwm2m_context *context) {
+    MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+    opts.onSuccess = NULL;
+    opts.onFailure = NULL;
+    opts.context = context;
+
+    char payload[1];
+    payload[0] = 1;
+
+    char topic[100];
+    sprintf(topic, "lynx/clients/%s", context->endpoint_client_name);
+
+    MQTTAsync_send(context->mqtt_client, topic, 1, payload, 1, 1, &opts);
+}
 
 static void subscribe_init(lwm2m_context *context) {
     char topic_server[100];
@@ -118,10 +134,15 @@ static void subscribe_init(lwm2m_context *context) {
 
 static void on_connect(void *context, MQTTAsync_successData *response) {
     pthread_mutex_lock(&started_lock);
+
+    publish_connected((lwm2m_context*) context);
     subscribe_init(context);
+
     pthread_cond_signal(&started_condition);
     pthread_mutex_unlock(&started_lock);
 }
+
+
 
 static void on_publish_success(void *context, MQTTAsync_successData *response) {
     printf("Published message :)\n");
@@ -231,11 +252,11 @@ void subscribe_server(lwm2m_context *context, lwm2m_server *server) {
 }
 
 void publish(lwm2m_context *context, char* topic, char* message, int message_len) {
-    MQTTAsync_responseOptions opts;
-    opts.onSuccess = on_publish_success;
-    opts.onFailure = NULL;
-    opts.context = context;
-
+    MQTTAsync_responseOptions opts = {
+            .onSuccess = on_publish_success,
+            .onFailure = on_publish_failure,
+            .context = context
+    };
     MQTTAsync_send(*(context->mqtt_client), topic, message_len, message, 1, 0, &opts);
 }
 
@@ -254,12 +275,25 @@ int start_transport_layer(lwm2m_context *context) {
         return res;
     }
 
+    char will_payload[1];
+    will_payload[0] = 0;
+
+    char topic[100];
+    sprintf(topic, "lynx/clients/%s", context->endpoint_client_name);
+
+    MQTTAsync_willOptions will_opts = MQTTAsync_willOptions_initializer;
+    will_opts.topicName = topic;
+    will_opts.message = will_payload;
+    will_opts.retained = 1;
+    will_opts.qos = 1;
+
     MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
     conn_opts.keepAliveInterval = 10;
     conn_opts.cleansession = 1;
     conn_opts.onSuccess = on_connect;
     conn_opts.onFailure = NULL;
     conn_opts.context = context;
+    conn_opts.will = &will_opts;
 
     res = MQTTAsync_connect(*(context->mqtt_client), &conn_opts);
     pthread_cond_wait(&started_condition, &started_lock);

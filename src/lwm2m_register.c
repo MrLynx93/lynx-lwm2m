@@ -177,7 +177,6 @@ int lwm2m_register(lwm2m_context *context) {
     context->register_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
     context->register_finished_condition = (pthread_cond_t) PTHREAD_COND_INITIALIZER;
 
-
     if (has_server_instances(context)) {
         context->state = REGISTERING;
 

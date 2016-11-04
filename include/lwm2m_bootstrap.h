@@ -29,14 +29,14 @@ int on_bootstrap_finish(lwm2m_server *server);
 
 ///////////// OTHER ///////////////////////
 
-/* Performs all bootstrapped sequence at client start */
+/* Performs all bootstrap sequence at client start */
 int lwm2m_bootstrap(lwm2m_context *context);
 
 /* Wait for maximum ClientHoldOffTime for server initiated bootstrap */
 int lwm2m_wait_for_server_bootstrap(lwm2m_context *context);
 
 /* Starts client initiated bootstrap */
-int lwm2m_bootstrap_client_initiated(lwm2m_context *context);
+int initiate_bootstrap(lwm2m_context *context);
 
 
 #endif //LYNX_LWM2M_BOOTSTRAP_H

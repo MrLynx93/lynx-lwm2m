@@ -9,9 +9,10 @@
 #define CONTENT_TYPE_OPAQUE 3
 #define CONTENT_TYPE_TLV 4
 
-#define LWM2M_OPERATION_REGISTER   "rr"
-#define LWM2M_OPERATION_DEREGISTER "rd"
-#define LWM2M_OPERATION_UPDATE     "ru"
+#define LWM2M_OPERATION_BOOTSTRAP_INIT "br"
+#define LWM2M_OPERATION_REGISTER       "rr"
+#define LWM2M_OPERATION_DEREGISTER     "rd"
+#define LWM2M_OPERATION_UPDATE         "ru"
 
 ///////////////// REQUEST /////////////////////
 
@@ -52,6 +53,8 @@ typedef struct lwm2m_topic {
 // TODO what about tokens????
 
 char *generate_token();
+
+void perform_bootstrap_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
 
 void perform_deregister_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
 

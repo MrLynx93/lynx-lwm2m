@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
     context->has_smartcard = false;
     context->create_objects_callback = create_example_objects;
     context->create_resources_callback = create_example_resources;
-    context->factory_bootstrap_callback = perform_factory_bootstrap;
+    context->factory_bootstrap_callback = NULL;
     context->smartcard_bootstrap_callback = NULL;
     context->client_id = "lynx";
     context->broker_address = "tcp://localhost:1883";
@@ -148,7 +148,7 @@ void bootstrap_server_object(lwm2m_context *context) {
     lwm2m_map_get_resource(server_instance->resources, 0)->resource.single.value.int_value = SHORT_SERVER_ID;
     lwm2m_map_get_resource(server_instance->resources, 1)->resource.single.value.int_value = 20;
     lwm2m_map_get_resource(server_instance->resources, 2)->resource.single.value.int_value = 10;
-    lwm2m_map_get_resource(server_instance->resources, 2)->resource.single.value.int_value = 30;
+    lwm2m_map_get_resource(server_instance->resources, 3)->resource.single.value.int_value = 30;
     lwm2m_map_get_resource(server_instance->resources, 6)->resource.single.value.bool_value = false;
     lwm2m_map_get_resource(server_instance->resources, 7)->resource.single.value.string_value = "T"; // TCP - this is not specified in LWM2M 1.0
     // TODO implement registration update trigger resource inside library (set execute callback)

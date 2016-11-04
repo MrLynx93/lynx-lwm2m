@@ -93,8 +93,8 @@ typedef struct lwm2m_context {
 
     lwm2m_map *update_tasks;
 
-    pthread_mutex_t* bootstrap_mutex;
-    pthread_cond_t* bootstrap_finished_condition;
+    pthread_mutex_t bootstrap_mutex;
+    pthread_cond_t bootstrap_finished_condition;
 
 } lwm2m_context;
 
