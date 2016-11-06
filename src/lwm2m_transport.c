@@ -1,6 +1,7 @@
 //#include "lwm2m.h"
 //#include "lwm2m_object.h"
 #include <lwm2m_register.h>
+#include "lwm2m_bootstrap.h"
 #include "lwm2m_transport.h"
 #include "lwm2m_transport_mqtt.h"
 //#include "lwm2m_device_management.h"
@@ -9,6 +10,21 @@
 #define CHARSET "abcdefghijklmnopqrstuvwxyz1234567890"
 #define CHARSET_LENGTH 36
 #define TOKEN_LENGTH 8
+
+char *serialize_response(lwm2m_response response, int *message_len) {
+    char *buffer = (char *) calloc(1000, sizeof(char)); // TODO size allocated (calloc? why?)
+    buffer[0] = (char) response.content_type; // TODO int to format in pdf
+
+    buffer[1] = 0;
+    if (response.response_code / 100 == 200)  {
+        buffer[1] &= 0b10000000;
+    }
+    buffer[1] += response.response_code % 100;
+
+    memcpy(buffer + 2, response.payload, (size_t) response.payload_len);
+    *message_len = response.payload_len + 2;
+    return buffer;
+}
 
 static char *serialize_request(lwm2m_request request, int *message_len) {
     char *buffer = (char *) calloc(1000, sizeof(char));
@@ -26,7 +42,7 @@ static char *serialize_register_request(lwm2m_register_request request, int *mes
     return buffer;
 }
 
-static char *serialize_topic(lwm2m_topic topic) {
+char *serialize_topic(lwm2m_topic topic) {
     char *buffer = (char *) malloc(100 * sizeof(char));
     sprintf(buffer, "lynx/%s/%s/%s/%s/%s", topic.operation, topic.type, topic.token, topic.client_id, topic.server_id);
     if (topic.object_id != -1) {
@@ -53,6 +69,59 @@ char *generate_token() {
     }
     token[TOKEN_LENGTH] = 0;
     return token;
+}
+
+lwm2m_response handle_bootstrap_delete_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
+    if (topic.instance_id == -1) {
+        on_bootstrap_delete_all(context);
+    } else {
+        lwm2m_object *object = lwm2m_map_get_object(context->object_tree, topic.object_id);
+        lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, topic.instance_id);
+        on_bootstrap_delete(context, instance);
+    }
+
+    lwm2m_response response = {
+            .content_type = CONTENT_TYPE_NO_FORMAT,
+            .response_code = RESPONSE_CODE_DELETED,
+            .payload = "",
+            .payload_len = 0
+    };
+    return response;
+}
+
+lwm2m_response handle_bootstrap_write_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
+    lwm2m_object *object = lwm2m_map_get_object(context->object_tree, topic.object_id);
+    if (topic.instance_id != -1 && topic.resource_id != -1) {
+        lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, topic.instance_id);
+        lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, topic.resource_id);
+        on_bootstrap_resource_write(context, resource, request.payload, (int) request.payload_len);
+    }
+    else if (topic.instance_id != -1) {
+        on_bootstrap_instance_write(context, object, topic.instance_id, request.payload, (int) request.payload_len);
+    }
+    else {
+        on_bootstrap_object_write(context, object, request.payload, (int) request.payload_len);
+    }
+
+    lwm2m_response response = {
+            .content_type = CONTENT_TYPE_NO_FORMAT,
+            .response_code = RESPONSE_CODE_CREATED, // TODO CREATED or CHANGED?
+            .payload = "",
+            .payload_len = 0,
+    };
+    return response;
+}
+
+lwm2m_response handle_bootstrap_finish_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
+    on_bootstrap_finish(context);
+
+    lwm2m_response response = {
+            .content_type = CONTENT_TYPE_NO_FORMAT,
+            .response_code = RESPONSE_CODE_CREATED, // TODO what here ?
+            .payload = "",
+            .payload_len = 0,
+    };
+    return response;
 }
 
 void perform_bootstrap_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {

@@ -11,6 +11,7 @@ void receive_response(lwm2m_context *context, lwm2m_topic topic, char* message, 
 void publish(lwm2m_context *context, char* topic, char* message, int message_len);
 void subscribe_server(lwm2m_context *context, lwm2m_server *server);
 
-int start_transport_layer(lwm2m_context *context);
+int start_mqtt(lwm2m_context *context);
+void publish_connected(lwm2m_context *context);
 
 #endif //PROJECT_LWM2M_TRANSPORT_MQTT_H

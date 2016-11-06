@@ -8,6 +8,27 @@
 #define TLV_FORMAT 1
 
 
+lwm2m_map *parse_multiple_resource(lwm2m_context *context, int object_id, int resource_id, char *message, int message_len);
+lwm2m_resource *parse_resource(lwm2m_context *context, int object_id, int resource_id, char *message, int message_len);
+lwm2m_map *parse_instance(lwm2m_context *context, int object_id, char *message, int message_len);
+lwm2m_map *parse_object(lwm2m_context *context, int object_id, char *message, int message_len);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*
  * All functions return 0 if serialize/deserialize was successful, otherwise it returns PARSE_ERROR
  * Server parameter for serialize functions is needed for checking access control
@@ -67,7 +88,7 @@ char *serialize_lwm2m_objects_and_instances(lwm2m_context *context);
 char *serialize_lwm2m_value(lwm2m_value value, lwm2m_type type, int format);
 
 /* Returns lwm2m_value from text/tlv message */
-lwm2m_value deserialize_lwm2m_value(char* message, lwm2m_type type, int format);
+lwm2m_value deserialize_lwm2m_value(char* message, int message_len, lwm2m_type type, int format);
 
 
 #endif //LYNX_LWM2M_PARSER_H

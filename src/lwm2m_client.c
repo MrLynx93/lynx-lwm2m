@@ -320,21 +320,14 @@ void deregister(lwm2m_server *server) {
 
 int lwm2m_start_client(lwm2m_context *context) {
     create_object_tree(context);
-    int error;
 
-    // TODO another session for transport and bootstrap - how to handle clients/+ topic?
-    if ((error = lwm2m_bootstrap(context)) != 0) {
-        return error;
-    }
+    start_mqtt(context);
+    publish_connected(context);
+    lwm2m_bootstrap(context);
 
     context->scheduler = (lwm2m_scheduler *) malloc(sizeof(lwm2m_scheduler));
     scheduler_start(context->scheduler);
 
-    if ((error = start_transport_layer(context)) != 0) {
-        return error;
-    }
-    if ((error = lwm2m_register(context)) != 0) {
-        return error;
-    }
+    lwm2m_register(context);
     return 0;
 }

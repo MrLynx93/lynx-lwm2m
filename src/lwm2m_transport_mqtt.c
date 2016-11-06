@@ -2,6 +2,7 @@
 #include <paho/MQTTClient.h>
 #include "lwm2m.h"
 #include "lwm2m_transport_mqtt.h"
+#include "lwm2m_transport.h"
 
 
 pthread_mutex_t started_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -66,6 +67,15 @@ static lwm2m_topic parse_topic(char *topic_string) {
     return topic;
 }
 
+static lwm2m_request parse_request(char *payload, int payload_len) {
+    lwm2m_request request = {
+            .content_type = payload[0] & 0b00000111,
+            .payload = payload + 1,
+            .payload_len = (size_t) (payload_len - 1)
+    }; // TODO payload NULL if paylod_len is 0
+    return request;
+}
+
 static lwm2m_response parse_response(char *payload, int payload_len) {
     int response_code = 0;
     if (payload[1] & 0b10000000) {
@@ -85,20 +95,6 @@ static lwm2m_response parse_response(char *payload, int payload_len) {
     return response;
 }
 
-static void publish_connected(lwm2m_context *context) {
-    MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-    opts.onSuccess = NULL;
-    opts.onFailure = NULL;
-    opts.context = context;
-
-    char payload[1];
-    payload[0] = 1;
-
-    char topic[100];
-    sprintf(topic, "lynx/clients/%s", context->endpoint_client_name);
-
-    MQTTAsync_send(context->mqtt_client, topic, 1, payload, 1, 1, &opts);
-}
 
 static void subscribe_init(lwm2m_context *context) {
     char topic_server[100];
@@ -132,36 +128,47 @@ static void subscribe_init(lwm2m_context *context) {
     MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
 }
 
-static void on_connect(void *context, MQTTAsync_successData *response) {
-    pthread_mutex_lock(&started_lock);
-
-    publish_connected((lwm2m_context*) context);
-    subscribe_init(context);
-
-    pthread_cond_signal(&started_condition);
-    pthread_mutex_unlock(&started_lock);
-}
-
-
-
 static void on_publish_success(void *context, MQTTAsync_successData *response) {
-    printf("Published message :)\n");
+    ;
 }
 
 static void on_publish_failure(void* context,  MQTTAsync_failureData* response) {
-    printf("Failed to publish :(\n");
+    printf("Publish failed\n");
 }
 
 static void on_connection_lost(void* context, char* cause) {
-    printf("Connection lost :( Reason: %s", cause);
+    printf("Connection lost. Reason: %s", cause);
 }
 
 static void on_delivery_complete(void* context, MQTTAsync_token token) {
 
 }
 
+void publish_connected(lwm2m_context *context) {
+    MQTTAsync_responseOptions opts = {
+            .onSuccess = on_publish_success,
+            .onFailure = on_publish_failure,
+            .context = context
+    };
+
+    char *topic = (char*) malloc(100);
+    sprintf(topic, "lynx/clients/%s", context->client_id);
+    MQTTAsync_send(*(context->mqtt_client), topic, 1, "1", 1, 1, &opts);
+    printf("Published %s\n", topic);
+}
+
+static void on_connect(void *context, MQTTAsync_successData *response) {
+    pthread_mutex_lock(&started_lock);
+
+    subscribe_init(context);
+//    publish_connected((lwm2m_context*) context); todo move back?
+
+    pthread_cond_signal(&started_condition);
+    pthread_mutex_unlock(&started_lock);
+}
+
 static int on_message(void* context, char* topicName, int topicLen, MQTTAsync_message* message) {
-    printf("onmsg\n");
+    printf("Received  %s\n", topicName);
     receive_message((lwm2m_context *) context, topicName, (char *) message->payload, message->payloadlen);
     return 1; // TODO check if payload is correct (void -> char)
 }
@@ -169,8 +176,39 @@ static int on_message(void* context, char* topicName, int topicLen, MQTTAsync_me
 
 ////////////////////////// MAIN //////////////////////////////
 
+void publish_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response response) {
+    MQTTAsync_responseOptions opts = {
+            .onSuccess = on_publish_success,
+            .onFailure = on_publish_failure,
+            .context = context
+    };
+    int message_len;
+    char *topic_str = serialize_topic(topic);
+    char *message = serialize_response(response, &message_len);
+    MQTTAsync_send(*(context->mqtt_client), topic_str, message_len, message, 1, 0, &opts);
+    printf("Published %s\n", topic_str);
+}
 
 void receive_request(lwm2m_context *context, lwm2m_topic topic, char *message, int message_len) {
+
+    if (!strcmp(LWM2M_OPERATION_BOOTSTRAP_DELETE, topic.operation)) {
+        lwm2m_request request = parse_request(message, message_len);
+        lwm2m_response response = handle_bootstrap_delete_request(context, topic, request);
+        topic.type = "res";
+        publish_response(context, topic, response);
+    }
+    if (!strcmp(LWM2M_OPERATION_BOOTSTRAP_WRITE, topic.operation)) {
+        lwm2m_request request = parse_request(message, message_len);
+        lwm2m_response response = handle_bootstrap_write_request(context, topic, request);
+        topic.type = "res";
+        publish_response(context, topic, response);
+    }
+    if (!strcmp(LWM2M_OPERATION_BOOTSTRAP_FINISH, topic.operation)) {
+        lwm2m_request request = parse_request(message, message_len);
+        lwm2m_response response = handle_bootstrap_finish_request(context, topic, request);
+        topic.type = "res";
+        publish_response(context, topic, response);
+    }
     // TODO more
 }
 
@@ -258,10 +296,10 @@ void publish(lwm2m_context *context, char* topic, char* message, int message_len
             .context = context
     };
     MQTTAsync_send(*(context->mqtt_client), topic, message_len, message, 1, 0, &opts);
+    printf("Published %s\n", topic);
 }
 
-
-int start_transport_layer(lwm2m_context *context) {
+int start_mqtt(lwm2m_context *context) {
     pthread_mutex_lock(&started_lock);
 
     context->mqtt_client = (MQTTAsync *) malloc(sizeof(MQTTAsync));
@@ -275,15 +313,12 @@ int start_transport_layer(lwm2m_context *context) {
         return res;
     }
 
-    char will_payload[1];
-    will_payload[0] = 0;
-
-    char topic[100];
+    char *topic = (char*) malloc(100);
     sprintf(topic, "lynx/clients/%s", context->endpoint_client_name);
 
     MQTTAsync_willOptions will_opts = MQTTAsync_willOptions_initializer;
     will_opts.topicName = topic;
-    will_opts.message = will_payload;
+    will_opts.message = "0";
     will_opts.retained = 1;
     will_opts.qos = 1;
 

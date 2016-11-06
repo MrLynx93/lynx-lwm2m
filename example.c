@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
     context->has_smartcard = false;
     context->create_objects_callback = create_example_objects;
     context->create_resources_callback = create_example_resources;
-    context->factory_bootstrap_callback = NULL;
+    context->factory_bootstrap_callback = perform_factory_bootstrap;
     context->smartcard_bootstrap_callback = NULL;
     context->client_id = "lynx";
     context->broker_address = "tcp://localhost:1883";
@@ -80,6 +80,7 @@ int main(int argc, char *argv[]) {
         sleep(30);
         lwm2m_server *server = lwm2m_map_get(context->servers, 123);
         deregister(server);
+        break;
     }
 }
 
@@ -114,7 +115,7 @@ void bootstrap_custom_object(lwm2m_context *context) {
     self_link.instance_id = 0;
 
     lwm2m_map *multiple_string = lwm2m_map_new();
-    lwm2m_map_put(multiple_string, 0, "string1");
+    lwm2m_map_put(multiple_string, 0, "string1"); // TODO should this be lwm2m_value???
     lwm2m_map_put(multiple_string, 1, "string2");
 
     lwm2m_object *example_object = lwm2m_map_get(context->object_tree, 123);
@@ -134,12 +135,9 @@ void bootstrap_custom_object(lwm2m_context *context) {
 void bootstrap_security_object(lwm2m_context *context) {
     lwm2m_object *security_object = lwm2m_map_get(context->object_tree, 0);
     lwm2m_instance *security_instance = lwm2m_instance_new_with_id(security_object, 0);
-    lwm2m_map_get_resource(security_instance->resources, 0)->resource.single.value.string_value = "localhost:123";
+    lwm2m_map_get_resource(security_instance->resources, 0)->resource.single.value.string_value = "lynx-bootstrap-server-old-name";
     lwm2m_map_get_resource(security_instance->resources, 1)->resource.single.value.bool_value = true;
-    lwm2m_map_get_resource(security_instance->resources, 2)->resource.single.value.int_value = SECURITY_MODE_NOSEC;
-    lwm2m_map_get_resource(security_instance->resources, 3)->resource.single.value.opaque_value = NULL;
-    lwm2m_map_get_resource(security_instance->resources, 4)->resource.single.value.opaque_value = NULL;
-    lwm2m_map_get_resource(security_instance->resources, 5)->resource.single.value.int_value = 1;
+    lwm2m_map_get_resource(security_instance->resources, 10)->resource.single.value.int_value = 555;
 }
 
 void bootstrap_server_object(lwm2m_context *context) {
@@ -156,8 +154,8 @@ void bootstrap_server_object(lwm2m_context *context) {
 
 int perform_factory_bootstrap(lwm2m_context *context) {
     bootstrap_security_object(context);
-    bootstrap_server_object(context);
-    bootstrap_custom_object(context);
+//    bootstrap_server_object(context);
+//    bootstrap_custom_object(context);
     return 0; // success
 }
 

@@ -35,8 +35,11 @@ void lwm2m_map_get_keys(lwm2m_map *map, int *keys) {
 void lwm2m_map_get_keys_string(lwm2m_map *map, char **keys) {
     int index = 0;
     for (int i = 0; i < INITIAL_SIZE; i++) {
-        if (map->data->data != NULL) {
-            keys[index] = map->data->key_string;
+        if (map->data[i].in_use) {
+            keys[index++] = map->data[i].key_string;
+            if (index == map->size) {
+                break;
+            }
         }
     }
 }
@@ -200,7 +203,10 @@ static int hash_int(lwm2m_map *map, int key) {
 
 static int hash_string(lwm2m_map *map, char *string) {
     unsigned int hash = 0;
-    for (int i = 0; string[i] != '\0'; i++) {
+    for (int i = 0; ; i++) {
+        if (string[i] == '\0') {
+            break;
+        }
         hash = 31 * hash + string[i];
     }
     return hash % map->table_size;

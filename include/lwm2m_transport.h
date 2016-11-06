@@ -3,13 +3,19 @@
 
 #include "lwm2m.h"
 
+#define RESPONSE_CODE_CREATED 201
+#define RESPONSE_CODE_DELETED 202
+
 #define CONTENT_TYPE_NO_FORMAT 0
 #define CONTENT_TYPE_TEXT 1
 #define CONTENT_TYPE_LINK 2
 #define CONTENT_TYPE_OPAQUE 3
 #define CONTENT_TYPE_TLV 4
 
-#define LWM2M_OPERATION_BOOTSTRAP_INIT "br"
+#define LWM2M_OPERATION_BOOTSTRAP_INIT   "br"
+#define LWM2M_OPERATION_BOOTSTRAP_DELETE "bd"
+#define LWM2M_OPERATION_BOOTSTRAP_WRITE  "bw"
+#define LWM2M_OPERATION_BOOTSTRAP_FINISH "bf"
 #define LWM2M_OPERATION_REGISTER       "rr"
 #define LWM2M_OPERATION_DEREGISTER     "rd"
 #define LWM2M_OPERATION_UPDATE         "ru"
@@ -52,7 +58,17 @@ typedef struct lwm2m_topic {
 
 // TODO what about tokens????
 
+char *serialize_topic(lwm2m_topic topic);
+
+char *serialize_response(lwm2m_response response, int *message_len);
+
 char *generate_token();
+
+lwm2m_response handle_bootstrap_delete_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request response);
+
+lwm2m_response handle_bootstrap_write_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
+
+lwm2m_response handle_bootstrap_finish_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
 
 void perform_bootstrap_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
 
