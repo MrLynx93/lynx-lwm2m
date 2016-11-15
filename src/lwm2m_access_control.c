@@ -5,7 +5,7 @@
 
 ///////////// CHECKING ACCESS CONTROL ///////////////////
 
-int lwm2m_check_object_access_control(lwm2m_server *server, lwm2m_object *object) { // TODO what to do here
+//int lwm2m_check_object_access_control(lwm2m_server *server, lwm2m_object *object) { // TODO what to do here
 //    TODO
 //
 //    lwm2m_resource_multiple *acl_resource = lwm2m_get_instance_acl_resource(instance); // TODO check if instance or object
@@ -13,40 +13,42 @@ int lwm2m_check_object_access_control(lwm2m_server *server, lwm2m_object *object
 //    if (!(acl_resource_instance->value.int_value & CREATE)) {
 //        return ACCESS_RIGHT_PERMISSION_DENIED;
 //    }
-    return 0;
-}
+//    return 0;
+//}
 
-int lwm2m_check_instance_access_control(lwm2m_server *server, lwm2m_instance *instance, int operation) {
+/////////// GETTING ACCESS CONTROL OBJECT AND RESOURCES ////////////
+
+// W/R/E/D ACCESS JEST SPRAWDZANY:
+// 0. JEŻELI OWNER, GRANTED
+// 1. PER INSTANCE (SPRAWDZANE PO INSTANCE -> ACCESS CONTROL INSTANCE -> ACL RESOURCE[SERVER_ID]
+// 2. PER RESOURCE - CZY RESOURCE JEST NP. READONLY/EXECUTABLE ETC
+// todo PROBABLY OPERATION PARAMETER WILL COME BACK HERE -
+bool lwm2m_check_instance_access_control(lwm2m_server *server, lwm2m_instance *instance) {
     if (server->context->servers->size == 1) {
-        return 0;
+        return true; // TODO why dont check operation ot supported????
     }
 
     lwm2m_resource_multiple *acl_resource = lwm2m_get_instance_acl_resource(instance);
     lwm2m_resource_single *acl_resource_instance = lwm2m_get_acl_resource_instance(acl_resource, server);
 
-    if (!lwm2m_get_access_control_owner(instance) == server->short_server_id && acl_resource_instance == NULL) {
-        return 0;
+    if (lwm2m_get_access_control_owner(instance) == server->short_server_id && acl_resource_instance == NULL) {
+        return true;
     }
 
     if (acl_resource_instance == NULL) {
         acl_resource_instance = get_default_acl_resource_instance(server->context, instance);
     }
+
     if (acl_resource_instance == NULL) {
-        return ACCESS_RIGHT_PERMISSION_DENIED;
+        return false;
+    } else {
+        // TODO get access from acl_resource_instance
     }
-
-    if (!(acl_resource_instance->value.int_value & operation)) {
-        return ACCESS_RIGHT_PERMISSION_DENIED;
-    }
-
-    return 0;
+    return true;
 }
 
-
-/////////// GETTING ACCESS CONTROL OBJECT AND RESOURCES ////////////
-
-int lwm2m_check_resource_operation_supported(lwm2m_resource *resource, int operation) {
-    return resource->operations & operation;
+bool lwm2m_check_resource_operation_supported(lwm2m_resource *resource, int operation) {
+    return (resource->operations & operation) != 0;
 }
 
 lwm2m_object *lwm2m_get_aco_object(lwm2m_context* context) {

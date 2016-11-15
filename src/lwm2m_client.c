@@ -43,6 +43,7 @@ static lwm2m_map *create_security_object_resources() {
     lwm2m_map* resources = lwm2m_map_new();
     lwm2m_resource *resource;
 
+    // TODO OPERATIONS
     resource = lwm2m_resource_new(false);
     resource->id = 0;
     resource->name = "LWM2M Server URI";
@@ -161,7 +162,7 @@ static lwm2m_map *create_server_object_resources() {
     resource->name = "Lifetime";
     resource->type = INTEGER;
     resource->mandatory = true;
-    resource->operations = READ & WRITE;
+    resource->operations = READ | WRITE;
     lwm2m_map_put(resources, 1, (void*)resource);
 
     resource = lwm2m_resource_new(false);
@@ -169,7 +170,7 @@ static lwm2m_map *create_server_object_resources() {
     resource->name = "Default Minimum Period";
     resource->type = INTEGER;
     resource->mandatory = false;
-    resource->operations = READ & WRITE;
+    resource->operations = READ | WRITE;
     lwm2m_map_put(resources, 2, (void*)resource);
 
     resource = lwm2m_resource_new(false);
@@ -177,7 +178,7 @@ static lwm2m_map *create_server_object_resources() {
     resource->name = "Default Maximum Period";
     resource->type = INTEGER;
     resource->mandatory = false;
-    resource->operations = READ & WRITE;
+    resource->operations = READ | WRITE;
     lwm2m_map_put(resources, 3, (void*)resource);
 
     resource = lwm2m_resource_new(false);
@@ -193,7 +194,7 @@ static lwm2m_map *create_server_object_resources() {
     resource->name = "Disable Timeout";
     resource->type = INTEGER;
     resource->mandatory = false;
-    resource->operations = READ & WRITE;
+    resource->operations = READ | WRITE;
     lwm2m_map_put(resources, 5, (void*)resource);
 
     resource = lwm2m_resource_new(false);
@@ -201,7 +202,7 @@ static lwm2m_map *create_server_object_resources() {
     resource->name = "Notification Storing When Disabled or Offline";
     resource->type = BOOLEAN;
     resource->mandatory = true;
-    resource->operations = READ & WRITE;
+    resource->operations = READ | WRITE;
     lwm2m_map_put(resources, 6, (void*)resource);
 
     resource = lwm2m_resource_new(false);
@@ -209,7 +210,7 @@ static lwm2m_map *create_server_object_resources() {
     resource->name = "Binding";
     resource->type = STRING;
     resource->mandatory = true;
-    resource->operations = READ & WRITE;
+    resource->operations = READ | WRITE;
     lwm2m_map_put(resources, 7, (void*)resource);
 
     resource = lwm2m_resource_new(false);
@@ -248,7 +249,7 @@ static lwm2m_map *create_access_control_object_resources() {
     resource->name = "ACL";
     resource->type = INTEGER;
     resource->mandatory = false;
-    resource->operations = READ & WRITE;
+    resource->operations = READ | WRITE;
     lwm2m_map_put(resources, 2, (void*)resource);
 
     resource = lwm2m_resource_new(false);
@@ -256,7 +257,7 @@ static lwm2m_map *create_access_control_object_resources() {
     resource->name = "Access Control Owner";
     resource->type = INTEGER;
     resource->mandatory = true;
-    resource->operations = READ & WRITE;
+    resource->operations = READ | WRITE;
     lwm2m_map_put(resources, 3, (void*)resource);
 
     return resources;

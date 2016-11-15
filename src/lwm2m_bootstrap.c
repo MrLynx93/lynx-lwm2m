@@ -49,9 +49,9 @@ static void delete_resource(lwm2m_context *context, lwm2m_resource *resource) {
             free(value);
         }
     }
-    if (resource->attributes != NULL) {
-        free_attributes(resource->attributes);
-    }
+//    if (resource->attributes != NULL) {
+//        free_attributes(resource->attributes);
+//    }
 }
 
 static void delete_instance(lwm2m_context *context, lwm2m_instance *instance) {
@@ -62,9 +62,9 @@ static void delete_instance(lwm2m_context *context, lwm2m_instance *instance) {
         lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, keys[i]);
         delete_resource(context, resource);
     }
-    if (instance->attributes != NULL) {
-        free_attributes(instance->attributes);
-    }
+//    if (instance->attributes != NULL) {
+//        free_attributes(instance->attributes);
+//    }
 }
 
 static void delete_object(lwm2m_context *context, lwm2m_object *object) {
@@ -119,7 +119,16 @@ int on_bootstrap_object_write(lwm2m_context *context, lwm2m_object *object, char
 int on_bootstrap_instance_write(lwm2m_context *context, lwm2m_object *object, int instance_id, char *message, int message_len) {
     lwm2m_instance *old_instance = lwm2m_map_get_instance(object->instances, instance_id);
     lwm2m_instance *new_instance = (lwm2m_instance *) malloc(sizeof(lwm2m_instance));
+    new_instance->id = instance_id;
+    new_instance->object = object;
     new_instance->resources = parse_instance(context, object->id, message, message_len);
+
+    // Set instance in parsed resources (only needed in bootstrap) TODO (probably)
+    int keys[new_instance->resources->size];
+    lwm2m_map_get_keys(new_instance->resources, keys);
+    for (int i = 0; i < new_instance->resources->size; ++i) {
+        lwm2m_map_get_resource(new_instance->resources, keys[i])->instance = new_instance;
+    }
 
     if (old_instance == NULL) {
         lwm2m_map_put(object->instances, instance_id, new_instance);

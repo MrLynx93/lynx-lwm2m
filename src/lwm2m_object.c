@@ -126,9 +126,11 @@ void lwm2m_delete_instance(lwm2m_instance *instance) {
 lwm2m_resource *lwm2m_resource_new(bool multiple) {
     lwm2m_resource *resource = (lwm2m_resource *) malloc(sizeof(lwm2m_resource));
     resource->multiple = multiple;
+    resource->execute_callback = NULL;
+    resource->write_callback = NULL;
+    resource->read_callback = NULL;
     return resource;
 }
-
 
 /////////////// MAP UTILITY FUNCTIONS ////////////////
 

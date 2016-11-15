@@ -1,167 +1,259 @@
+#include "lwm2m.h"
 #include "lwm2m_parser.h"
-#include "lwm2m_access_control.h"
-#include "lwm2m_device_management.h"
+
+#define OBJECT_INSTANCE_TYPE    0b00000000
+#define RESOURCE_INSTANCE_TYPE  0b01000000
+#define MULTIPLE_RESOURCE_TYPE  0b10000000
+#define RESOURCE_TYPE           0b11000000
 
 
-//////////////// HELPER FUNCTIONS /////////////////
-
-static int get_int_bits(int number) {
-    // TODO
+static int get_int_bytes(int value) {
+    if (value < 0xFF) {
+        return 1;
+    }
+    if (value < 0xFFFF) {
+        return 2;
+    }
+    if (value < 0xFFFFFF) {
+        return 3;
+    }
+    if (value < 0xFFFFFFFF) {
+        return 4;
+    }
+    return 8;
 }
 
-static int get_int_digits(int number) {
-    int digits = 0;
-    while (number) {
-        digits++;
-        number /= 10;
-    }
-    return digits;
-}
+static union double_bytes {
+    double val;
+    char bytes[8];
+} double_bytes;
 
-//////////////// SERIALIZE MULTIPLE VALUES /////////////////
+static void serialize_header(int id, int type, int value_len, char *message, int *message_len) {
+    message[0] = 0;
+    message[0] |= type;
+    message[0] |= id < 0xFF ? 0b00000000 : 0b00100000;
+    message[0] |= value_len < 8 ? value_len : 0x0;
 
-static lwm2m_map *get_nodes(lwm2m_node *parent_node, lwm2m_node_type type) {
-    if (type == OBJECT) {
-        return parent_node->object.instances;
-    }
-    if (type == INSTANCE) {
-        return parent_node->instance.resources;
-    }
-    if (type == RESOURCE) {
-        return parent_node->resource.resource.multiple.instances;
-    }
-    return NULL;
-}
+    int bytes_required = get_int_bytes(value_len);
 
-
-static char *create_type_header(char *buf, lwm2m_node *node, lwm2m_node_type type, int len) {
-    char header = 0;
-
-    if (type == OBJECT) {
-        header |= node->instance.id < 0xFF ? 0b00100000 : 0b00000000;     // length of identifier (is 8-bits long?)
-    }
-    if (type == INSTANCE) {
-        header |= node->resource.multiple ? 0b10000000 : 0b11000000;     // type
-        header |= node->resource.id < 0xFF ? 0b00100000 : 0b00000000;     // length of identifier (is 8-bits long?)
-    }
-    if (type == RESOURCE) {
-        header |= 0b01000000;                                            // type
-        header |= node->resource.id < 0xFF ? 0b00100000 : 0b00000000;     // length of identifier (is 8-bits long?)
-    }
-
-    header |= len < 8 ? len : 0b00000000;    // length if < 8
-
-    // Number of bits required for string "length" value
-    if (get_int_bits(len) == 8) {
-        header |= 0b00001000;
-    }
-    if (get_int_bits(len) == 16) {
-        header |= 0b00010000;
-    }
-    if (get_int_bits(len) == 24) {
-        header |= 0b00011000;
-    }
-    buf[0] = header;
-    return buf + 1;
-}
-
-static char *create_identifier(char *buf, lwm2m_node *node, lwm2m_node_type type) {
-    int id = type == OBJECT ? node->instance.id : node->resource.id;
-
+    char *length;
+    // Identifier
     if (id < 0xFF) {
-        buf[0] = (char) id;
-        return buf + 1;
+        message[1] = (char) id;
+        length = message + 2;
+        *message_len = 2;
+    } else {
+        message[1] = (char) id;
+        message[2] = (char) (id >> 8);
+        length = message + 3;
+        *message_len = 3;
     }
-    else {
-        buf[0] = (char) id;
-        buf[1] = (char) id >> 8;
-        return buf + 2;
-    }
-}
 
-static char *create_length(char *buf, int len) {
-    if (len < 8) {
-        return buf;
-    }
-    if (get_int_bits(len) == 8) {
-        buf[0] = (char) len;
-        return buf + 1;
-    }
-    if (get_int_bits(len) == 16) {
-        buf[0] = (char) len;
-        buf[1] = (char) len >> 8;
-        return buf + 2;
-    }
-    if (get_int_bits(len) == 24) {
-        buf[0] = (char) len;
-        buf[1] = (char) len >> 8;
-        buf[2] = (char) len >> 16;
-        return buf + 3;
-    }
-    return NULL;
-}
 
-static int serialize_lwm2m_node(
-        lwm2m_server *server,
-        lwm2m_node *node,
-        lwm2m_node_type type,
-        char **message,
-        int *message_len) {
+    // Length type
+    if (value_len < 4) {
+        message[0] |= (value_len & 0b00000111);
+    } else {
+        message[0] |= (bytes_required << 3);
 
-    char *main_buf = (char *) malloc(sizeof(char) * 100);
-    char *node_buf = (char *) malloc(sizeof(char) * 100);
-    char *curr_buf;
-    int node_len;
-
-    *message_len = 0;
-
-    lwm2m_map *nodes = get_nodes(node, type);
-    int *keys = (int *) malloc(nodes->size);
-    for (int i = 0; i < nodes->size; i++) {
-        int id = keys[i];
-        lwm2m_node *node = (lwm2m_node*) lwm2m_map_get(nodes, id);
-
-        if (type == OBJECT && !serialize_lwm2m_instance(server, &node->instance, &node_buf, &node_len)) {
-            continue; // can fail when server is not owner of instance
+        // Length field
+        if (bytes_required == 1) {
+            length[0] = (char) value_len;
+            *message_len += 1;
         }
-        if (type != OBJECT && !serialize_lwm2m_resource(server, &node->resource, &node_buf, &node_len, TLV_FORMAT)) {
-            continue; // can fail when READ operation is not supported for resource or is EXECUTE resource
+        if (bytes_required == 2) {
+            length[0] = (char) value_len;
+            length[1] = (char) value_len >> 8;
+            *message_len += 2;
+        }
+        if (bytes_required == 3) {
+            length[0] = (char) value_len;
+            length[1] = (char) value_len >> 8;
+            length[2] = (char) value_len >> 16;
+            *message_len += 3;
+        }
+    }
+};
+
+static void serialize_double(double value, const char *message, int message_len) {
+    memcpy((void *) message, &value, 8);
+}
+
+static void serialize_value(lwm2m_resource *resource, char *message, int *message_len) {
+    if (resource->type == STRING) {
+        *message_len = resource->resource.single.length;
+        memcpy(message, resource->resource.single.value.string_value, *message_len);
+    }
+    if (resource->type == OPAQUE) {
+        *message_len = resource->resource.single.length;
+        memcpy(message, resource->resource.single.value.opaque_value, *message_len);
+    }
+    if (resource->type == INTEGER) {
+        int val = resource->resource.single.value.int_value;
+        *message_len = get_int_bytes(val);
+        memcpy(message, &val, *message_len);
+    }
+    if (resource->type == BOOLEAN) {
+        int val = resource->resource.single.value.bool_value ? 1 : 0;
+        *message_len = 1;
+        memcpy(message, &val, 1);
+    }
+    if (resource->type == DOUBLE) {
+        serialize_double(resource->resource.single.value.double_value, message, 8);
+        *message_len = 8;
+    }
+    if (resource->type == LINK) {
+        lwm2m_link link = resource->resource.single.value.link_value;
+        *message_len = 4;
+        message[0] = (char) (link.object_id);
+        message[1] = (char) (link.object_id >> 8);
+        message[2] = (char) (link.instance_id);
+        message[3] = (char) (link.instance_id >> 8);
+    }
+}
+
+//char *serialize_multiple_resource(lwm2m_resource *resource, int *message_len) {
+//
+//}
+
+/**
+ * TEXT FORMAT
+ * Resource is already checked and READABLE
+ */
+void serialize_resource_text(lwm2m_resource *resource, char *message, int *message_len) {
+    if (resource->type == STRING) {
+        *message_len = resource->resource.single.length;
+        memcpy(message, resource->resource.single.value.string_value, *message_len);
+    }
+    if (resource->type == OPAQUE) {
+        *message_len = resource->resource.single.length;
+        memcpy(message, resource->resource.single.value.opaque_value, *message_len);
+    }
+    if (resource->type == INTEGER) {
+        sprintf(message, "%d", resource->resource.single.value.int_value);
+        *message_len = (int) strlen(message);
+    }
+    if (resource->type == BOOLEAN) {
+        message[0] = (char) (resource->resource.single.value.bool_value ? '1' : '0');
+        message[1] = '\0';
+        *message_len = 1;
+    }
+    if (resource->type == DOUBLE) {
+        sprintf(message, "%f", resource->resource.single.value.double_value);
+        *message_len = (int) strlen(message);
+    }
+    if (resource->type == LINK) {
+        int object_id = resource->resource.single.value.link_value.object_id;
+        int instance_id = resource->resource.single.value.link_value.instance_id;
+        sprintf(message, "%d:%d", object_id, instance_id);
+        *message_len = (int) strlen(message);
+    }
+}
+
+/**
+ * TLV FORMAT
+ * Resource is already checked and READABLE
+ */
+void serialize_single_resource(lwm2m_resource *resource, char *message, int *message_len) {
+    serialize_value(resource, message, message_len);
+}
+
+/**
+ * TLV FORMAT
+ * Resource is already checked and READABLE
+ */
+void serialize_multiple_resource(lwm2m_map *resources, char *message, int *message_len) {
+    char *value_buffer = malloc(sizeof(char) * 100);
+    char *header_buffer = malloc(sizeof(char) * 20);
+    int header_length, value_length;
+    int total_length = 0;
+
+    int keys[resources->size];
+    lwm2m_map_get_keys(resources, keys);
+    for (int i = 0; i < resources->size; ++i) {
+        // Serialize resource instance
+        lwm2m_resource *resource_instance = lwm2m_map_get_resource(resources, keys[i]);
+        serialize_single_resource(resource_instance, value_buffer, &value_length);
+        serialize_header(resource_instance->id, RESOURCE_INSTANCE_TYPE, value_length, header_buffer, &header_length);
+
+        // Copy these to message
+        memcpy(message, header_buffer, header_length);
+        memcpy(message + header_length, value_buffer, value_length);
+        message += header_length + value_length;
+        total_length += header_length + value_length;
+
+    }
+    free(value_buffer);
+    free(header_buffer);
+    *message_len = total_length;
+}
+
+/**
+ * TLV FORMAT
+ * 1. Instance is already granted READ access control for reading server
+ * 2. Resources are already filtered out so they support READ operation
+ */
+void serialize_instance(lwm2m_map *resources, char *message, int *message_len) {
+    char *value_buffer = malloc(sizeof(char) * 1000);
+    char *header_buffer = malloc(sizeof(char) * 20);
+    int header_length, value_length;
+    int total_length = 0;
+
+    int keys[resources->size];
+    lwm2m_map_get_keys(resources, keys);
+    for (int i = 0; i < resources->size; ++i) {
+        lwm2m_resource *resource = lwm2m_map_get_resource(resources, keys[i]);
+
+        // Serialize resource
+        if (resource->multiple) {
+            serialize_multiple_resource(resource->resource.multiple.instances, value_buffer, &value_length);
+            serialize_header(resource->id, MULTIPLE_RESOURCE_TYPE, value_length, header_buffer, &header_length);
+
+        } else {
+            serialize_single_resource(resource, value_buffer, &value_length);
+            serialize_header(resource->id, RESOURCE_TYPE, value_length, header_buffer, &header_length);
         }
 
-        curr_buf = main_buf;
-        curr_buf = create_type_header(curr_buf, node, type, node_len);
-        curr_buf = create_identifier(curr_buf, node, type);
-        curr_buf = create_length(curr_buf, node_len);
-        memcpy(curr_buf, node_buf, node_len);
-
-        *message_len = *message_len + (curr_buf - main_buf + node_len);
+        // Copy these to message
+        memcpy(message, header_buffer, header_length);
+        memcpy(message + header_length, value_buffer, value_length);
+        message += header_length + value_length;
+        total_length += header_length + value_length;
     }
-    *message = main_buf;
-    return 0;
+    free(value_buffer);
+    free(header_buffer);
+    *message_len = total_length;
 }
 
-////// SERIALIZE OBJECTS //////
+/**
+ * TLV FORMAT
+ * Map of instances that are already:
+ * 1. Granted READ access control for reading server
+ * 2. Resources are already filtered out so they support READ operation
+ */
+void serialize_object(lwm2m_map *instances, char *message, int* message_len) {
+    char *value_buffer = malloc(sizeof(char) * 1000);
+    char *header_buffer = malloc(sizeof(char) * 20);
+    int header_length, value_length;
+    int total_length = 0;
 
-int serialize_lwm2m_instance(lwm2m_server *server, lwm2m_instance *instance, char **message, int *message_len) {
-    if (!lwm2m_check_instance_access_control(server, instance, READ)) {
-        return OPERATION_NOT_SUPPORTED;
-    }
-    return serialize_lwm2m_node(server, (lwm2m_node *) instance, INSTANCE, message, message_len);
-}
+    int instance_len;
+    int keys[instances->size];
+    lwm2m_map_get_keys(instances, keys);
+    for (int i = 0; i < instances->size; ++i) {
+        // Serialize instance
+        lwm2m_instance *instance = lwm2m_map_get_instance(instances, keys[i]);
 
-int serialize_lwm2m_object(lwm2m_server *server, lwm2m_object *object, char **message, int *message_len) {
-    return serialize_lwm2m_node(server, (lwm2m_node *) object, OBJECT, message, message_len);
-}
+        serialize_instance(instance->resources, value_buffer, &value_length);
+        serialize_header(instance->id, OBJECT_INSTANCE_TYPE, value_length, header_buffer, &header_length);
 
-int serialize_lwm2m_resource(lwm2m_server* server, lwm2m_resource *resource, char **message, int *message_len, int format) {
-    if (!lwm2m_check_resource_operation_supported(resource, READ)) {
-        return OPERATION_NOT_SUPPORTED;
+        // Copy these to message
+        memcpy(message, header_buffer, header_length);
+        memcpy(message + header_length, value_buffer, value_length);
+        message += header_length + value_length;
+        total_length += header_length + value_length;
     }
-    if (resource->multiple) {
-        return serialize_lwm2m_node(server, (lwm2m_node *) resource, RESOURCE, message, message_len);
-    }
-    else {
-        *message = serialize_lwm2m_value(resource->resource.single.value, resource->type, format);
-        *message_len = strlen(*message);
-    }
+    free(value_buffer);
+    free(header_buffer);
+    *message_len = total_length;
 }

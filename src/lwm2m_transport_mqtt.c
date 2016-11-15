@@ -95,7 +95,6 @@ static lwm2m_response parse_response(char *payload, int payload_len) {
     return response;
 }
 
-
 static void subscribe_init(lwm2m_context *context) {
     char topic_server[100];
     MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
@@ -153,7 +152,7 @@ void publish_connected(lwm2m_context *context) {
 
     char *topic = (char*) malloc(100);
     sprintf(topic, "lynx/clients/%s", context->client_id);
-    MQTTAsync_send(*(context->mqtt_client), topic, 1, "1", 1, 1, &opts);
+    MQTTAsync_send(*(context->mqtt_client), topic, 1, "1", 1, 0, &opts);
     printf("Published %s\n", topic);
 }
 
@@ -172,7 +171,6 @@ static int on_message(void* context, char* topicName, int topicLen, MQTTAsync_me
     receive_message((lwm2m_context *) context, topicName, (char *) message->payload, message->payloadlen);
     return 1; // TODO check if payload is correct (void -> char)
 }
-
 
 ////////////////////////// MAIN //////////////////////////////
 
@@ -206,6 +204,18 @@ void receive_request(lwm2m_context *context, lwm2m_topic topic, char *message, i
     if (!strcmp(LWM2M_OPERATION_BOOTSTRAP_FINISH, topic.operation)) {
         lwm2m_request request = parse_request(message, message_len);
         lwm2m_response response = handle_bootstrap_finish_request(context, topic, request);
+        topic.type = "res";
+        publish_response(context, topic, response);
+    }
+    if (!strcmp(LWM2M_OPERATION_WRITE, topic.operation)) {
+        lwm2m_request request = parse_request(message, message_len);
+        lwm2m_response response = handle_write_request(context, topic, request);
+        topic.type = "res";
+        publish_response(context, topic, response);
+    }
+    if (!strcmp(LWM2M_OPERATION_READ, topic.operation)) {
+        lwm2m_request request = parse_request(message, message_len);
+        lwm2m_response response = handle_read_request(context, topic, request);
         topic.type = "res";
         publish_response(context, topic, response);
     }
@@ -253,7 +263,7 @@ void subscribe_server(lwm2m_context *context, lwm2m_server *server) {
     MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
 
     // Read
-    sprintf(topic_server, "lynx/mr/req/+/+/%s/%d/#", context->client_id, server->short_server_id);
+    sprintf(topic_server, "lynx/mr/req/+/%s/%d/#", context->client_id, server->short_server_id);
     MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
 
     // Write

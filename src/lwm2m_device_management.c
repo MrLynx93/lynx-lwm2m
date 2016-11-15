@@ -1,10 +1,187 @@
-//#include "lwm2m.h"
-//#include "lwm2m_device_management.h"
-//#include "lwm2m_access_control.h"
-//#include "lwm2m_parser.h"
-//
-//
-//
+#include "lwm2m.h"
+#include "lwm2m_device_management.h"
+#include "lwm2m_access_control.h"
+#include "lwm2m_transport.h"
+#include "lwm2m_parser.h"
+
+// new_resource is parsed one. It's convenient to just copy values and free the old ones
+static void merge_resources(lwm2m_resource *old_resource, lwm2m_resource *new_resource) {
+    if (old_resource->multiple) {
+        lwm2m_map *old_resource_instances = old_resource->resource.multiple.instances;
+        lwm2m_map *new_resource_instances = new_resource->resource.multiple.instances;
+
+        int keys[new_resource_instances->size];
+        lwm2m_map_get_keys(new_resource_instances, keys);
+        for (int i = 0; i < new_resource_instances->size; ++i) {
+            lwm2m_resource *new_instance = lwm2m_map_get_resource(new_resource_instances, keys[i]);
+            lwm2m_resource *old_instance = lwm2m_map_get_resource(old_resource_instances, keys[i]);
+            lwm2m_map_put(old_resource_instances, keys[i], new_instance);
+            // TODO free old_instance
+        }
+    } else {
+        old_resource->resource = new_resource->resource;
+    }
+}
+
+int on_resource_write(lwm2m_server *server, lwm2m_resource *resource, char *message, int message_len) {
+    if (!lwm2m_check_instance_access_control(server, resource->instance)) {
+        return RESPONSE_CODE_UNAUTHORIZED;
+    }
+    if (!lwm2m_check_resource_operation_supported(resource, READ)) {
+        return RESPONSE_CODE_METHOD_NOT_ALLOWED;
+    }
+
+    lwm2m_resource *parsed_resource = parse_resource(
+            server->context,
+            resource->instance->object->id,
+            resource->id,
+            message,
+            message_len
+    );
+
+    merge_resources(resource, parsed_resource);
+    if (resource->write_callback != NULL) {
+        resource->write_callback(resource);
+    }
+    return RESPONSE_CODE_CHANGED;
+}
+
+int on_instance_write(lwm2m_server* server, lwm2m_instance* instance, char* message, int message_len) {
+    if (!lwm2m_check_instance_access_control(server, instance)) {
+        return RESPONSE_CODE_UNAUTHORIZED;
+    }
+
+    lwm2m_map *parsed_instance = parse_instance(
+            server->context,
+            instance->object->id,
+            message,
+            message_len
+    );
+
+    // Check if WRITE operation is granted for each resource ???? FOR INSTANCE?
+    int keys[parsed_instance->size];
+    lwm2m_map_get_keys(parsed_instance, keys);
+    for (int i = 0; i < parsed_instance->size; ++i) {
+        lwm2m_resource *resource = lwm2m_map_get_resource(parsed_instance, keys[i]);
+        if (lwm2m_check_resource_operation_supported(resource, WRITE) == false) {
+            return RESPONSE_CODE_METHOD_NOT_ALLOWED;
+        };
+    }
+
+    // Copy all resources and call WRITE callback
+    for (int i = 0; i < parsed_instance->size; ++i) {
+        lwm2m_resource *old_resource = lwm2m_map_get_resource(parsed_instance, keys[i]);
+        lwm2m_resource *new_resource = lwm2m_map_get_resource(instance->resources, keys[i]);
+        merge_resources(old_resource, new_resource);
+        if (old_resource->write_callback != NULL) {
+            old_resource->write_callback(old_resource);
+        }
+    }
+
+    return RESPONSE_CODE_CHANGED;
+}
+
+lwm2m_response on_resource_read(lwm2m_server* server, lwm2m_resource* resource) {
+    lwm2m_response response = {
+            .payload = (char*) malloc(sizeof(char) * 100),
+    };
+
+    if (!lwm2m_check_instance_access_control(server, resource->instance)) {
+        response.content_type = CONTENT_TYPE_NO_FORMAT;
+        response.response_code = RESPONSE_CODE_UNAUTHORIZED;
+        return response;
+    }
+    if (!lwm2m_check_resource_operation_supported(resource, READ)) {
+        response.content_type = CONTENT_TYPE_NO_FORMAT;
+        response.response_code = RESPONSE_CODE_METHOD_NOT_ALLOWED;
+        return response;
+    }
+
+    if (resource->multiple) {
+        serialize_multiple_resource(resource->resource.multiple.instances, response.payload, &response.payload_len);
+        response.content_type = CONTENT_TYPE_TLV;
+    } else {
+        serialize_resource_text(resource, response.payload, &response.payload_len);
+        response.content_type = resource->type == OPAQUE ? CONTENT_TYPE_OPAQUE : CONTENT_TYPE_TEXT;
+    }
+    response.response_code = RESPONSE_CODE_CHANGED;
+    return response;
+}
+
+lwm2m_response on_instance_read(lwm2m_server *server, lwm2m_instance *instance) {
+    lwm2m_response response = {
+            .payload = (char*) malloc(sizeof(char) * 100),
+    };
+    
+    if (!lwm2m_check_instance_access_control(server, instance)) {
+        response.content_type = CONTENT_TYPE_NO_FORMAT;
+        response.response_code = RESPONSE_CODE_UNAUTHORIZED;
+        return response;
+    }
+
+    lwm2m_map *resources_to_parse = lwm2m_map_new();
+
+    int keys[instance->resources->size];
+    lwm2m_map_get_keys(instance->resources, keys);
+    for (int i = 0; i < instance->resources->size; ++i) {
+        lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, keys[i]);
+        if (lwm2m_check_resource_operation_supported(resource, READ)) {
+            lwm2m_map_put(resources_to_parse, resource->id, resource);
+        }
+    }
+    serialize_instance(resources_to_parse, response.payload, &response.payload_len);
+    response.content_type = CONTENT_TYPE_TLV;
+    response.response_code = RESPONSE_CODE_CHANGED;
+    return response;
+}
+
+lwm2m_response on_object_read(lwm2m_server *server, lwm2m_object *object) {
+    lwm2m_response response = {
+            .payload = (char*) malloc(sizeof(char) * 1000),
+            .content_type = CONTENT_TYPE_TLV,
+            .response_code = RESPONSE_CODE_CHANGED,
+    };
+    lwm2m_map *instances_to_parse = lwm2m_map_new();
+
+    // For each instance
+    int keys[object->instances->size];
+    lwm2m_map_get_keys(object->instances, keys);
+    for (int i = 0; i < object->instances->size; ++i) {
+        lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, keys[i]);
+        
+        if (lwm2m_check_instance_access_control(server, instance)) {
+            lwm2m_instance *instance_to_parse = (lwm2m_instance *) malloc(sizeof(lwm2m_instance));
+            instance_to_parse->resources = lwm2m_map_new();
+            instance_to_parse->id = instance->id;
+
+            // For each resource
+            int res_keys[instance->resources->size];
+            lwm2m_map_get_keys(instance->resources, res_keys);
+            for (int j = 0; j < instance->resources->size; ++j) {
+                lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, res_keys[j]);
+
+                if (lwm2m_check_resource_operation_supported(resource, READ)) {
+                    lwm2m_map_put(instance_to_parse->resources, resource->id, resource);
+                }
+            }
+            lwm2m_map_put(instances_to_parse, instance_to_parse->id, instance_to_parse);
+        }
+    }
+    serialize_object(instances_to_parse, response.payload, &response.payload_len);
+    
+    // Free allocated instances
+    int keys2[instances_to_parse->size];
+    lwm2m_map_get_keys(instances_to_parse, keys2);
+    for (int i = 0; i < instances_to_parse->size; ++i) {
+        lwm2m_instance *parsed_instance = lwm2m_map_get_instance(instances_to_parse, keys2[i]);
+        lwm2m_map_free(parsed_instance->resources);
+        free(parsed_instance);
+    }
+    free(instances_to_parse);
+    return response;
+}
+
+
 //static int check_object_access(lwm2m_server *server, lwm2m_object *object) {
 //    if (!lwm2m_check_object_access_control(server, object)) {
 //        return ACCESS_RIGHT_PERMISSION_DENIED;
@@ -19,15 +196,7 @@
 //    return 0;
 //}
 //
-//static int check_resource_access(lwm2m_server *server, lwm2m_resource *resource, int operation) {
-//    if (!lwm2m_check_instance_access_control(server, resource->instance, READ)) {
-//        return ACCESS_RIGHT_PERMISSION_DENIED;
-//    }
-//    if (!lwm2m_check_resource_operation_supported(resource, operation)) {
-//        return OPERATION_NOT_SUPPORTED;
-//    }
-//    return 0;
-//}
+
 //
 //static int on_lwm2m_node_write_attributes(lwm2m_server *server, lwm2m_node *node, lwm2m_type type, char *message) {
 //    lwm2m_map *parsed_attributes = deserialize_lwm2m_attributes(message);

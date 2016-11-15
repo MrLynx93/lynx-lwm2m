@@ -1,9 +1,9 @@
-//#ifndef LYNX_LWM2M_DEVICE_MANAGEMENT_H
-//#define LYNX_LWM2M_DEVICE_MANAGEMENT_H
-//
-//#include "lwm2m.h"
-//#include "lwm2m_object.h"
-//
+#ifndef LYNX_LWM2M_DEVICE_MANAGEMENT_H
+#define LYNX_LWM2M_DEVICE_MANAGEMENT_H
+
+#include "lwm2m.h"
+#include "lwm2m_transport.h"
+
 ///*
 // * All functions except discover and write attributes return error code if some error occurred, in other case returns 0
 // * List of error codes:
@@ -28,11 +28,18 @@
 ////////////// WRITE ///////////
 //
 ///* Checks access control, parses TLV format message and fills values in instance */
-//int on_lwm2m_instance_write(lwm2m_server* server, lwm2m_instance* instance, char* message);
+int on_instance_write(lwm2m_server* server, lwm2m_instance* instance, char* message, int message_len);
 //
 ///* Checks access control, parses message in proper format and fills values in resource */
-//int on_lwm2m_resource_write(lwm2m_server* server, lwm2m_resource* resource, char* message);
+int on_resource_write(lwm2m_server* server, lwm2m_resource* resource, char* message, int message_len);
 //
+
+lwm2m_response on_resource_read(lwm2m_server* server, lwm2m_resource* resource);
+
+lwm2m_response on_instance_read(lwm2m_server *server, lwm2m_instance *instance);
+
+lwm2m_response on_object_read(lwm2m_server *server, lwm2m_object *object);
+
 //
 ////////////// DELETE ///////////
 //
@@ -77,4 +84,4 @@
 //} lwm2m_execute_parameter;
 //
 //
-//#endif //LYNX_LWM2M_DEVICE_MANAGEMENT_H
+#endif //LYNX_LWM2M_DEVICE_MANAGEMENT_H

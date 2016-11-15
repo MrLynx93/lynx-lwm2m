@@ -4,7 +4,7 @@
 #include "lwm2m_bootstrap.h"
 #include "lwm2m_transport.h"
 #include "lwm2m_transport_mqtt.h"
-//#include "lwm2m_device_management.h"
+#include "lwm2m_device_management.h"
 
 
 #define CHARSET "abcdefghijklmnopqrstuvwxyz1234567890"
@@ -59,7 +59,6 @@ char *serialize_topic(lwm2m_topic topic) {
     }
     return buffer;
 }
-
 
 char *generate_token() {
     srand(time(0));
@@ -123,6 +122,49 @@ lwm2m_response handle_bootstrap_finish_request(lwm2m_context *context, lwm2m_top
     };
     return response;
 }
+
+lwm2m_response handle_write_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
+    lwm2m_response response = {
+            .content_type = CONTENT_TYPE_NO_FORMAT,
+            .payload = "",
+            .payload_len = 0,
+    };
+
+    lwm2m_server *server = (lwm2m_server *) lwm2m_map_get(context->servers, atoi(topic.server_id));
+    lwm2m_object *object = lwm2m_map_get_object(context->object_tree, topic.object_id);
+    lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, topic.instance_id);
+
+    if (topic.resource_id != -1) {
+        lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, topic.resource_id);
+        response.response_code = on_resource_write(server, resource, request.payload, (int) request.payload_len);
+    } else {
+        response.response_code = on_instance_write(server, instance, request.payload, (int) request.payload_len);
+    }
+    return response;
+}
+
+lwm2m_response handle_read_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
+    lwm2m_server *server = (lwm2m_server *) lwm2m_map_get(context->servers, atoi(topic.server_id));
+    lwm2m_object *object = lwm2m_map_get_object(context->object_tree, topic.object_id);
+
+    if (topic.instance_id != -1 && topic.resource_id != -1) {
+        lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, topic.instance_id);
+        lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, topic.resource_id);
+        return on_resource_read(server, resource);
+    }
+    else if (topic.instance_id != -1) {
+        lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, topic.instance_id);
+        return on_instance_read(server, instance);
+    } else {
+        return on_object_read(server, object);
+    }
+}
+
+
+
+
+
+///////// PERFORM
 
 void perform_bootstrap_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
     int message_len;

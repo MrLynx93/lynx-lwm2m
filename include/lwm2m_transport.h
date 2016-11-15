@@ -5,6 +5,9 @@
 
 #define RESPONSE_CODE_CREATED 201
 #define RESPONSE_CODE_DELETED 202
+#define RESPONSE_CODE_CHANGED 204
+#define RESPONSE_CODE_UNAUTHORIZED 401
+#define RESPONSE_CODE_METHOD_NOT_ALLOWED 405
 
 #define CONTENT_TYPE_NO_FORMAT 0
 #define CONTENT_TYPE_TEXT 1
@@ -19,6 +22,8 @@
 #define LWM2M_OPERATION_REGISTER       "rr"
 #define LWM2M_OPERATION_DEREGISTER     "rd"
 #define LWM2M_OPERATION_UPDATE         "ru"
+#define LWM2M_OPERATION_WRITE "mw"
+#define LWM2M_OPERATION_READ "mr"
 
 ///////////////// REQUEST /////////////////////
 
@@ -69,6 +74,10 @@ lwm2m_response handle_bootstrap_delete_request(lwm2m_context *context, lwm2m_top
 lwm2m_response handle_bootstrap_write_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
 
 lwm2m_response handle_bootstrap_finish_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
+
+lwm2m_response handle_write_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
+
+lwm2m_response handle_read_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
 
 void perform_bootstrap_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
 

@@ -3,13 +3,13 @@
 
 ///////////////// SERIALIZE OBJECTS AND INSTANCES ////////////////
 
-static char *serialize_object(lwm2m_object* object) {
+static char *create_object_string(lwm2m_object* object) {
     char *buffer = (char *) calloc(10, sizeof(char));
     sprintf(buffer, "</%d>", object->id);
     return buffer;
 }
 
-static char *serialize_object_with_instances(lwm2m_object* object) {
+static char *create_object_with_instances_string(lwm2m_object* object) {
     char *buffer = (char *) calloc(100, sizeof(char));
     char buf[20];
 
@@ -38,9 +38,9 @@ char *serialize_lwm2m_objects_and_instances(lwm2m_context *context) {
         lwm2m_object *object = lwm2m_map_get_object(context->object_tree, object_id);
 
         if (object->instances->size == 0) {
-            strcat(buffer, serialize_object(object));
+            strcat(buffer, create_object_string(object));
         } else {
-            strcat(buffer, serialize_object_with_instances(object));
+            strcat(buffer, create_object_with_instances_string(object));
         }
         // If its not the last one, then append ","
         if (i < context->object_tree->size - 1) {

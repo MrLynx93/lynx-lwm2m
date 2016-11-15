@@ -7,13 +7,13 @@
 ///////////// CHECKING ACCESS CONTROL ///////////////////
 
 /* Checks if object have an access control for a given LWM2M server (used only for create operation) */
-int lwm2m_check_object_access_control(lwm2m_server *server, lwm2m_object *object);
+bool lwm2m_check_object_access_control(lwm2m_server *server, lwm2m_object *object);
 
-/* Checks if instance have an access control for a given LWM2M server and operation */
-int lwm2m_check_instance_access_control(lwm2m_server *server, lwm2m_instance *instance, int operation);
+/* Checks if instance have an access control for a given LWM2M server */
+bool lwm2m_check_instance_access_control(lwm2m_server *server, lwm2m_instance *instance);
 
 /* Checks if resource have an operation supported */
-int lwm2m_check_resource_operation_supported(lwm2m_resource *resource, int operation);
+bool lwm2m_check_resource_operation_supported(lwm2m_resource *resource, int operation);
 
 /////////// GETTING ACCESS CONTROL OBJECT AND RESOURCES ////////////
 

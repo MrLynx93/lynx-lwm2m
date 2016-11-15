@@ -69,19 +69,23 @@ int main(int argc, char *argv[]) {
     context->create_resources_callback = create_example_resources;
     context->factory_bootstrap_callback = perform_factory_bootstrap;
     context->smartcard_bootstrap_callback = NULL;
-    context->client_id = "lynx";
+    context->client_id = "lynx_ep";
     context->broker_address = "tcp://localhost:1883";
     context->endpoint_client_name = "lynx_ep";
 
     lwm2m_start_client(context);
     // This should not exit, as new threads are created
 
-    while(1) {
-        sleep(30);
-        lwm2m_server *server = lwm2m_map_get(context->servers, 123);
+    getchar();
+
+    // Deregister from all servers
+    int keys[context->servers->size];
+    lwm2m_map_get_keys(context->servers, keys);
+    for (int i = 0; i < context->servers->size; ++i) {
+        lwm2m_server *server = lwm2m_map_get(context->servers, keys[i]);
         deregister(server);
-        break;
     }
+    sleep(2);
 }
 
 
@@ -190,7 +194,7 @@ lwm2m_map *create_example_resources(int object_id) {
         resource->name = "Battery level";
         resource->type = INTEGER;
         resource->mandatory = true;
-        resource->operations = READ & WRITE;
+        resource->operations = READ | WRITE;
         resource->read_callback = measure_battery_level;
         lwm2m_map_put(resources, 0, resource);
 
@@ -199,7 +203,7 @@ lwm2m_map *create_example_resources(int object_id) {
         resource->name = "Double example resource";
         resource->type = DOUBLE;
         resource->mandatory = true;
-        resource->operations = READ & WRITE;
+        resource->operations = READ | WRITE;
         lwm2m_map_put(resources, 1, resource);
 
         resource = lwm2m_resource_new(false);
@@ -207,7 +211,7 @@ lwm2m_map *create_example_resources(int object_id) {
         resource->name = "String example resource";
         resource->type = STRING;
         resource->mandatory = true;
-        resource->operations = READ & WRITE;
+        resource->operations = READ | WRITE;
         lwm2m_map_put(resources, 2, resource);
 
         resource = lwm2m_resource_new(false);
@@ -215,7 +219,7 @@ lwm2m_map *create_example_resources(int object_id) {
         resource->name = "Light on";
         resource->type = BOOLEAN;
         resource->mandatory = true;
-        resource->operations = READ & WRITE;
+        resource->operations = READ | WRITE;
         resource->write_callback = switch_light;
         lwm2m_map_put(resources, 3, resource);
 
@@ -224,7 +228,7 @@ lwm2m_map *create_example_resources(int object_id) {
         resource->name = "Opaque example resource";
         resource->type = OPAQUE;
         resource->mandatory = true;
-        resource->operations = READ & WRITE;
+        resource->operations = READ | WRITE;
         lwm2m_map_put(resources, 4, resource);
 
         resource = lwm2m_resource_new(false);
@@ -241,7 +245,7 @@ lwm2m_map *create_example_resources(int object_id) {
         resource->name = "Link example resource";
         resource->type = LINK;
         resource->mandatory = true;
-        resource->operations = READ & WRITE;
+        resource->operations = READ | WRITE;
         lwm2m_map_put(resources, 6, resource);
 
         resource = lwm2m_resource_new(false);
@@ -249,7 +253,7 @@ lwm2m_map *create_example_resources(int object_id) {
         resource->name = "Not mandatory integer example resource";
         resource->type = INTEGER;
         resource->mandatory = false;
-        resource->operations = READ & WRITE;
+        resource->operations = READ | WRITE;
         lwm2m_map_put(resources, 7, resource);
 
         resource = lwm2m_resource_new(true);
@@ -257,7 +261,7 @@ lwm2m_map *create_example_resources(int object_id) {
         resource->name = "Multiple string example resource";
         resource->type = STRING;
         resource->mandatory = true;
-        resource->operations = READ & WRITE;
+        resource->operations = READ | WRITE;
         lwm2m_map_put(resources, 8, resource);
 
         resource = lwm2m_resource_new(true);
