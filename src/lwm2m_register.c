@@ -20,18 +20,15 @@ static void wait_for_registered(lwm2m_context *context) {
 }
 
 static int get_lifetime(lwm2m_instance *server_instance) {
-    lwm2m_resource *lifetime_resource = lwm2m_map_get_resource(server_instance->resources, LIFETIME_RESOURCE_ID);
-    return lifetime_resource->resource.single.value.int_value;
+    return lwm2m_map_get_resource(server_instance->resources, LIFETIME_RESOURCE_ID)->value->int_value;
 }
 
 static char *get_binding_mode(lwm2m_instance *server_instance) {
-    lwm2m_resource *binding_resource = lwm2m_map_get_resource(server_instance->resources, BINDING_RESOURCE_ID);
-    return binding_resource->resource.single.value.string_value;
+    return lwm2m_map_get_resource(server_instance->resources, BINDING_RESOURCE_ID)->value->string_value;
 }
 
 static char *get_endpoint_client_name(lwm2m_instance *server_instance) {
-    lwm2m_resource *binding_resource = lwm2m_map_get_resource(server_instance->resources, BINDING_RESOURCE_ID);
-    return binding_resource->resource.single.value.string_value;
+    return lwm2m_map_get_resource(server_instance->resources, BINDING_RESOURCE_ID)->value->string_value;
 }
 
 static char *serialize_registration_params(lwm2m_server *server) {
@@ -103,7 +100,7 @@ void register_on_server(lwm2m_context *context, lwm2m_instance *server_instance)
     lwm2m_server *server = (lwm2m_server *) malloc(sizeof(lwm2m_server));
     server->context = context;
     server->server_instance = server_instance;
-    server->short_server_id = id_resource->resource.single.value.int_value;
+    server->short_server_id = id_resource->value->int_value;
     subscribe_server(context, server);
 
     char *objects_and_instances = serialize_lwm2m_objects_and_instances(context);

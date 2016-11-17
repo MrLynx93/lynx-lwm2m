@@ -45,11 +45,11 @@
  * |2   | String example resource                   | RW         | Single    | Mandatory | String  |
  * |3   | Light on                                  | RW         | Single    | Mandatory | Boolean |
  * |4   | Opaque example resource                   | RW         | Single    | Mandatory | Opaque  |
- * |5   | Firmwire update resource                  | E          | Single    | Mandatory |         |
+ * |5   | Firmwire update resource                  | E          | Single    | Optional  |         |
  * |6   | Link example resource                     | RW         | Single    | Mandatory | ObjInk  |
  * |7   | Not mandatory integer example resource    | RW         | Single    | Optional  | Integer |
  * |8   | Multiple string example resource          | RW         | Multiple  | Mandatory | String  |
- * |9   | Readonly string example resource          | R          | Single    | Mandatory | String  |
+ * |9   | Readonly string example resource          | R          | Single    | Optional  | String  |
  * +----+-------------------------------------------+------------+-----------+-----------+---------+
  *
  */
@@ -93,11 +93,11 @@ int main(int argc, char *argv[]) {
 
 void measure_battery_level(lwm2m_resource* resource) {
     int battery_level = 20; // On real device this would be read of some sensor
-    resource->resource.single.value.int_value = battery_level;
+    set_value_int(resource, battery_level);
 }
 
 void switch_light(lwm2m_resource *resource) {
-    bool light_turned_on = resource->resource.single.value.bool_value;
+    bool light_turned_on = resource->value->bool_value;
     if (light_turned_on) {
         // On real device you would call turning light on here
     } else {
@@ -113,51 +113,52 @@ void update_firmwire(lwm2m_resource *resource, char *args) {
 
 ///////////////// DEFINITION OF FACTORY BOOTSTRAP ///////////////
 
-void bootstrap_custom_object(lwm2m_context *context) {
-    lwm2m_link self_link;
-    self_link.object_id = 123;
-    self_link.instance_id = 0;
+//void bootstrap_custom_object(lwm2m_context *context) {
+//    lwm2m_link self_link;
+//    self_link.object_id = 123;
+//    self_link.instance_id = 0;
+//
+//    lwm2m_map *multiple_string = lwm2m_map_new();
+//    lwm2m_map_put(multiple_string, 0, "string1"); // TODO should this be lwm2m_value???
+//    lwm2m_map_put(multiple_string, 1, "string2");
+//
+//    lwm2m_object *example_object = lwm2m_map_get(context->object_tree, 123);
+//    lwm2m_instance *example_instance = lwm2m_instance_new_with_id(example_object, 0);
+//    lwm2m_map_get_resource(example_instance->resources, 0)->resource.single.value.int_value = 80;
+//    lwm2m_map_get_resource(example_instance->resources, 1)->resource.single.value.double_value = 0.5;
+//    lwm2m_map_get_resource(example_instance->resources, 2)->resource.single.value.string_value = "example";
+//    lwm2m_map_get_resource(example_instance->resources, 3)->resource.single.value.bool_value = false;
+//    lwm2m_map_get_resource(example_instance->resources, 4)->resource.single.value.opaque_value = "opaque";
+//
+//    lwm2m_map_get_resource(example_instance->resources, 6)->resource.single.value.link_value = self_link;
+////    TODO allow NULL for valueslwm2m_map_get_resource(example_instance->resources, 7)->resource.single.
+//    // TODO WHATS WRONG HERE
+//    lwm2m_map_get_resource(example_instance->resources, 8)->resource.multiple.instances = multiple_string;
+//    lwm2m_map_get_resource(example_instance->resources, 8)->resource.single.value.string_value = "readonlyString";
+//}
 
-    lwm2m_map *multiple_string = lwm2m_map_new();
-    lwm2m_map_put(multiple_string, 0, "string1"); // TODO should this be lwm2m_value???
-    lwm2m_map_put(multiple_string, 1, "string2");
-
-    lwm2m_object *example_object = lwm2m_map_get(context->object_tree, 123);
-    lwm2m_instance *example_instance = lwm2m_instance_new_with_id(example_object, 0);
-    lwm2m_map_get_resource(example_instance->resources, 0)->resource.single.value.int_value = 80;
-    lwm2m_map_get_resource(example_instance->resources, 1)->resource.single.value.double_value = 0.5;
-    lwm2m_map_get_resource(example_instance->resources, 2)->resource.single.value.string_value = "example";
-    lwm2m_map_get_resource(example_instance->resources, 3)->resource.single.value.bool_value = false;
-    lwm2m_map_get_resource(example_instance->resources, 4)->resource.single.value.opaque_value = "opaque";
-
-    lwm2m_map_get_resource(example_instance->resources, 6)->resource.single.value.link_value = self_link;
-//    TODO allow NULL for valueslwm2m_map_get_resource(example_instance->resources, 7)->resource.single.
-    lwm2m_map_get_resource(example_instance->resources, 8)->resource.multiple.instances = multiple_string;
-    lwm2m_map_get_resource(example_instance->resources, 8)->resource.single.value.string_value = "readonlyString";
-}
-
-void bootstrap_security_object(lwm2m_context *context) {
-    lwm2m_object *security_object = lwm2m_map_get(context->object_tree, 0);
-    lwm2m_instance *security_instance = lwm2m_instance_new_with_id(security_object, 0);
-    lwm2m_map_get_resource(security_instance->resources, 0)->resource.single.value.string_value = "lynx-bootstrap-server-old-name";
-    lwm2m_map_get_resource(security_instance->resources, 1)->resource.single.value.bool_value = true;
-    lwm2m_map_get_resource(security_instance->resources, 10)->resource.single.value.int_value = 555;
-}
-
-void bootstrap_server_object(lwm2m_context *context) {
-    lwm2m_object *server_object = lwm2m_map_get(context->object_tree, 1);
-    lwm2m_instance *server_instance = lwm2m_instance_new_with_id(server_object, 0);
-    lwm2m_map_get_resource(server_instance->resources, 0)->resource.single.value.int_value = SHORT_SERVER_ID;
-    lwm2m_map_get_resource(server_instance->resources, 1)->resource.single.value.int_value = 20;
-    lwm2m_map_get_resource(server_instance->resources, 2)->resource.single.value.int_value = 10;
-    lwm2m_map_get_resource(server_instance->resources, 3)->resource.single.value.int_value = 30;
-    lwm2m_map_get_resource(server_instance->resources, 6)->resource.single.value.bool_value = false;
-    lwm2m_map_get_resource(server_instance->resources, 7)->resource.single.value.string_value = "T"; // TCP - this is not specified in LWM2M 1.0
-    // TODO implement registration update trigger resource inside library (set execute callback)
-}
+//void bootstrap_security_object(lwm2m_context *context) {
+//    lwm2m_object *security_object = lwm2m_map_get(context->object_tree, 0);
+//    lwm2m_instance *security_instance = lwm2m_instance_new_with_id(security_object, 0);
+//    lwm2m_map_get_resource(security_instance->resources, 0)->resource.single.value.string_value = "lynx-bootstrap-server-old-name";
+//    lwm2m_map_get_resource(security_instance->resources, 1)->resource.single.value.bool_value = true;
+//    lwm2m_map_get_resource(security_instance->resources, 10)->resource.single.value.int_value = 555;
+//}
+//
+//void bootstrap_server_object(lwm2m_context *context) {
+//    lwm2m_object *server_object = lwm2m_map_get(context->object_tree, 1);
+//    lwm2m_instance *server_instance = lwm2m_instance_new_with_id(server_object, 0);
+//    lwm2m_map_get_resource(server_instance->resources, 0)->resource.single.value.int_value = SHORT_SERVER_ID;
+//    lwm2m_map_get_resource(server_instance->resources, 1)->resource.single.value.int_value = 20;
+//    lwm2m_map_get_resource(server_instance->resources, 2)->resource.single.value.int_value = 10;
+//    lwm2m_map_get_resource(server_instance->resources, 3)->resource.single.value.int_value = 30;
+//    lwm2m_map_get_resource(server_instance->resources, 6)->resource.single.value.bool_value = false;
+//    lwm2m_map_get_resource(server_instance->resources, 7)->resource.single.value.string_value = "T"; // TCP - this is not specified in LWM2M 1.0
+//    // TODO implement registration update trigger resource inside library (set execute callback)
+//}
 
 int perform_factory_bootstrap(lwm2m_context *context) {
-    bootstrap_security_object(context);
+//    bootstrap_security_object(context);
 //    bootstrap_server_object(context);
 //    bootstrap_custom_object(context);
     return 0; // success
@@ -235,7 +236,7 @@ lwm2m_map *create_example_resources(int object_id) {
         resource->id = 5;
         resource->name = "Firmwire update resource";
         resource->type = OPAQUE;
-        resource->mandatory = true;
+        resource->mandatory = false;
         resource->operations = EXECUTE;
         resource->execute_callback = update_firmwire;
         lwm2m_map_put(resources, 5, resource);
@@ -268,7 +269,7 @@ lwm2m_map *create_example_resources(int object_id) {
         resource->id = 9;
         resource->name = "Readonly string example resource";
         resource->type = STRING;
-        resource->mandatory = true;
+        resource->mandatory = false;
         resource->operations = READ;
         lwm2m_map_put(resources, 9, resource);
 

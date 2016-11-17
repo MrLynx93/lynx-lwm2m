@@ -22,8 +22,10 @@
 #define LWM2M_OPERATION_REGISTER       "rr"
 #define LWM2M_OPERATION_DEREGISTER     "rd"
 #define LWM2M_OPERATION_UPDATE         "ru"
+#define LWM2M_OPERATION_CREATE "mc"
 #define LWM2M_OPERATION_WRITE "mw"
 #define LWM2M_OPERATION_READ "mr"
+#define LWM2M_OPERATION_DISCOVER "mm" // todo check
 
 ///////////////// REQUEST /////////////////////
 
@@ -78,6 +80,10 @@ lwm2m_response handle_bootstrap_finish_request(lwm2m_context *context, lwm2m_top
 lwm2m_response handle_write_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
 
 lwm2m_response handle_read_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
+
+lwm2m_response handle_create_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
+
+
 
 void perform_bootstrap_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
 

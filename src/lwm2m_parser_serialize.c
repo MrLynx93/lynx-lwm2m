@@ -80,30 +80,35 @@ static void serialize_double(double value, const char *message, int message_len)
 }
 
 static void serialize_value(lwm2m_resource *resource, char *message, int *message_len) {
+    if (resource->value == NULL) {
+        *message_len = 0;
+        return;
+    }
+
     if (resource->type == STRING) {
-        *message_len = resource->resource.single.length;
-        memcpy(message, resource->resource.single.value.string_value, *message_len);
+        *message_len = resource->length;
+        strcpy(message, resource->value->string_value);
     }
     if (resource->type == OPAQUE) {
-        *message_len = resource->resource.single.length;
-        memcpy(message, resource->resource.single.value.opaque_value, *message_len);
+        *message_len = resource->length;
+        memcpy(message, resource->value->opaque_value, (size_t) *message_len);
     }
     if (resource->type == INTEGER) {
-        int val = resource->resource.single.value.int_value;
+        int val = resource->value->int_value;
         *message_len = get_int_bytes(val);
         memcpy(message, &val, *message_len);
     }
     if (resource->type == BOOLEAN) {
-        int val = resource->resource.single.value.bool_value ? 1 : 0;
+        int val = resource->value->bool_value ? 1 : 0;
         *message_len = 1;
         memcpy(message, &val, 1);
     }
     if (resource->type == DOUBLE) {
-        serialize_double(resource->resource.single.value.double_value, message, 8);
+        serialize_double(resource->value->double_value, message, 8);
         *message_len = 8;
     }
     if (resource->type == LINK) {
-        lwm2m_link link = resource->resource.single.value.link_value;
+        lwm2m_link link = resource->value->link_value;
         *message_len = 4;
         message[0] = (char) (link.object_id);
         message[1] = (char) (link.object_id >> 8);
@@ -112,39 +117,40 @@ static void serialize_value(lwm2m_resource *resource, char *message, int *messag
     }
 }
 
-//char *serialize_multiple_resource(lwm2m_resource *resource, int *message_len) {
-//
-//}
-
 /**
  * TEXT FORMAT
  * Resource is already checked and READABLE
  */
 void serialize_resource_text(lwm2m_resource *resource, char *message, int *message_len) {
+    if (resource->value == NULL) {
+        *message_len = 0;
+        return;
+    }
+
     if (resource->type == STRING) {
-        *message_len = resource->resource.single.length;
-        memcpy(message, resource->resource.single.value.string_value, *message_len);
+        *message_len = resource->length;
+        strcpy(message, resource->value->string_value);
     }
     if (resource->type == OPAQUE) {
-        *message_len = resource->resource.single.length;
-        memcpy(message, resource->resource.single.value.opaque_value, *message_len);
+        *message_len = resource->length;
+        memcpy(message, resource->value->opaque_value, (size_t) *message_len);
     }
     if (resource->type == INTEGER) {
-        sprintf(message, "%d", resource->resource.single.value.int_value);
+        sprintf(message, "%d", resource->value->int_value);
         *message_len = (int) strlen(message);
     }
     if (resource->type == BOOLEAN) {
-        message[0] = (char) (resource->resource.single.value.bool_value ? '1' : '0');
+        message[0] = (char) (resource->value->bool_value ? '1' : '0');
         message[1] = '\0';
         *message_len = 1;
     }
     if (resource->type == DOUBLE) {
-        sprintf(message, "%f", resource->resource.single.value.double_value);
+        sprintf(message, "%f", resource->value->double_value);
         *message_len = (int) strlen(message);
     }
     if (resource->type == LINK) {
-        int object_id = resource->resource.single.value.link_value.object_id;
-        int instance_id = resource->resource.single.value.link_value.instance_id;
+        int object_id = resource->value->link_value.object_id;
+        int instance_id = resource->value->link_value.instance_id;
         sprintf(message, "%d:%d", object_id, instance_id);
         *message_len = (int) strlen(message);
     }
@@ -206,7 +212,7 @@ void serialize_instance(lwm2m_map *resources, char *message, int *message_len) {
 
         // Serialize resource
         if (resource->multiple) {
-            serialize_multiple_resource(resource->resource.multiple.instances, value_buffer, &value_length);
+            serialize_multiple_resource(resource->instances, value_buffer, &value_length);
             serialize_header(resource->id, MULTIPLE_RESOURCE_TYPE, value_length, header_buffer, &header_length);
 
         } else {

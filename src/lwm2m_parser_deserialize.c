@@ -149,8 +149,8 @@ static lwm2m_value parse_value(char *message, int message_len, lwm2m_type type) 
         }
         case LINK: {
             lwm2m_link link;
-            link.object_id = parse_int(message + 2, 16);
-            link.instance_id = parse_int(message, 16);
+            link.object_id = parse_int(message + 2, 2);
+            link.instance_id = parse_int(message, 2);
             value.link_value = link;
             break;
         }
@@ -169,10 +169,8 @@ lwm2m_map *parse_multiple_resource(lwm2m_context *context, int object_id, int re
 
         lwm2m_resource *resource_instance = create_resource(context, object_id, resource_id);
         resource_instance->id = resource_header.id;
-        resource_instance->resource.single.value = parse_value(curr, resource_header.length, resource_instance->type);
-        if (resource_instance->type == STRING || resource_instance->type == OPAQUE) {
-            resource_instance->resource.single.length = resource_instance->resource.single.length;
-        }
+        lwm2m_value value = parse_value(curr, resource_header.length, resource_instance->type);
+        set_value(resource_instance, value, resource_header.length);
 
         lwm2m_map_put(resources, resource_instance->id, resource_instance);
         curr = curr + resource_header.length;
@@ -185,13 +183,10 @@ lwm2m_resource *parse_resource(lwm2m_context *context, int object_id, int resour
     lwm2m_resource *resource = create_resource(context, object_id, resource_id);
     if (resource->multiple) {
         lwm2m_map *resource_instances = parse_multiple_resource(context, object_id, resource_id, message, message_len);
-        resource->resource.multiple.instances = resource_instances;
+        resource->instances = resource_instances;
     } else {
         lwm2m_value value = parse_value_text(message, message_len, resource->type);
-        resource->resource.single.value = value;
-        if (resource->type == STRING || resource->type == OPAQUE) {
-            resource->resource.single.length = message_len;
-        }
+        set_value(resource, value, message_len);
     }
     return resource;
 }
@@ -208,15 +203,10 @@ lwm2m_map *parse_instance(lwm2m_context *context, int object_id, char *message, 
         lwm2m_resource *resource = create_resource(context, object_id, resource_header.id);
 
         if (resource_header.type == MULTIPLE_RESOURCE_TYPE) {
-            lwm2m_map *resource_instances = parse_multiple_resource(context, object_id, resource->id, curr, resource_header.length);
-            resource->resource.multiple.instances = resource_instances;
-
+            resource->instances = parse_multiple_resource(context, object_id, resource->id, curr, resource_header.length);
         } else {
             lwm2m_value value = parse_value(curr, resource_header.length, resource->type);
-            resource->resource.single.value = value;
-            if (resource->type == STRING || resource->type == OPAQUE) {
-                resource->resource.single.length = resource_header.length;
-            }
+            set_value(resource, value, resource_header.length);
         }
         lwm2m_map_put(resources, resource->id, resource);
         curr = curr + resource_header.length;

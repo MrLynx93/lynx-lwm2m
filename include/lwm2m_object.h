@@ -67,6 +67,14 @@ typedef struct lwm2m_attribute {
     lwm2m_value numeric_value;
 } lwm2m_attribute;
 
+
+void merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource, bool call_callback);
+
+void merge_resources(lwm2m_map *old_resources, lwm2m_map *new_resources, bool call_callback);
+
+
+
+
 lwm2m_attribute *new_int_attribute(char* name, int value, int access_mode);
 
 /* Definition of general attribute value types */
@@ -117,10 +125,10 @@ struct lwm2m_instance {
 };
 
 /* Constructor */
-lwm2m_instance *lwm2m_instance_new(lwm2m_object *object);
+lwm2m_instance *lwm2m_instance_new(lwm2m_context *context, int object_id);
 
 /* Constructor */
-lwm2m_instance *lwm2m_instance_new_with_id(lwm2m_object *object, int id);
+lwm2m_instance *lwm2m_instance_new_with_id(lwm2m_context *context, int object_id, int instance_id);
 
 /* Removes instance from object together with resources and access control instance */
 void lwm2m_delete_instance(lwm2m_instance *instance);
@@ -146,9 +154,13 @@ typedef union lwm2m_resource_real {
 struct lwm2m_resource {
     int id;
     lwm2m_instance *instance;
-    lwm2m_resource_real resource;
-    char *name;
+
+    lwm2m_value *value;
     lwm2m_type type;
+    int length;
+    lwm2m_map *instances;
+
+    char *name;
     lwm2m_map *attributes;
     int operations;
     bool multiple;
@@ -160,6 +172,15 @@ struct lwm2m_resource {
 
 /* Constructor */
 lwm2m_resource *lwm2m_resource_new(bool multiple);
+
+void set_value_int(lwm2m_resource *resource, int value);
+void set_value_bool(lwm2m_resource *resource, bool value);
+void set_value_double(lwm2m_resource *resource, double value);
+void set_value_link(lwm2m_resource *resource, lwm2m_link value);
+void set_value_string(lwm2m_resource *resource, char *value);
+void set_value_opaque(lwm2m_resource *resource, char *value, int length);
+void set_value(lwm2m_resource *resource, lwm2m_value value, int length);
+void set_null(lwm2m_resource *resource);
 
 /////////////// NODE ///////////////////
 

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define INITIAL_SIZE 1024
+#define INITIAL_SIZE 100
 #define MAP_FULL -1
 
 static int lwm2m_map_hash(lwm2m_map *map, int key);
@@ -14,7 +14,8 @@ static int hash_string(lwm2m_map *map, char *key);
 
 lwm2m_map *lwm2m_map_new() {
     lwm2m_map *map = (lwm2m_map *) malloc(sizeof(lwm2m_map));
-    map->data = (element *) calloc(INITIAL_SIZE, sizeof(element));
+    void* c = malloc(INITIAL_SIZE * sizeof(element));
+    map->data = (element *) c;
     map->table_size = INITIAL_SIZE;
     map->size = 0;
     return map;

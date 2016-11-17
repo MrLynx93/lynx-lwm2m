@@ -13,11 +13,12 @@
 #include <paho/MQTTClient.h>
 #include <paho/MQTTAsync.h>
 
-#define READ 1
-#define WRITE 2
-#define EXECUTE 4
-#define DELETE 8
-#define CREATE 16
+#define NOOP    0
+#define READ    1 << 0
+#define WRITE   1 << 1
+#define EXECUTE 1 << 2
+#define DELETE  1 << 3
+#define CREATE  1 << 4
 
 //////////////////// ERRORS //////////////////////////
 

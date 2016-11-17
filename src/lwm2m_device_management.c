@@ -1,25 +1,24 @@
 #include "lwm2m.h"
 #include "lwm2m_device_management.h"
 #include "lwm2m_access_control.h"
-#include "lwm2m_transport.h"
 #include "lwm2m_parser.h"
 
-// new_resource is parsed one. It's convenient to just copy values and free the old ones
-static void merge_resources(lwm2m_resource *old_resource, lwm2m_resource *new_resource) {
-    if (old_resource->multiple) {
-        lwm2m_map *old_resource_instances = old_resource->resource.multiple.instances;
-        lwm2m_map *new_resource_instances = new_resource->resource.multiple.instances;
+#define PAD_LEN 30
+#define STR_LEN 30
 
-        int keys[new_resource_instances->size];
-        lwm2m_map_get_keys(new_resource_instances, keys);
-        for (int i = 0; i < new_resource_instances->size; ++i) {
-            lwm2m_resource *new_instance = lwm2m_map_get_resource(new_resource_instances, keys[i]);
-            lwm2m_resource *old_instance = lwm2m_map_get_resource(old_resource_instances, keys[i]);
-            lwm2m_map_put(old_resource_instances, keys[i], new_instance);
-            // TODO free old_instance
-        }
+/***
+     * [1]
+     * If a new Object Instance is created through that operation and
+     * the LWM2M Client has more than one LWM2M Server Account, then
+     * the LWM2M Client creates an Access Control Object Instance for
+     * the created Object Instance
+     */
+
+static lwm2m_map* __create_resources(lwm2m_context *context, int object_id) {
+    if (object_id == SECURITY_OBJECT_ID || object_id == SERVER_OBJECT_ID || object_id == ACCESS_CONTROL_OBJECT_ID) {
+        return context->create_standard_resources_callback(object_id);
     } else {
-        old_resource->resource = new_resource->resource;
+        return context->create_resources_callback(object_id);
     }
 }
 
@@ -39,51 +38,37 @@ int on_resource_write(lwm2m_server *server, lwm2m_resource *resource, char *mess
             message_len
     );
 
-    merge_resources(resource, parsed_resource);
-    if (resource->write_callback != NULL) {
-        resource->write_callback(resource);
-    }
+    /**** Copy value and call WRITE callback *****/
+    merge_resource(resource, parsed_resource, true);
+
     return RESPONSE_CODE_CHANGED;
 }
 
-int on_instance_write(lwm2m_server* server, lwm2m_instance* instance, char* message, int message_len) {
+int on_instance_write(lwm2m_server *server, lwm2m_instance *instance, char *message, int message_len) {
     if (!lwm2m_check_instance_access_control(server, instance)) {
         return RESPONSE_CODE_UNAUTHORIZED;
     }
+    lwm2m_map *parsed_resources = parse_instance(server->context, instance->object->id, message, message_len);
 
-    lwm2m_map *parsed_instance = parse_instance(
-            server->context,
-            instance->object->id,
-            message,
-            message_len
-    );
-
-    // Check if WRITE operation is granted for each resource ???? FOR INSTANCE?
-    int keys[parsed_instance->size];
-    lwm2m_map_get_keys(parsed_instance, keys);
-    for (int i = 0; i < parsed_instance->size; ++i) {
-        lwm2m_resource *resource = lwm2m_map_get_resource(parsed_instance, keys[i]);
-        if (lwm2m_check_resource_operation_supported(resource, WRITE) == false) {
+    /**** Error if any of resources is not writeable ****/
+    int keys[parsed_resources->size];
+    lwm2m_map_get_keys(parsed_resources, keys);
+    for (int i = 0; i < parsed_resources->size; ++i) {
+        lwm2m_resource *resource = lwm2m_map_get_resource(parsed_resources, keys[i]);
+        if (!lwm2m_check_resource_operation_supported(resource, WRITE)) {
             return RESPONSE_CODE_METHOD_NOT_ALLOWED;
         };
     }
 
-    // Copy all resources and call WRITE callback
-    for (int i = 0; i < parsed_instance->size; ++i) {
-        lwm2m_resource *old_resource = lwm2m_map_get_resource(parsed_instance, keys[i]);
-        lwm2m_resource *new_resource = lwm2m_map_get_resource(instance->resources, keys[i]);
-        merge_resources(old_resource, new_resource);
-        if (old_resource->write_callback != NULL) {
-            old_resource->write_callback(old_resource);
-        }
-    }
+    /**** Copy all resources and call WRITE callback ****/
+    merge_resources(instance->resources, parsed_resources, true);
 
     return RESPONSE_CODE_CHANGED;
 }
 
-lwm2m_response on_resource_read(lwm2m_server* server, lwm2m_resource* resource) {
+lwm2m_response on_resource_read(lwm2m_server *server, lwm2m_resource *resource) {
     lwm2m_response response = {
-            .payload = (char*) malloc(sizeof(char) * 100),
+            .payload = (char *) malloc(sizeof(char) * 100),
     };
 
     if (!lwm2m_check_instance_access_control(server, resource->instance)) {
@@ -98,7 +83,7 @@ lwm2m_response on_resource_read(lwm2m_server* server, lwm2m_resource* resource) 
     }
 
     if (resource->multiple) {
-        serialize_multiple_resource(resource->resource.multiple.instances, response.payload, &response.payload_len);
+        serialize_multiple_resource(resource->instances, response.payload, &response.payload_len);
         response.content_type = CONTENT_TYPE_TLV;
     } else {
         serialize_resource_text(resource, response.payload, &response.payload_len);
@@ -110,9 +95,9 @@ lwm2m_response on_resource_read(lwm2m_server* server, lwm2m_resource* resource) 
 
 lwm2m_response on_instance_read(lwm2m_server *server, lwm2m_instance *instance) {
     lwm2m_response response = {
-            .payload = (char*) malloc(sizeof(char) * 100),
+            .payload = (char *) malloc(sizeof(char) * 100),
     };
-    
+
     if (!lwm2m_check_instance_access_control(server, instance)) {
         response.content_type = CONTENT_TYPE_NO_FORMAT;
         response.response_code = RESPONSE_CODE_UNAUTHORIZED;
@@ -121,6 +106,7 @@ lwm2m_response on_instance_read(lwm2m_server *server, lwm2m_instance *instance) 
 
     lwm2m_map *resources_to_parse = lwm2m_map_new();
 
+    /**** Parse only resources that are readable ****/
     int keys[instance->resources->size];
     lwm2m_map_get_keys(instance->resources, keys);
     for (int i = 0; i < instance->resources->size; ++i) {
@@ -130,6 +116,7 @@ lwm2m_response on_instance_read(lwm2m_server *server, lwm2m_instance *instance) 
         }
     }
     serialize_instance(resources_to_parse, response.payload, &response.payload_len);
+
     response.content_type = CONTENT_TYPE_TLV;
     response.response_code = RESPONSE_CODE_CHANGED;
     return response;
@@ -137,29 +124,29 @@ lwm2m_response on_instance_read(lwm2m_server *server, lwm2m_instance *instance) 
 
 lwm2m_response on_object_read(lwm2m_server *server, lwm2m_object *object) {
     lwm2m_response response = {
-            .payload = (char*) malloc(sizeof(char) * 1000),
+            .payload = (char *) malloc(sizeof(char) * 1000),
             .content_type = CONTENT_TYPE_TLV,
             .response_code = RESPONSE_CODE_CHANGED,
     };
     lwm2m_map *instances_to_parse = lwm2m_map_new();
 
-    // For each instance
     int keys[object->instances->size];
     lwm2m_map_get_keys(object->instances, keys);
     for (int i = 0; i < object->instances->size; ++i) {
         lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, keys[i]);
-        
+
+        /**** Parse only instances, that have granted READ access ****/
         if (lwm2m_check_instance_access_control(server, instance)) {
             lwm2m_instance *instance_to_parse = (lwm2m_instance *) malloc(sizeof(lwm2m_instance));
             instance_to_parse->resources = lwm2m_map_new();
             instance_to_parse->id = instance->id;
 
-            // For each resource
             int res_keys[instance->resources->size];
             lwm2m_map_get_keys(instance->resources, res_keys);
             for (int j = 0; j < instance->resources->size; ++j) {
                 lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, res_keys[j]);
 
+                /**** Parse only resources that are readable ****/
                 if (lwm2m_check_resource_operation_supported(resource, READ)) {
                     lwm2m_map_put(instance_to_parse->resources, resource->id, resource);
                 }
@@ -168,8 +155,8 @@ lwm2m_response on_object_read(lwm2m_server *server, lwm2m_object *object) {
         }
     }
     serialize_object(instances_to_parse, response.payload, &response.payload_len);
-    
-    // Free allocated instances
+
+    /**** Free parsed instances ****/
     int keys2[instances_to_parse->size];
     lwm2m_map_get_keys(instances_to_parse, keys2);
     for (int i = 0; i < instances_to_parse->size; ++i) {
@@ -178,9 +165,222 @@ lwm2m_response on_object_read(lwm2m_server *server, lwm2m_object *object) {
         free(parsed_instance);
     }
     free(instances_to_parse);
+
     return response;
 }
 
+lwm2m_response on_instance_create(lwm2m_server *server, lwm2m_object *object, int instance_id, char *message, int message_len) {
+    lwm2m_context *context = server->context;
+    lwm2m_response response = {
+            .payload = NULL,
+            .payload_len = 0
+    };
+
+    /***** Check access in ACO Instance assigned to LWM2M Object *****/
+    if (!check_create_object_access_control(server, object)) {
+        response.content_type = CONTENT_TYPE_NO_FORMAT;
+        response.response_code = RESPONSE_CODE_UNAUTHORIZED;
+        return response;
+    }
+
+    /***** If one instance is allowed, then instance's ID=0 *****/
+    if (object->multiple == false) {
+        instance_id = 0;
+    }
+
+    /***** Error if ID already exists *****/
+    lwm2m_instance *old_instance = lwm2m_map_get_instance(object->instances, instance_id);
+    if (old_instance != NULL) {
+        response.content_type = CONTENT_TYPE_NO_FORMAT;
+        response.response_code = RESPONSE_CODE_METHOD_NOT_ALLOWED;
+        return response;
+    }
+
+    lwm2m_map *resources = lwm2m_map_new();
+    lwm2m_map *template_resources = __create_resources(context, object->id);
+    lwm2m_map *parsed_resources = parse_instance(context, object->id, message, message_len);
+
+    int keys[template_resources->size];
+    lwm2m_map_get_keys(template_resources, keys);
+    for (int i = 0; i < template_resources->size; ++i) {
+        lwm2m_resource *template_resource = lwm2m_map_get_resource(template_resources, keys[i]);
+        lwm2m_resource *parsed_resource = lwm2m_map_get_resource(parsed_resources, keys[i]);
+
+        /***** Error id not all mandatory resources are provided  ******/
+        if (template_resource->mandatory && parsed_resource == NULL) {
+            response.content_type = CONTENT_TYPE_NO_FORMAT;
+            response.response_code = RESPONSE_CODE_METHOD_NOT_ALLOWED; // TODO check
+            return response; // TODO free payload?
+        }
+
+        /***** Ignore read-only resource *******/
+        if (parsed_resource != NULL && template_resource->operations & WRITE) {
+            lwm2m_map_put(resources, parsed_resource->id, parsed_resource);
+        }
+
+        // TODO Can resource be mandatory and read-only?
+    }
+
+    /***** Create instance and add to object *******/
+    lwm2m_instance *instance = instance_id == -1
+                               ? lwm2m_instance_new(context, object->id)
+                               : lwm2m_instance_new_with_id(context, object->id, instance_id);
+    instance->object = object;
+    lwm2m_map_put(object->instances, instance->id, instance);
+
+    /**** [1] Create ACO for new instance *****/
+    if (context->servers->size > 1) {
+        lwm2m_instance_create_aco_instance(server, instance);
+    }
+    merge_resources(instance->resources, resources, true);
+
+    response.content_type = CONTENT_TYPE_NO_FORMAT;
+    response.response_code = RESPONSE_CODE_CREATED;
+    return response;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void subst(char *s, char from, char to) {
+    while (*s == from)
+        *s++ = to;
+}
+
+void DUMP_MULTIPLE_RESOURCE(lwm2m_resource *resource) {
+    char buffer[100], header[20], value[100];
+    int value_len;
+
+    sprintf(header, "/%d/%d/%d", resource->instance->object->id, resource->instance->id, resource->id);
+    sprintf(buffer, "%0*d", (int) (PAD_LEN + STR_LEN + 2 - strlen(header)), 0);
+    subst(buffer, '0', '.');
+    printf("%s%s\n", header, buffer);
+
+    lwm2m_map *instances = resource->instances;
+    int keys[instances->size];
+    lwm2m_map_get_keys(instances, keys);
+    
+    for (int i = 0; i < instances->size; ++i) {
+        lwm2m_resource *instance = lwm2m_map_get_resource(instances, keys[i]);
+        serialize_resource_text(instance, value, &value_len);
+
+        sprintf(header, "/%d/%d/%d/%d", resource->instance->object->id, resource->instance->id, resource->id, instance->id);
+        sprintf(buffer, "%0*d", (int) (PAD_LEN - strlen(header)), 0);
+        subst(buffer, '0', '.');
+
+        if (resource->type == OPAQUE) {
+            printf("%s%s[", header, buffer);
+            if (value_len == 0) {
+                printf("-------------%s-------------", resource->type == NONE ? "EXEC" : "NULL");
+            } else {
+                for (int j = 0; j < 10; ++j) {
+                    if (j < instance->length) {
+                        printf("x%02X", value[j]);
+                    } else {
+                        printf("   ");
+                    }
+                }
+            }
+            printf("]");
+        } else {
+            printf("%s%s[%-30s]", header, buffer, value);
+        }
+        printf(".%c.....%s\n", resource->mandatory ? 'M' : '.', resource->name);
+    }
+}
+
+void DUMP_SINGLE_RESOURCE(lwm2m_resource *resource) {
+    char buffer[100], header[20], value[100];
+    int value_len;
+
+    serialize_resource_text(resource, value, &value_len);
+    if (value_len == 0) {
+        strcpy(value, resource->type == NONE ? "-------------EXEC-------------" : "-------------NULL-------------");
+    }
+    sprintf(header, "/%d/%d/%d", resource->instance->object->id, resource->instance->id, resource->id);
+
+    sprintf(buffer, "%0*d", (int) (PAD_LEN - strlen(header)), 0);
+    subst(buffer, '0', '.');
+    if (resource->type == OPAQUE) {
+        printf("%s%s[", header, buffer);
+        if (value_len == 0) {
+            printf("-------------%s-------------", resource->type == NONE ? "EXEC" : "NULL");
+        } else {
+            for (int i = 0; i < 10; ++i) {
+                if (i < value_len) {
+                    printf("x%02X", value[i]);
+                } else {
+                    printf("   ");
+                }
+            }
+        }
+
+        printf("]");
+    } else {
+        printf("%s%s[%-30s]", header, buffer, value);
+    }
+    printf(".%c.....%s\n", resource->mandatory ? 'M' : '.', resource->name);
+}
+
+void DUMP_INSTANCE(lwm2m_instance *instance) {
+    char header[20], buffer[100];
+    sprintf(header, "/%d/%d", instance->object->id, instance->id);
+    sprintf(buffer, "%0*d", (int) (PAD_LEN - strlen(header) + STR_LEN + 2), 0);
+    subst(buffer, '0', '.');
+    printf("%s%s\n", header, buffer);
+
+    int keys[instance->resources->size];
+    lwm2m_map_get_keys(instance->resources, keys);
+    for (int i = 0; i < instance->resources->size; ++i) {
+        lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, keys[i]);
+        if (resource->multiple) {
+            DUMP_MULTIPLE_RESOURCE(resource);
+        } else {
+            DUMP_SINGLE_RESOURCE(resource);
+        }
+    }
+}
+
+void DUMP_OBJECT(lwm2m_object *object) {
+    char header[20], buffer[100];
+    sprintf(header, "/%d", object->id);
+    sprintf(buffer, "%0*d", (int) (PAD_LEN - strlen(header) + STR_LEN + 2), 0);
+    subst(buffer, '0', '.');
+    printf("%s%s\n", header, buffer);
+
+    int keys[object->instances->size];
+    lwm2m_map_get_keys(object->instances, keys);
+    for (int i = 0; i < object->instances->size; ++i) {
+        lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, keys[i]);
+        DUMP_INSTANCE(instance);
+    }
+}
+
+void DUMP_ALL(lwm2m_context *context) {
+    int keys[context->object_tree->size];
+    lwm2m_map_get_keys(context->object_tree, keys);
+
+    for (int i = 0; i < context->object_tree->size; ++i) {
+        lwm2m_object *object = lwm2m_map_get_object(context->object_tree, keys[i]);
+        DUMP_OBJECT(object);
+    }
+}
 
 //static int check_object_access(lwm2m_server *server, lwm2m_object *object) {
 //    if (!lwm2m_check_object_access_control(server, object)) {

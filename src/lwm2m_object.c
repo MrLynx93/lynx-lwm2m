@@ -2,6 +2,122 @@
 #include "lwm2m.h"
 #include "map.h"
 
+void set_value_int(lwm2m_resource *resource, int value) {
+    if (resource->value == NULL) {
+        resource->value = (lwm2m_value *) malloc(sizeof(lwm2m_value));
+    }
+    resource->value->int_value = value;
+}
+
+void set_value_bool(lwm2m_resource *resource, bool value) {
+    if (resource->value == NULL) {
+        resource->value = (lwm2m_value *) malloc(sizeof(lwm2m_value));
+    }
+    resource->value->bool_value = value;
+    resource->length = 0;
+}
+
+void set_value_double(lwm2m_resource *resource, double value) {
+    if (resource->value == NULL) {
+        resource->value = (lwm2m_value *) malloc(sizeof(lwm2m_value));
+    }
+    resource->value->double_value = value;
+    resource->length = 0;
+}
+
+void set_value_link(lwm2m_resource *resource, lwm2m_link value) {
+    if (resource->value == NULL) {
+        resource->value = (lwm2m_value *) malloc(sizeof(lwm2m_value));
+    }
+    resource->value->link_value = value;
+    resource->length = 0;
+}
+
+void set_value_string(lwm2m_resource *resource, char *value) {
+    if (resource->value == NULL) {
+        resource->value = (lwm2m_value *) malloc(sizeof(lwm2m_value));
+    }
+    resource->value->string_value = value;
+    resource->length = (int) strlen(value);
+}
+
+void set_value_opaque(lwm2m_resource *resource, char *value, int length) {
+    if (resource->value == NULL) {
+        resource->value = (lwm2m_value *) malloc(sizeof(lwm2m_value));
+    }
+    resource->value->string_value = value;
+    resource->length = length;
+}
+
+void set_value(lwm2m_resource *resource, lwm2m_value value, int length) {
+    if (resource->value == NULL) {
+        resource->value = (lwm2m_value *) malloc(sizeof(lwm2m_value));
+    }
+    if (resource->type == OPAQUE) {
+        resource->value->opaque_value = value.opaque_value;
+        resource->length = length;
+    }
+    else if (resource->type == STRING) {
+        resource->value->string_value = value.string_value;
+        resource->length = length;
+    }
+    else {
+        *resource->value = value;
+        resource->length = 0;
+    }
+}
+
+void set_null(lwm2m_resource *resource) {
+    if (resource->value != NULL) {
+        free(resource->value);
+    }
+    resource->value = NULL;
+    resource->length = 0;
+}
+
+// new_resource is parsed one. It's convenient to just copy values and free the old ones
+void merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource, bool call_callback) {
+    if (old_resource->multiple) {
+        lwm2m_map *old_resource_instances = old_resource->instances;
+        lwm2m_map *new_resource_instances = new_resource->instances;
+
+        int keys[new_resource_instances->size];
+        lwm2m_map_get_keys(new_resource_instances, keys);
+        for (int i = 0; i < new_resource_instances->size; ++i) {
+            lwm2m_resource *new_instance = lwm2m_map_get_resource(new_resource_instances, keys[i]);
+            lwm2m_resource *old_instance = lwm2m_map_get_resource(old_resource_instances, keys[i]);
+            if (old_instance == NULL) {
+                lwm2m_map_put(old_resource_instances, new_instance->id, new_instance);
+            } else {
+                if (new_resource->value == NULL) {
+                    set_null(old_instance);
+                } else {
+                    set_value(old_instance, *new_instance->value, new_instance->length);
+                }
+            }
+            // TODO free old_instance value ????
+        }
+    } else {
+        if (new_resource->value == NULL) {
+            set_null(old_resource);
+        } else {
+            set_value(old_resource, *new_resource->value, new_resource->length);
+        }
+    }
+    if (call_callback && old_resource->write_callback != NULL) {
+        old_resource->write_callback(old_resource);
+    }
+}
+
+void merge_resources(lwm2m_map *old_resources, lwm2m_map *new_resources, bool call_callback) {
+    int keys[new_resources->size];
+    lwm2m_map_get_keys(new_resources, keys);
+    for (int i = 0; i < new_resources->size; ++i) {
+        lwm2m_resource *old_resource = lwm2m_map_get_resource(old_resources, keys[i]);
+        lwm2m_resource *new_resource = lwm2m_map_get_resource(new_resources, keys[i]);
+        merge_resource(old_resource, new_resource, call_callback);
+    }
+}
 
 ///////////// FREE MEMORY /////////////////
 
@@ -79,24 +195,34 @@ lwm2m_object *lwm2m_object_new() {
 
 ////////////// LWM2M INSTANCE //////////////////////
 
-lwm2m_instance *lwm2m_instance_new_with_id(lwm2m_object *object, int id) {
+/**
+ * - alloc instance
+ * - create resources
+ * - assign id
+ * - assign resource.instance_id
+ *
+ * DOES NOT set instance->object and object->instances
+ *
+ */
+lwm2m_instance *lwm2m_instance_new_with_id(lwm2m_context *context, int object_id, int instance_id) {
     lwm2m_instance *instance = (lwm2m_instance *) malloc(sizeof(lwm2m_instance));
-    instance->id = id;
+    instance->id = instance_id;
+    instance->resources = is_standard_object(object_id)
+                          ? context->create_standard_resources_callback(object_id)
+                          : context->create_resources_callback(object_id);
 
-    if (is_standard_object(object->id)) {
-        instance->resources = object->context->create_standard_resources_callback(object->id);
+    /**** Set resource->instance ****/
+    int keys[instance->resources->size];
+    lwm2m_map_get_keys(instance->resources, keys);
+    for (int i = 0; i < instance->resources->size; ++i) {
+        lwm2m_map_get_resource(instance->resources, keys[i])->instance = instance;
     }
-    else {
-        instance->resources = object->context->create_resources_callback(object->id);
-    }
-    instance->object = object;
-    lwm2m_map_put(object->instances, instance->id, instance);
     return instance;
 }
 
-lwm2m_instance *lwm2m_instance_new(lwm2m_object *object) {
+lwm2m_instance *lwm2m_instance_new(lwm2m_context *context, int object_id) {
     int newId = 6; // TODO
-    return lwm2m_instance_new_with_id(object, newId);
+    return lwm2m_instance_new_with_id(context, object_id, newId);
 }
 
 void lwm2m_delete_instance(lwm2m_instance *instance) {
@@ -123,8 +249,13 @@ void lwm2m_delete_instance(lwm2m_instance *instance) {
 
 ////////////// LWM2M RESOURCE //////////////////////
 
+
+
 lwm2m_resource *lwm2m_resource_new(bool multiple) {
     lwm2m_resource *resource = (lwm2m_resource *) malloc(sizeof(lwm2m_resource));
+    resource->instances = multiple ? lwm2m_map_new() : NULL;
+    resource->value = NULL;
+    resource->length = 0;
     resource->multiple = multiple;
     resource->execute_callback = NULL;
     resource->write_callback = NULL;

@@ -1,5 +1,6 @@
 #include <paho/MQTTAsync.h>
 #include <paho/MQTTClient.h>
+#include <lwm2m_device_management.h>
 #include "lwm2m.h"
 #include "lwm2m_transport_mqtt.h"
 #include "lwm2m_transport.h"
@@ -188,38 +189,44 @@ void publish_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response 
 }
 
 void receive_request(lwm2m_context *context, lwm2m_topic topic, char *message, int message_len) {
+    lwm2m_request request = parse_request(message, message_len);
+    lwm2m_response response;
 
     if (!strcmp(LWM2M_OPERATION_BOOTSTRAP_DELETE, topic.operation)) {
-        lwm2m_request request = parse_request(message, message_len);
-        lwm2m_response response = handle_bootstrap_delete_request(context, topic, request);
-        topic.type = "res";
-        publish_response(context, topic, response);
+        response = handle_bootstrap_delete_request(context, topic, request);
+        DUMP_ALL(context);
     }
     if (!strcmp(LWM2M_OPERATION_BOOTSTRAP_WRITE, topic.operation)) {
-        lwm2m_request request = parse_request(message, message_len);
-        lwm2m_response response = handle_bootstrap_write_request(context, topic, request);
-        topic.type = "res";
-        publish_response(context, topic, response);
+        response = handle_bootstrap_write_request(context, topic, request);
+        DUMP_ALL(context);
+
     }
     if (!strcmp(LWM2M_OPERATION_BOOTSTRAP_FINISH, topic.operation)) {
-        lwm2m_request request = parse_request(message, message_len);
-        lwm2m_response response = handle_bootstrap_finish_request(context, topic, request);
-        topic.type = "res";
-        publish_response(context, topic, response);
+        response = handle_bootstrap_finish_request(context, topic, request);
+        DUMP_ALL(context);
+
     }
     if (!strcmp(LWM2M_OPERATION_WRITE, topic.operation)) {
-        lwm2m_request request = parse_request(message, message_len);
-        lwm2m_response response = handle_write_request(context, topic, request);
-        topic.type = "res";
-        publish_response(context, topic, response);
+        response = handle_write_request(context, topic, request);
+        DUMP_ALL(context);
+
     }
     if (!strcmp(LWM2M_OPERATION_READ, topic.operation)) {
-        lwm2m_request request = parse_request(message, message_len);
-        lwm2m_response response = handle_read_request(context, topic, request);
-        topic.type = "res";
-        publish_response(context, topic, response);
+        response = handle_read_request(context, topic, request);
+        DUMP_ALL(context);
+
     }
-    // TODO more
+    if (!strcmp(LWM2M_OPERATION_CREATE, topic.operation)) {
+        response = handle_create_request(context, topic, request);
+        DUMP_ALL(context);
+
+    }
+//    if (!strcmp(LWM2M_OPERATION_DISCOVER, topic.operation)) {
+//        response = handle_discover_request(context, topic, request);
+//    }
+
+    topic.type = "res";
+    publish_response(context, topic, response);
 }
 
 void receive_response(lwm2m_context *context, lwm2m_topic topic, char *message, int message_len) {

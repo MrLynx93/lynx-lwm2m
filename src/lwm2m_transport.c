@@ -160,7 +160,12 @@ lwm2m_response handle_read_request(lwm2m_context *context, lwm2m_topic topic, lw
     }
 }
 
+lwm2m_response handle_create_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
+    lwm2m_server *server = (lwm2m_server *) lwm2m_map_get(context->servers, atoi(topic.server_id));
+    lwm2m_object *object = lwm2m_map_get_object(context->object_tree, topic.object_id);
 
+    return on_instance_create(server, object, topic.instance_id, request.payload, request.payload_len);
+}
 
 
 

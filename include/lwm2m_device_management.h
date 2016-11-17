@@ -40,6 +40,24 @@ lwm2m_response on_instance_read(lwm2m_server *server, lwm2m_instance *instance);
 
 lwm2m_response on_object_read(lwm2m_server *server, lwm2m_object *object);
 
+
+lwm2m_response on_instance_create(lwm2m_server *server, lwm2m_object *object, int instance_id, char *message, int message_len);
+
+
+
+
+
+
+
+void DUMP_SINGLE_RESOURCE(lwm2m_resource *resource);
+
+void DUMP_MULTIPLE_RESOURCE(lwm2m_resource *resource);
+
+void DUMP_INSTANCE(lwm2m_instance *instance);
+
+void DUMP_OBJECT(lwm2m_object *object);
+
+void DUMP_ALL(lwm2m_context *context);
 //
 ////////////// DELETE ///////////
 //

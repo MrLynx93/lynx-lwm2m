@@ -43,12 +43,12 @@ static lwm2m_map *create_security_object_resources() {
     lwm2m_map* resources = lwm2m_map_new();
     lwm2m_resource *resource;
 
-    // TODO OPERATIONS
     resource = lwm2m_resource_new(false);
     resource->id = 0;
     resource->name = "LWM2M Server URI";
     resource->type = STRING;
     resource->mandatory = true;
+    resource->operations = NOOP;
     lwm2m_map_put(resources, 0, (void*)resource);
 
     resource = lwm2m_resource_new(false);
@@ -56,34 +56,39 @@ static lwm2m_map *create_security_object_resources() {
     resource->name = "Bootstrap Server";
     resource->type = BOOLEAN;
     resource->mandatory = true;
+    resource->operations = NOOP;
     lwm2m_map_put(resources, 1, (void*)resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 2;
     resource->name = "Security Mode";
     resource->type = INTEGER;
-    resource->mandatory = true;
+    resource->mandatory = false; // TODO FOR NOW ONLY
+    resource->operations = NOOP;
     lwm2m_map_put(resources, 2, (void*)resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 3;
     resource->name = "Public Key or Identity";
     resource->type = OPAQUE;
-    resource->mandatory = true;
+    resource->mandatory = false; // TODO FOR NOW ONLY
+    resource->operations = NOOP;
     lwm2m_map_put(resources, 3, (void*)resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 4;
     resource->name = "Server Public Key";
     resource->type = OPAQUE;
-    resource->mandatory = true;
+    resource->mandatory = false; // TODO FOR NOW ONLY
+    resource->operations = NOOP;
     lwm2m_map_put(resources, 4, (void*)resource);
 
     resource = lwm2m_resource_new(false);
     resource->id = 5;
     resource->name = "Secret Key";
     resource->type = OPAQUE;
-    resource->mandatory = true;
+    resource->mandatory = false; // TODO FOR NOW ONLY
+    resource->operations = NOOP;
     lwm2m_map_put(resources, 5, (void*)resource);
 
     resource = lwm2m_resource_new(false);
@@ -91,6 +96,7 @@ static lwm2m_map *create_security_object_resources() {
     resource->name = "SMS Security Mode";
     resource->type = INTEGER;
     resource->mandatory = false;
+    resource->operations = NOOP;
     lwm2m_map_put(resources, 6, (void*)resource);
 
     resource = lwm2m_resource_new(false);
@@ -98,6 +104,7 @@ static lwm2m_map *create_security_object_resources() {
     resource->name = "SMS Key Binding Parameters";
     resource->type = OPAQUE;
     resource->mandatory = false;
+    resource->operations = NOOP;
     lwm2m_map_put(resources, 7, (void*)resource);
 
 
@@ -106,6 +113,7 @@ static lwm2m_map *create_security_object_resources() {
     resource->name = "SMS Binding Secret Key(s)";
     resource->type = OPAQUE;
     resource->mandatory = false;
+    resource->operations = NOOP;
     lwm2m_map_put(resources, 8, (void*)resource);
 
     resource = lwm2m_resource_new(false);
@@ -113,6 +121,7 @@ static lwm2m_map *create_security_object_resources() {
     resource->name = "LWM2M Server SMS Number";
     resource->type = STRING;
     resource->mandatory = false;
+    resource->operations = NOOP;
     lwm2m_map_put(resources, 9, (void*)resource);
 
     resource = lwm2m_resource_new(false);
@@ -120,6 +129,7 @@ static lwm2m_map *create_security_object_resources() {
     resource->name = "Short Server ID";
     resource->type = INTEGER;
     resource->mandatory = false;
+    resource->operations = NOOP;
     lwm2m_map_put(resources, 10, (void*)resource);
 
 
@@ -128,6 +138,7 @@ static lwm2m_map *create_security_object_resources() {
     resource->name = "Client Hold Off Time";
     resource->type = INTEGER;
     resource->mandatory = false;
+    resource->operations = NOOP;
     lwm2m_map_put(resources, 11, (void*)resource);
 
     resource = lwm2m_resource_new(false);
@@ -135,12 +146,8 @@ static lwm2m_map *create_security_object_resources() {
     resource->name = "Bootstrap Server Account Timeout";
     resource->type = INTEGER;
     resource->mandatory = false;
+    resource->operations = NOOP;
     lwm2m_map_put(resources, 12, (void*)resource);
-
-    // Can be modified only in bootstrap
-    for (int i = 0; i < 13; i++) {
-        ((lwm2m_resource*)lwm2m_map_get(resources, i))->operations = 0;
-    }
 
     return resources;
 }

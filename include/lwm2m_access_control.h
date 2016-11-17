@@ -12,6 +12,9 @@ bool lwm2m_check_object_access_control(lwm2m_server *server, lwm2m_object *objec
 /* Checks if instance have an access control for a given LWM2M server */
 bool lwm2m_check_instance_access_control(lwm2m_server *server, lwm2m_instance *instance);
 
+
+bool check_create_object_access_control(lwm2m_server *server, lwm2m_object *object);
+
 /* Checks if resource have an operation supported */
 bool lwm2m_check_resource_operation_supported(lwm2m_resource *resource, int operation);
 
@@ -21,16 +24,16 @@ bool lwm2m_check_resource_operation_supported(lwm2m_resource *resource, int oper
 lwm2m_object *lwm2m_get_aco_object(lwm2m_context* context);
 
 /* Returns ACL multiple resource from a given object */
-lwm2m_resource_multiple* lwm2m_get_object_acl_resource(lwm2m_object* object);
+lwm2m_resource* lwm2m_get_object_acl_resource(lwm2m_object* object);
 
 /* Returns ACL multiple resource from a given instance */
-lwm2m_resource_multiple* lwm2m_get_instance_acl_resource(lwm2m_instance* instance);
+lwm2m_resource* lwm2m_get_instance_acl_resource(lwm2m_instance* instance);
 
 /* Returns ACL resource instance from ACL multiple resource for a given server */
-lwm2m_resource_single *lwm2m_get_acl_resource_instance(lwm2m_resource_multiple *acl_resource, lwm2m_server *server);
+lwm2m_resource *lwm2m_get_acl_resource_instance(lwm2m_resource *acl_resource, lwm2m_server *server);
 
 /* Returns a default ACL resource instance which is defined at global level (context) */
-lwm2m_resource_single *get_default_acl_resource_instance(lwm2m_context *context, lwm2m_instance* instance); // TODO why instance is needed
+lwm2m_resource *get_default_acl_resource_instance(lwm2m_context *context, lwm2m_instance* instance); // TODO why instance is needed
 
 /////////// OTHERS ////////////////////////////////////
 
