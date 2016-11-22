@@ -92,11 +92,10 @@ void cancel(lwm2m_scheduler *scheduler, scheduler_task *task) {
 
     pthread_cond_signal(&scheduler->condition);
     pthread_mutex_unlock(&scheduler->lock);
-
 }
 
 void execute(lwm2m_scheduler *scheduler, scheduler_task *task) {
-    task->function(task->arg1, task->arg2);
+    task->function(task->arg1, task->arg2, task->arg3);
     task->waking_time = time(0) + task->period;
     pthread_cond_signal(&scheduler->condition);
 }
@@ -108,7 +107,7 @@ void process_tasks(lwm2m_scheduler *scheduler) {
     while (curr != NULL) {
         if (difftime(curr->task->waking_time, now) < 0) {
             // Execute without waking - we are already awake here
-            curr->task->function(curr->task->arg1, curr->task->arg2);
+            curr->task->function(curr->task->arg1, curr->task->arg2, curr->task->arg3);
             curr->task->waking_time = time(0) + curr->task->period;
         }
         curr = curr->next;

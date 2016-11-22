@@ -10,7 +10,7 @@
 bool lwm2m_check_object_access_control(lwm2m_server *server, lwm2m_object *object);
 
 /* Checks if instance have an access control for a given LWM2M server */
-bool lwm2m_check_instance_access_control(lwm2m_server *server, lwm2m_instance *instance);
+bool lwm2m_check_instance_access_control(lwm2m_server *server, lwm2m_instance *instance, int operation);
 
 
 bool check_create_object_access_control(lwm2m_server *server, lwm2m_object *object);

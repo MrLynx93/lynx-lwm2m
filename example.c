@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
 
 void measure_battery_level(lwm2m_resource* resource) {
     int battery_level = 20; // On real device this would be read of some sensor
-    set_value_int(resource, battery_level);
+    __set_value_int(resource, battery_level);
 }
 
 void switch_light(lwm2m_resource *resource) {
@@ -235,7 +235,7 @@ lwm2m_map *create_example_resources(int object_id) {
         resource = lwm2m_resource_new(false);
         resource->id = 5;
         resource->name = "Firmwire update resource";
-        resource->type = OPAQUE;
+        resource->type = NONE;
         resource->mandatory = false;
         resource->operations = EXECUTE;
         resource->execute_callback = update_firmwire;

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define INITIAL_SIZE 100
+#define INITIAL_SIZE 1000
 #define MAP_FULL -1
 
 static int lwm2m_map_hash(lwm2m_map *map, int key);
@@ -98,6 +98,8 @@ void lwm2m_map_remove(lwm2m_map *map, int key) {
             map->data[curr].in_use = 0;
             map->data[curr].data = NULL;
             map->data[curr].key = 0;
+            map->size--;
+            break;
         }
         curr = (curr + 1) % map->table_size;
     }
@@ -110,6 +112,8 @@ void lwm2m_map_remove_string(lwm2m_map *map, char *key) {
             map->data[curr].in_use = 0;
             map->data[curr].data = NULL;
             map->data[curr].key_string = NULL;
+            map->size--;
+            break;
         }
         curr = (curr + 1) % map->table_size;
     }

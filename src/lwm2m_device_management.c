@@ -23,10 +23,10 @@ static lwm2m_map* __create_resources(lwm2m_context *context, int object_id) {
 }
 
 int on_resource_write(lwm2m_server *server, lwm2m_resource *resource, char *message, int message_len) {
-    if (!lwm2m_check_instance_access_control(server, resource->instance)) {
+    if (!lwm2m_check_instance_access_control(server, resource->instance, WRITE)) {
         return RESPONSE_CODE_UNAUTHORIZED;
     }
-    if (!lwm2m_check_resource_operation_supported(resource, READ)) {
+    if (!lwm2m_check_resource_operation_supported(resource, WRITE)) {
         return RESPONSE_CODE_METHOD_NOT_ALLOWED;
     }
 
@@ -45,7 +45,7 @@ int on_resource_write(lwm2m_server *server, lwm2m_resource *resource, char *mess
 }
 
 int on_instance_write(lwm2m_server *server, lwm2m_instance *instance, char *message, int message_len) {
-    if (!lwm2m_check_instance_access_control(server, instance)) {
+    if (!lwm2m_check_instance_access_control(server, instance, WRITE)) {
         return RESPONSE_CODE_UNAUTHORIZED;
     }
     lwm2m_map *parsed_resources = parse_instance(server->context, instance->object->id, message, message_len);
@@ -71,7 +71,7 @@ lwm2m_response on_resource_read(lwm2m_server *server, lwm2m_resource *resource) 
             .payload = (char *) malloc(sizeof(char) * 100),
     };
 
-    if (!lwm2m_check_instance_access_control(server, resource->instance)) {
+    if (!lwm2m_check_instance_access_control(server, resource->instance, READ)) {
         response.content_type = CONTENT_TYPE_NO_FORMAT;
         response.response_code = RESPONSE_CODE_UNAUTHORIZED;
         return response;
@@ -98,7 +98,7 @@ lwm2m_response on_instance_read(lwm2m_server *server, lwm2m_instance *instance) 
             .payload = (char *) malloc(sizeof(char) * 100),
     };
 
-    if (!lwm2m_check_instance_access_control(server, instance)) {
+    if (!lwm2m_check_instance_access_control(server, instance, READ)) {
         response.content_type = CONTENT_TYPE_NO_FORMAT;
         response.response_code = RESPONSE_CODE_UNAUTHORIZED;
         return response;
@@ -136,7 +136,7 @@ lwm2m_response on_object_read(lwm2m_server *server, lwm2m_object *object) {
         lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, keys[i]);
 
         /**** Parse only instances, that have granted READ access ****/
-        if (lwm2m_check_instance_access_control(server, instance)) {
+        if (lwm2m_check_instance_access_control(server, instance, READ)) {
             lwm2m_instance *instance_to_parse = (lwm2m_instance *) malloc(sizeof(lwm2m_instance));
             instance_to_parse->resources = lwm2m_map_new();
             instance_to_parse->id = instance->id;
@@ -239,11 +239,62 @@ lwm2m_response on_instance_create(lwm2m_server *server, lwm2m_object *object, in
     return response;
 }
 
+lwm2m_response on_instance_delete(lwm2m_server *server, lwm2m_instance *instance) {
+    lwm2m_response response = {
+            .content_type = CONTENT_TYPE_NO_FORMAT,
+            .payload = NULL,
+            .payload_len = 0
+    };
 
+    /**** Check access for DELETE operation ****/
+    if (!lwm2m_check_instance_access_control(server, instance, DELETE)) {
+        response.response_code = RESPONSE_CODE_UNAUTHORIZED;
+        return response;
+    }
 
+    lwm2m_delete_instance(instance);
+    response.response_code = RESPONSE_CODE_DELETED;
+    return response;
+}
 
+lwm2m_response on_object_discover(lwm2m_object *object) {
+    lwm2m_response response = {
+            .content_type = CONTENT_TYPE_TEXT,
+            .response_code = RESPONSE_CODE_CHANGED,
+            .payload = (char*) malloc(sizeof(char) * 500),
+    };
 
+    /**** Don't have to check any access ****/
+    serialize_lwm2m_object_discover(object, response.payload);
+    response.payload_len = (int) strlen(response.payload);
+    return response;
+}
 
+lwm2m_response on_instance_discover(lwm2m_instance *instance) {
+    lwm2m_response response = {
+            .content_type = CONTENT_TYPE_TEXT,
+            .response_code = RESPONSE_CODE_CHANGED,
+            .payload = (char*) malloc(sizeof(char) * 500),
+    };
+
+    /**** Don't have to check any access ****/
+    serialize_lwm2m_instance_discover(instance, response.payload);
+    response.payload_len = (int) strlen(response.payload);
+    return response;
+}
+
+lwm2m_response on_resource_discover(lwm2m_resource *resource) {
+    lwm2m_response response = {
+            .content_type = CONTENT_TYPE_TEXT,
+            .response_code = RESPONSE_CODE_CHANGED,
+            .payload = (char*) malloc(sizeof(char) * 500),
+    };
+
+    /**** Don't have to check any access ****/
+    serialize_lwm2m_resource_discover(resource, response.payload);
+    response.payload_len = (int) strlen(response.payload);
+    return response;
+}
 
 
 

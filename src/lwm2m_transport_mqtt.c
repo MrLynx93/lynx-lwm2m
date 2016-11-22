@@ -145,16 +145,22 @@ static void on_delivery_complete(void* context, MQTTAsync_token token) {
 }
 
 void publish_connected(lwm2m_context *context) {
+    time_t timer;
+    char buffer[26];
+    struct tm* tm_info;
+    time(&timer);
+    tm_info = localtime(&timer);
+    strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
+
     MQTTAsync_responseOptions opts = {
             .onSuccess = on_publish_success,
             .onFailure = on_publish_failure,
             .context = context
     };
-
     char *topic = (char*) malloc(100);
     sprintf(topic, "lynx/clients/%s", context->client_id);
     MQTTAsync_send(*(context->mqtt_client), topic, 1, "1", 1, 0, &opts);
-    printf("Published %s\n", topic);
+    printf("[%s] Received  %s\n", buffer, topic);
 }
 
 static void on_connect(void *context, MQTTAsync_successData *response) {
@@ -167,8 +173,14 @@ static void on_connect(void *context, MQTTAsync_successData *response) {
     pthread_mutex_unlock(&started_lock);
 }
 
-static int on_message(void* context, char* topicName, int topicLen, MQTTAsync_message* message) {
-    printf("Received  %s\n", topicName);
+static int on_message(void *context, char *topicName, int topicLen, MQTTAsync_message *message) {
+    time_t timer;
+    char buffer[26];
+    struct tm* tm_info;
+    time(&timer);
+    tm_info = localtime(&timer);
+    strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
+    printf("[%s] Received  %s\n", buffer, topicName);
     receive_message((lwm2m_context *) context, topicName, (char *) message->payload, message->payloadlen);
     return 1; // TODO check if payload is correct (void -> char)
 }
@@ -176,6 +188,13 @@ static int on_message(void* context, char* topicName, int topicLen, MQTTAsync_me
 ////////////////////////// MAIN //////////////////////////////
 
 void publish_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response response) {
+    time_t timer;
+    char buffer[26];
+    struct tm* tm_info;
+    time(&timer);
+    tm_info = localtime(&timer);
+    strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
+
     MQTTAsync_responseOptions opts = {
             .onSuccess = on_publish_success,
             .onFailure = on_publish_failure,
@@ -185,7 +204,7 @@ void publish_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response 
     char *topic_str = serialize_topic(topic);
     char *message = serialize_response(response, &message_len);
     MQTTAsync_send(*(context->mqtt_client), topic_str, message_len, message, 1, 0, &opts);
-    printf("Published %s\n", topic_str);
+    printf("[%s] Published %s\n", buffer, topic_str);
 }
 
 void receive_request(lwm2m_context *context, lwm2m_topic topic, char *message, int message_len) {
@@ -199,31 +218,37 @@ void receive_request(lwm2m_context *context, lwm2m_topic topic, char *message, i
     if (!strcmp(LWM2M_OPERATION_BOOTSTRAP_WRITE, topic.operation)) {
         response = handle_bootstrap_write_request(context, topic, request);
         DUMP_ALL(context);
-
     }
     if (!strcmp(LWM2M_OPERATION_BOOTSTRAP_FINISH, topic.operation)) {
         response = handle_bootstrap_finish_request(context, topic, request);
         DUMP_ALL(context);
-
     }
     if (!strcmp(LWM2M_OPERATION_WRITE, topic.operation)) {
         response = handle_write_request(context, topic, request);
         DUMP_ALL(context);
-
     }
     if (!strcmp(LWM2M_OPERATION_READ, topic.operation)) {
         response = handle_read_request(context, topic, request);
         DUMP_ALL(context);
-
     }
     if (!strcmp(LWM2M_OPERATION_CREATE, topic.operation)) {
         response = handle_create_request(context, topic, request);
         DUMP_ALL(context);
-
     }
-//    if (!strcmp(LWM2M_OPERATION_DISCOVER, topic.operation)) {
-//        response = handle_discover_request(context, topic, request);
-//    }
+    if (!strcmp(LWM2M_OPERATION_DELETE, topic.operation)) {
+        response = handle_delete_request(context, topic, request);
+        DUMP_ALL(context);
+    }
+    if (!strcmp(LWM2M_OPERATION_DISCOVER, topic.operation)) {
+        response = handle_discover_request(context, topic, request);
+        DUMP_ALL(context);
+    }
+    if (!strcmp(LWM2M_OPERATION_OBSERVE, topic.operation)) {
+        response = handle_observe_request(context, topic, request);
+    }
+    if (!strcmp(LWM2M_OPERATION_CANCEL_OBSERVE, topic.operation)) {
+        response = handle_cancel_observe_request(context, topic, request);
+    }
 
     topic.type = "res";
     publish_response(context, topic, response);
@@ -307,13 +332,19 @@ void subscribe_server(lwm2m_context *context, lwm2m_server *server) {
 }
 
 void publish(lwm2m_context *context, char* topic, char* message, int message_len) {
+    time_t timer;
+    char buffer[26];
+    struct tm* tm_info;
+    time(&timer);
+    tm_info = localtime(&timer);
+    strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
     MQTTAsync_responseOptions opts = {
             .onSuccess = on_publish_success,
             .onFailure = on_publish_failure,
             .context = context
     };
     MQTTAsync_send(*(context->mqtt_client), topic, message_len, message, 1, 0, &opts);
-    printf("Published %s\n", topic);
+    printf("[%s] Published %s\n", buffer, topic);
 }
 
 int start_mqtt(lwm2m_context *context) {

@@ -68,7 +68,7 @@ static char *serialize_update_params(lwm2m_server *server) {
 }
 
 
-void update_func(void *context, void *server) {
+void update_func(void *context, void *server, void *nothing) {
     update_on_server((lwm2m_context *) context, (lwm2m_server *) server);
 }
 
@@ -208,6 +208,7 @@ void on_server_deregister(lwm2m_server* server, int response_code) {
     // TODO free server
 }
 
+// TODO same in observe
 void on_server_register(lwm2m_server *server, int success) {
     scheduler_task *update_task = (scheduler_task *) malloc(sizeof(scheduler_task));
     update_task->id = generate_task_id();
@@ -215,6 +216,7 @@ void on_server_register(lwm2m_server *server, int success) {
     update_task->function = update_func;
     update_task->arg1 = server->context;
     update_task->arg2 = server;
+    update_task->arg3 = NULL;
 
     lwm2m_map_put(server->context->update_tasks, server->short_server_id, update_task);
     schedule(server->context->scheduler, update_task);

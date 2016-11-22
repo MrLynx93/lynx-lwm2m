@@ -64,7 +64,7 @@ typedef struct lwm2m_attribute {
     int name_len;
     int access_mode;
     lwm2m_type type;
-    lwm2m_value numeric_value;
+    lwm2m_value* numeric_value;
 } lwm2m_attribute;
 
 
@@ -105,6 +105,7 @@ struct lwm2m_object {
     char *object_urn;
     bool multiple;
     bool mandatory;
+    lwm2m_map *observers;
 };
 
 /* Constructor */
@@ -121,6 +122,7 @@ struct lwm2m_instance {
     lwm2m_object *object;
     lwm2m_map *resources;
     lwm2m_map *attributes;
+    lwm2m_map *observers;
     lwm2m_instance *aco_instance;
 };
 
@@ -159,6 +161,7 @@ struct lwm2m_resource {
     lwm2m_type type;
     int length;
     lwm2m_map *instances;
+    lwm2m_map *observers; // Map of shortServerId -> notify_task
 
     char *name;
     lwm2m_map *attributes;
@@ -168,19 +171,68 @@ struct lwm2m_resource {
     lwm2m_resource_read_callback *read_callback;
     lwm2m_resource_write_callback *write_callback;
     lwm2m_resource_execute_callback *execute_callback;
+
+
 };
 
 /* Constructor */
 lwm2m_resource *lwm2m_resource_new(bool multiple);
 
-void set_value_int(lwm2m_resource *resource, int value);
-void set_value_bool(lwm2m_resource *resource, bool value);
-void set_value_double(lwm2m_resource *resource, double value);
-void set_value_link(lwm2m_resource *resource, lwm2m_link value);
-void set_value_string(lwm2m_resource *resource, char *value);
-void set_value_opaque(lwm2m_resource *resource, char *value, int length);
-void set_value(lwm2m_resource *resource, lwm2m_value value, int length);
-void set_null(lwm2m_resource *resource);
+/**
+ * These functions just save value and length. They do NOT
+ * start notifying new values to servers.
+ *
+ * Should be used only internally
+ *
+ *
+ *
+ *
+ */
+void __set_value_int(lwm2m_resource *resource, int value);
+
+void __set_value_bool(lwm2m_resource *resource, bool value);
+
+void __set_value_double(lwm2m_resource *resource, double value);
+
+void __set_value_link(lwm2m_resource *resource, lwm2m_link value);
+
+void __set_value_string(lwm2m_resource *resource, char *value);
+
+void __set_value_opaque(lwm2m_resource *resource, char *value, int length);
+
+void __set_value(lwm2m_resource *resource, lwm2m_value value, int length);
+
+void __set_null(lwm2m_resource *resource);
+
+
+/**
+ * These functions not only save value and length. Also,
+ * they notify servers about change if conditions are met:
+ * - time since last update < pmin
+ * - gt, lt, step conditions are met
+ *
+ * They should be used when status of some analog device
+ * has changed (ex. Light on/off)
+ *
+ *
+ */
+// TODO implement and save last notify time somwhere (maybe same as in register/update interface?)
+//void set_value_int(lwm2m_resource *resource, int value);
+//
+//void set_value_bool(lwm2m_resource *resource, bool value);
+//
+//void set_value_double(lwm2m_resource *resource, double value);
+//
+//void set_value_link(lwm2m_resource *resource, lwm2m_link value);
+//
+//void set_value_string(lwm2m_resource *resource, char *value);
+//
+//void set_value_opaque(lwm2m_resource *resource, char *value, int length);
+//
+//void set_value(lwm2m_resource *resource, lwm2m_value value, int length);
+//
+//void set_null(lwm2m_resource *resource);
+
 
 /////////////// NODE ///////////////////
 

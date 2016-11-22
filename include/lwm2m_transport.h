@@ -6,6 +6,7 @@
 #define RESPONSE_CODE_CREATED 201
 #define RESPONSE_CODE_DELETED 202
 #define RESPONSE_CODE_CHANGED 204
+#define RESPONSE_CODE_CONTENT 205
 #define RESPONSE_CODE_UNAUTHORIZED 401
 #define RESPONSE_CODE_METHOD_NOT_ALLOWED 405
 
@@ -23,9 +24,12 @@
 #define LWM2M_OPERATION_DEREGISTER     "rd"
 #define LWM2M_OPERATION_UPDATE         "ru"
 #define LWM2M_OPERATION_CREATE "mc"
+#define LWM2M_OPERATION_DELETE "md"
 #define LWM2M_OPERATION_WRITE "mw"
 #define LWM2M_OPERATION_READ "mr"
 #define LWM2M_OPERATION_DISCOVER "mm" // todo check
+#define LWM2M_OPERATION_OBSERVE "io" // todo check
+#define LWM2M_OPERATION_CANCEL_OBSERVE "ic" // todo check
 
 ///////////////// REQUEST /////////////////////
 
@@ -83,6 +87,13 @@ lwm2m_response handle_read_request(lwm2m_context *context, lwm2m_topic topic, lw
 
 lwm2m_response handle_create_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
 
+lwm2m_response handle_delete_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
+
+lwm2m_response handle_discover_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
+
+lwm2m_response handle_observe_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
+
+lwm2m_response handle_cancel_observe_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
 
 
 void perform_bootstrap_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
@@ -92,6 +103,8 @@ void perform_deregister_request(lwm2m_context *context, lwm2m_topic topic, lwm2m
 void perform_register_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_register_request request);
 
 void perform_update_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_register_request request);
+
+void perform_notify_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response response);
 
 void handle_deregister_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response response);
 

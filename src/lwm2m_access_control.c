@@ -23,7 +23,8 @@
 // 1. PER INSTANCE (SPRAWDZANE PO INSTANCE -> ACCESS CONTROL INSTANCE -> ACL RESOURCE[SERVER_ID]
 // 2. PER RESOURCE - CZY RESOURCE JEST NP. READONLY/EXECUTABLE ETC
 // todo PROBABLY OPERATION PARAMETER WILL COME BACK HERE -
-bool lwm2m_check_instance_access_control(lwm2m_server *server, lwm2m_instance *instance) {
+// TODO
+bool lwm2m_check_instance_access_control(lwm2m_server *server, lwm2m_instance *instance, int operation) {
     if (server->context->servers->size == 1) {
         return true; // TODO why dont check operation ot supported????
     }
@@ -87,9 +88,9 @@ int lwm2m_get_access_control_owner(lwm2m_instance *instance) {
 lwm2m_instance *lwm2m_object_create_aco_instance(lwm2m_server* server, lwm2m_object* object) {
     lwm2m_instance* aco_instance = lwm2m_instance_new(server->context, lwm2m_get_aco_object(server->context)->id);
     aco_instance->resources = server->context->create_standard_resources_callback(ACCESS_CONTROL_OBJECT_ID);
-    set_value_int(lwm2m_map_get_resource(aco_instance->resources, OBJECT_ID_RESOURCE_ID), object->id);
-    set_value_int(lwm2m_map_get_resource(aco_instance->resources, INSTANCE_ID_RESOURCE_ID), 0);
-    set_value_int(lwm2m_map_get_resource(aco_instance->resources, ACO_RESOURCE_ID), server->short_server_id);
+    __set_value_int(lwm2m_map_get_resource(aco_instance->resources, OBJECT_ID_RESOURCE_ID), object->id);
+    __set_value_int(lwm2m_map_get_resource(aco_instance->resources, INSTANCE_ID_RESOURCE_ID), 0);
+    __set_value_int(lwm2m_map_get_resource(aco_instance->resources, ACO_RESOURCE_ID), server->short_server_id);
     // TODO setting default ACL resource instances
     return aco_instance;
 }
@@ -97,16 +98,16 @@ lwm2m_instance *lwm2m_object_create_aco_instance(lwm2m_server* server, lwm2m_obj
 lwm2m_instance *lwm2m_instance_create_aco_instance(lwm2m_server* server, lwm2m_instance* instance) {
     lwm2m_instance* aco_instance = lwm2m_instance_new(server->context, lwm2m_get_aco_object(server->context)->id);
     aco_instance->resources = server->context->create_standard_resources_callback(ACCESS_CONTROL_OBJECT_ID);
-    set_value_int(lwm2m_map_get_resource(aco_instance->resources, OBJECT_ID_RESOURCE_ID), instance->object->id);
-    set_value_int(lwm2m_map_get_resource(aco_instance->resources, INSTANCE_ID_RESOURCE_ID), instance->id);
-    set_value_int(lwm2m_map_get_resource(aco_instance->resources, ACO_RESOURCE_ID), server->short_server_id);
+    __set_value_int(lwm2m_map_get_resource(aco_instance->resources, OBJECT_ID_RESOURCE_ID), instance->object->id);
+    __set_value_int(lwm2m_map_get_resource(aco_instance->resources, INSTANCE_ID_RESOURCE_ID), instance->id);
+    __set_value_int(lwm2m_map_get_resource(aco_instance->resources, ACO_RESOURCE_ID), server->short_server_id);
 
     /***** Create ACL multiple resource *****/
     lwm2m_map *acl = lwm2m_map_get_resource(aco_instance->resources, ACL_RESOURCE_ID)->instances;
 
     /***** Add ACL resource instance with all previliges *****/
     lwm2m_resource *server_resource_instance = lwm2m_resource_new(false);
-    set_value_int(server_resource_instance, READ | WRITE | EXECUTE | DELETE);
+    __set_value_int(server_resource_instance, READ | WRITE | EXECUTE | DELETE);
     lwm2m_map_put(acl, server->short_server_id, server_resource_instance);
 
     return aco_instance;
