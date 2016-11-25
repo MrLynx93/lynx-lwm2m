@@ -49,11 +49,12 @@ static char *create_attributes_string(lwm2m_map *attributes) {
     char **attribute_names = (char **) malloc(sizeof(char) * 10 * attributes->size);
     lwm2m_map_get_keys_string(attributes, attribute_names);
     for (int i = 0; i < attributes->size; i++) {
-        lwm2m_attribute *attribute = (lwm2m_attribute *) lwm2m_map_get_string(attributes, attribute_names[i]);
-        strcat(buf, ";");
-        strcat(buf, attribute->name);
-        strcat(buf, "=");
-        strcat(buf, value_to_text(attribute->numeric_value, attribute->type));
+        // TODO other way of serializing attributes
+//        lwm2m_attribute *attribute = (lwm2m_attribute *) lwm2m_map_get_string(attributes, attribute_names[i]);
+//        strcat(buf, ";");
+//        strcat(buf, attribute->name);
+//        strcat(buf, "=");
+//        strcat(buf, value_to_text(attribute->numeric_value, attribute->type));
     }
     return buf;
 }

@@ -62,21 +62,21 @@ static void free_value(lwm2m_value *value, lwm2m_type type) {
 //    }
 }
 
-static void lwm2m_attribute_free(lwm2m_attribute *attribute) {
+//static void lwm2m_attribute_free(lwm2m_attribute *attribute) {
 //    free_value(attribute->numeric_value, attribute->type);
 //    free(attribute);
-}
+//}
 
-static void free_attributes(lwm2m_map *attributes) {
-    char **keys = (char **) malloc(sizeof(char *) * attributes->size);
-    lwm2m_map_get_keys_string(attributes, keys);
-
-    for (int i = 0; i < attributes->size; ++i) {
-        lwm2m_attribute *attribute = lwm2m_map_get_string(attributes, keys[i]);
-        lwm2m_attribute_free(attribute);
-    }
-    lwm2m_map_free(attributes);
-}
+//static void free_attributes(lwm2m_map *attributes) {
+//    char **keys = (char **) malloc(sizeof(char *) * attributes->size);
+//    lwm2m_map_get_keys_string(attributes, keys);
+//
+//    for (int i = 0; i < attributes->size; ++i) {
+//        lwm2m_attribute *attribute = lwm2m_map_get_string(attributes, keys[i]);
+//        lwm2m_attribute_free(attribute);
+//    }
+//    lwm2m_map_free(attributes);
+//}
 
 static void delete_resource(lwm2m_context *context, lwm2m_resource *resource) {
     if (!resource->multiple) {

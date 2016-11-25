@@ -150,28 +150,28 @@ static bool is_standard_object(int object_id) {
 
 ////////////// ATTRIBUTE //////////////////////
 
-lwm2m_attribute *new_int_attribute(char* name, int int_value, int access_mode) {
-    lwm2m_value *value = (lwm2m_value *) malloc(sizeof(lwm2m_value));
-    value->int_value = int_value;
-
-    lwm2m_attribute *attribute = (lwm2m_attribute*) malloc(sizeof(lwm2m_attribute));
-    attribute->numeric_value = value;
-    attribute->access_mode = access_mode;
-    attribute->name = name;
-    attribute->type = INTEGER;
-    return attribute;
-}
-
-lwm2m_type lwm2m_get_attribute_type(char *attribute_name) {
-    // TODO implement
-}
-
-bool is_notify_attribute(char* attribute_name) {
-    // TODO implement
-}
+//lwm2m_attribute *new_int_attribute(char* name, int int_value, int access_mode) {
+//    lwm2m_value *value = (lwm2m_value *) malloc(sizeof(lwm2m_value));
+//    value->int_value = int_value;
+//
+//    lwm2m_attribute *attribute = (lwm2m_attribute*) malloc(sizeof(lwm2m_attribute));
+//    attribute->numeric_value = value;
+//    attribute->access_mode = access_mode;
+//    attribute->name = name;
+//    attribute->type = INTEGER;
+//    return attribute;
+//}
+//
+//lwm2m_type lwm2m_get_attribute_type(char *attribute_name) {
+//    // TODO implement
+//}
+//
+//bool is_notify_attribute(char* attribute_name) {
+//    // TODO implement
+//}
 
 ////////////// LWM2M OBJECT //////////////////////
-
+// TODO why would you delete object?
 void lwm2m_delete_object(lwm2m_object *object) {
     lwm2m_map *object_tree = object->context->object_tree;
 
@@ -290,9 +290,9 @@ lwm2m_object *lwm2m_map_get_object(lwm2m_map *map, int key) {
     return (lwm2m_object *) lwm2m_map_get(map, key);
 }
 
-lwm2m_attribute *lwm2m_map_get_attribute(lwm2m_map *map, char *key) {
-    return (lwm2m_attribute *) lwm2m_map_get_string(map, key);
-}
+//lwm2m_attribute *lwm2m_map_get_attribute(lwm2m_map *map, char *key) {
+//    return (lwm2m_attribute *) lwm2m_map_get_string(map, key);
+//}
 
 
 // TODO SET VALUE HERE

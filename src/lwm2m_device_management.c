@@ -295,10 +295,20 @@ lwm2m_response on_resource_discover(lwm2m_resource *resource) {
     response.payload_len = (int) strlen(response.payload);
     return response;
 }
-
-
-
-
+//
+//lwm2m_response on_resource_write_attributes(lwm2m_resource *resource) {
+//    lwm2m_response response = {
+//            .content_type = CONTENT_TYPE_TEXT,
+//            .response_code = RESPONSE_CODE_CONTENT,
+//            .payload = NULL,
+//            .payload_len = 0
+//    };
+//
+//    /**** Don't have to check any access ****/
+////    lwm2m_attribute
+//}
+//
+//
 
 
 

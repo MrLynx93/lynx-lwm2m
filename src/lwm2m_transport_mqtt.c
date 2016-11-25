@@ -249,6 +249,9 @@ void receive_request(lwm2m_context *context, lwm2m_topic topic, char *message, i
     if (!strcmp(LWM2M_OPERATION_CANCEL_OBSERVE, topic.operation)) {
         response = handle_cancel_observe_request(context, topic, request);
     }
+    if (!strcmp(LWM2M_OPERATION_WRITE_ATTRIBUTES, topic.operation)) {
+        response = handle_write_attributes_request(context, topic, request);
+    }
 
     topic.type = "res";
     publish_response(context, topic, response);

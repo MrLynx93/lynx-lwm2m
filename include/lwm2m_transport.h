@@ -28,6 +28,7 @@
 #define LWM2M_OPERATION_WRITE "mw"
 #define LWM2M_OPERATION_READ "mr"
 #define LWM2M_OPERATION_DISCOVER "mm" // todo check
+#define LWM2M_OPERATION_WRITE_ATTRIBUTES "ma" // todo check
 #define LWM2M_OPERATION_OBSERVE "io" // todo check
 #define LWM2M_OPERATION_CANCEL_OBSERVE "ic" // todo check
 
@@ -94,6 +95,12 @@ lwm2m_response handle_discover_request(lwm2m_context *context, lwm2m_topic topic
 lwm2m_response handle_observe_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
 
 lwm2m_response handle_cancel_observe_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
+
+lwm2m_response handle_write_attributes_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
+
+
+
+
 
 
 void perform_bootstrap_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);

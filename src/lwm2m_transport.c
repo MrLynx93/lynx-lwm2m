@@ -6,6 +6,7 @@
 #include "lwm2m_transport.h"
 #include "lwm2m_transport_mqtt.h"
 #include "lwm2m_device_management.h"
+#include "lwm2m_attribute.h"
 
 
 #define CHARSET "abcdefghijklmnopqrstuvwxyz1234567890"
@@ -190,22 +191,6 @@ lwm2m_response handle_delete_request(lwm2m_context *context, lwm2m_topic topic, 
     return on_instance_delete(server, instance);
 }
 
-lwm2m_response handle_discover_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
-    lwm2m_object *object = lwm2m_map_get_object(context->object_tree, topic.object_id);
-
-    if (topic.instance_id != -1 && topic.resource_id != -1) {
-        lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, topic.instance_id);
-        lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, topic.resource_id);
-        return on_resource_discover(resource);
-    }
-    else if (topic.instance_id != -1) {
-        lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, topic.instance_id);
-        return on_instance_discover(instance);
-    } else {
-        return on_object_discover(object);
-    }
-}
-
 lwm2m_response handle_observe_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
     lwm2m_server *server = (lwm2m_server *) lwm2m_map_get(context->servers, atoi(topic.server_id));
     lwm2m_object *object = lwm2m_map_get_object(context->object_tree, topic.object_id);
@@ -235,6 +220,37 @@ lwm2m_response handle_cancel_observe_request(lwm2m_context *context, lwm2m_topic
         return on_instance_cancel_observe(server, instance);
     } else {
         return on_object_cancel_observe(server, object);
+    }
+}
+
+lwm2m_response handle_discover_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
+    lwm2m_object *object = lwm2m_map_get_object(context->object_tree, topic.object_id);
+
+    if (topic.instance_id != -1 && topic.resource_id != -1) {
+        lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, topic.instance_id);
+        lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, topic.resource_id);
+        return on_resource_discover(resource);
+    }
+    else if (topic.instance_id != -1) {
+        lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, topic.instance_id);
+        return on_instance_discover(instance);
+    } else {
+        return on_object_discover(object);
+    }
+}
+
+lwm2m_response handle_write_attributes_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
+    lwm2m_server *server = (lwm2m_server *) lwm2m_map_get(context->servers, atoi(topic.server_id));
+    lwm2m_object *object = lwm2m_map_get_object(context->object_tree, topic.object_id);
+    if (topic.instance_id != -1 && topic.resource_id != -1) {
+        lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, topic.instance_id);
+        lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, topic.resource_id);
+        return on_resource_write_attributes(server, resource, request);
+    } else if (topic.instance_id != -1) {
+        lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, topic.instance_id);
+        return on_instance_write_attributes(server, instance, request);
+    } else {
+        return on_object_write_attributes(server, object, request);
     }
 }
 

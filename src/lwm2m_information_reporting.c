@@ -10,56 +10,56 @@
  *
  */
 
-static int get_resource_pmax(lwm2m_server *server, lwm2m_resource *resource) {
-    /**** Take R-Attribute ****/
-    int *pmax = lwm2m_map_get_string(resource->attributes, "pmax");
-
-    /**** Take OI-Attribute ****/
-    if (pmax == NULL) {
-        pmax = lwm2m_map_get_string(resource->instance->attributes, "pmax");
-    }
-    /**** Take O-Attribute ****/
-    if (pmax == NULL) {
-        pmax = lwm2m_map_get_string(resource->instance->object->attributes, "pmax");
-    }
-    /**** Take default attribute ****/
-    if (pmax == NULL) {
-        lwm2m_resource *pmax_resource = lwm2m_map_get_resource(server->server_instance->resources, 2);
-        return pmax_resource->value->int_value;
-    } else {
-        return *pmax;
-    }
-}
-
-static int get_instance_pmax(lwm2m_server *server, lwm2m_instance *instance) {
-    /**** Take OI-Attribute ****/
-    int *pmax = lwm2m_map_get_string(instance->attributes, "pmax");
-
-    /**** Take O-Attribute ****/
-    if (pmax == NULL) {
-        pmax = lwm2m_map_get_string(instance->object->attributes, "pmax");
-    }
-    /**** Take default attribute ****/
-    if (pmax == NULL) {
-        lwm2m_resource *pmax_resource = lwm2m_map_get_resource(server->server_instance->resources, 2);
-        return pmax_resource->value->int_value;
-    } else {
-        return *pmax;
-    }
-}
-
-static int get_object_pmax(lwm2m_server *server, lwm2m_object *object) {
-    /**** Take O-Attribute ****/
-    int *pmax = lwm2m_map_get_string(object->attributes, "pmax");
-
-    /**** Take default attribute ****/
-    if (pmax == NULL) {
-        lwm2m_resource *pmax_resource = lwm2m_map_get_resource(server->server_instance->resources, 2);
-        return pmax_resource->value->int_value;
-    } else {
-        return *pmax;
-    }
-}
+//static int get_resource_pmax(lwm2m_server *server, lwm2m_resource *resource) {
+//    /**** Take R-Attribute ****/
+//    int *pmax = lwm2m_map_get_string(resource->attributes, "pmax");
+//
+//    /**** Take OI-Attribute ****/
+//    if (pmax == NULL) {
+//        pmax = lwm2m_map_get_string(resource->instance->attributes, "pmax");
+//    }
+//    /**** Take O-Attribute ****/
+//    if (pmax == NULL) {
+//        pmax = lwm2m_map_get_string(resource->instance->object->attributes, "pmax");
+//    }
+//    /**** Take default attribute ****/
+//    if (pmax == NULL) {
+//        lwm2m_resource *pmax_resource = lwm2m_map_get_resource(server->server_instance->resources, 2);
+//        return pmax_resource->value->int_value;
+//    } else {
+//        return *pmax;
+//    }
+//}
+//
+//static int get_instance_pmax(lwm2m_server *server, lwm2m_instance *instance) {
+//    /**** Take OI-Attribute ****/
+//    int *pmax = lwm2m_map_get_string(instance->attributes, "pmax");
+//
+//    /**** Take O-Attribute ****/
+//    if (pmax == NULL) {
+//        pmax = lwm2m_map_get_string(instance->object->attributes, "pmax");
+//    }
+//    /**** Take default attribute ****/
+//    if (pmax == NULL) {
+//        lwm2m_resource *pmax_resource = lwm2m_map_get_resource(server->server_instance->resources, 2);
+//        return pmax_resource->value->int_value;
+//    } else {
+//        return *pmax;
+//    }
+//}
+//
+//static int get_object_pmax(lwm2m_server *server, lwm2m_object *object) {
+//    /**** Take O-Attribute ****/
+//    int *pmax = lwm2m_map_get_string(object->attributes, "pmax");
+//
+//    /**** Take default attribute ****/
+//    if (pmax == NULL) {
+//        lwm2m_resource *pmax_resource = lwm2m_map_get_resource(server->server_instance->resources, 2);
+//        return pmax_resource->value->int_value;
+//    } else {
+//        return *pmax;
+//    }
+//}
 
 /**
  * Notify functions - these are called periodically
@@ -215,7 +215,7 @@ lwm2m_response on_resource_observe(lwm2m_server *server, lwm2m_resource *resourc
     /**** Scheule notify task ****/
     scheduler_task *notify_task = (scheduler_task *) malloc(sizeof(scheduler_task));
     notify_task->id = generate_task_id();
-    notify_task->period = get_resource_pmax(server, resource);
+    notify_task->period = *get_resource_pmax(server, resource, 2);
     notify_task->function = notify_resource_func;
     notify_task->arg1 = server;
     notify_task->arg2 = resource;
@@ -244,7 +244,7 @@ lwm2m_response on_instance_observe(lwm2m_server *server, lwm2m_instance *instanc
     /**** Scheule notify task ****/
     scheduler_task *notify_task = (scheduler_task *) malloc(sizeof(scheduler_task));
     notify_task->id = generate_task_id();
-    notify_task->period = get_instance_pmax(server, instance);
+    notify_task->period = *get_instance_pmax(server, instance, 2);
     notify_task->function = notify_instance_func;
     notify_task->arg1 = server;
     notify_task->arg2 = instance;
@@ -267,7 +267,7 @@ lwm2m_response on_object_observe(lwm2m_server *server, lwm2m_object *object, cha
     /**** Scheule notify task ****/
     scheduler_task *notify_task = (scheduler_task *) malloc(sizeof(scheduler_task));
     notify_task->id = generate_task_id();
-    notify_task->period = get_object_pmax(server, object);
+    notify_task->period = *get_object_pmax(server, object, 2);
     notify_task->function = notify_object_func;
     notify_task->arg1 = server;
     notify_task->arg2 = object;

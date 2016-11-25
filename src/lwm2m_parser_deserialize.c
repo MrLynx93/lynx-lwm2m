@@ -232,3 +232,50 @@ lwm2m_map *parse_object(lwm2m_context *context, int object_id, char *message, in
     }
     return instances;
 }
+
+
+void parse_attributes(lwm2m_attributes *attributes, char *message) {
+    int count = 0;
+    char *elems[6];
+    char *buf = strtok(message, "&");
+
+    while (buf != NULL) {
+        elems[count++] = buf;
+        buf = strtok(NULL, "&");
+    }
+
+    for (int i = 0; i < count; i++) {
+        buf = strtok(elems[i], "=");
+
+        if (!strcmp(buf, "dim")) {
+            buf = strtok(NULL, "=");
+            attributes->dim = (int*) malloc(sizeof(int));
+            *attributes->dim = atoi(buf);
+        }
+        if (!strcmp(buf, "pmax")) {
+            buf = strtok(NULL, "=");
+            attributes->pmax = (int*) malloc(sizeof(int));
+            *attributes->pmax = atoi(buf);
+        }
+        if (!strcmp(buf, "pmin")) {
+            buf = strtok(NULL, "=");
+            attributes->pmin = (int*) malloc(sizeof(int));
+            *attributes->pmin = atoi(buf);
+        }
+        if (!strcmp(buf, "gt")) {
+            buf = strtok(NULL, "=");
+            attributes->gt = (float*) malloc(sizeof(float));
+            *attributes->gt = (float) atof(buf);
+        }
+        if (!strcmp(buf, "lt")) {
+            buf = strtok(NULL, "=");
+            attributes->lt = (float*) malloc(sizeof(float));
+            *attributes->lt = (float) atof(buf);
+        }
+        if (!strcmp(buf, "stp")) {
+            buf = strtok(NULL, "=");
+            attributes->stp = (float*) malloc(sizeof(float));
+            *attributes->stp = (float) atof(buf);
+        }
+    }
+}

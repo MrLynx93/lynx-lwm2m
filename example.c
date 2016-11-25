@@ -58,6 +58,8 @@
 
 #define SHORT_SERVER_ID 123
 
+#include "lwm2m_attribute.h"
+
 lwm2m_map *create_example_objects();
 lwm2m_map *create_example_resources(int object_id);
 int perform_factory_bootstrap(lwm2m_context *context);
@@ -177,8 +179,9 @@ lwm2m_map *create_example_objects() {
     example_object->attributes = lwm2m_map_new();
 
     // Set object's minimum period attribute to 10 sec
-    lwm2m_attribute *pmin_attribute = new_int_attribute("pmin", 10, ATTR_READ | ATTR_WRITE);
-    lwm2m_map_put_string(example_object->attributes, "pmin", pmin_attribute);
+    // TODO new way of declaring attributes
+//    lwm2m_attribute *pmin_attribute = new_int_attribute("pmin", 10, ATTR_READ | ATTR_WRITE);
+//    lwm2m_map_put_string(example_object->attributes, "pmin", pmin_attribute);
 
     lwm2m_map_put(objects, example_object->id, (void*) example_object);
     return objects;

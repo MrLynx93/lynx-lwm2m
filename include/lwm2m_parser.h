@@ -3,9 +3,14 @@
 
 #include "lwm2m.h"
 #include "lwm2m_object.h"
+#include "lwm2m_attribute.h"
 
 #define TEXT_FORMAT 0
 #define TLV_FORMAT 1
+
+// TODO opis
+void parse_attributes(lwm2m_attributes *attributes, char *message);
+
 
 /**
  * TEXT/TLV -> ENTITY
