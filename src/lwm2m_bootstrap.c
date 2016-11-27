@@ -121,6 +121,7 @@ static void delete_object(lwm2m_context *context, lwm2m_object *object) {
 
 static int __bootstrap_create_instance(lwm2m_context *context, lwm2m_object *object, lwm2m_map *parsed_resources, int instance_id) {
     lwm2m_map *resources = lwm2m_map_new();
+    lwm2m_instance parsed_instance = {.resources = resources};
     lwm2m_map *template_resources = __create_resources(context, object->id);
 
     /***** If one instance is allowed, then instance's ID=0 *****/
@@ -148,7 +149,7 @@ static int __bootstrap_create_instance(lwm2m_context *context, lwm2m_object *obj
     new_instance->object = object;
     lwm2m_map_put(object->instances, new_instance->id, new_instance);
 
-    merge_resources(new_instance->resources, resources, true);
+    merge_resources(new_instance, &parsed_instance, true, false);
     return RESPONSE_CODE_CREATED;
 }
 
@@ -166,7 +167,7 @@ int on_bootstrap_object_write(lwm2m_context *context, lwm2m_object *object, char
         if (old_instance == NULL) {
             __bootstrap_create_instance(context, object, new_instance->resources, new_instance->id);
         } else {
-            merge_resources(old_instance->resources, new_instance->resources, true);
+            merge_resources(old_instance, new_instance, true, false);
         }
     }
     return RESPONSE_CODE_CHANGED;
@@ -175,11 +176,12 @@ int on_bootstrap_object_write(lwm2m_context *context, lwm2m_object *object, char
 int on_bootstrap_instance_write(lwm2m_context *context, lwm2m_object *object, int instance_id, char *message, int message_len) {
     lwm2m_instance *old_instance = lwm2m_map_get_instance(object->instances, instance_id);
     lwm2m_map *parsed_resources = parse_instance(context, object->id, message, message_len);
+    lwm2m_instance parsed_instance = {.resources = parsed_resources};
 
     if (old_instance == NULL) {
         return __bootstrap_create_instance(context, object, parsed_resources, instance_id);
     } else {
-        merge_resources(old_instance->resources, parsed_resources, true);
+        merge_resources(old_instance, &parsed_instance, true, false);
     }
     return RESPONSE_CODE_CHANGED;
 }
@@ -205,7 +207,7 @@ int on_bootstrap_resource_write(lwm2m_context *context, lwm2m_resource *resource
                 message_len
         );
     }
-    merge_resource(resource, parsed_resource, true);
+    merge_resource(resource, parsed_resource, true, false);
     return RESPONSE_CODE_CHANGED;
 }
 

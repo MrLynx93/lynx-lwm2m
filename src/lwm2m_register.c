@@ -68,7 +68,7 @@ static char *serialize_update_params(lwm2m_server *server) {
 }
 
 
-void update_func(void *context, void *server, void *nothing) {
+void update_func(void *task, void *context, void *server, void *nothing) {
     update_on_server((lwm2m_context *) context, (lwm2m_server *) server);
 }
 
@@ -94,7 +94,6 @@ void deregister_on_server(lwm2m_context *context, lwm2m_server *server) {
     perform_deregister_request(context, topic, request);
 }
 void register_on_server(lwm2m_context *context, lwm2m_instance *server_instance) {
-    // Get necessary values
     lwm2m_resource *id_resource = lwm2m_map_get_resource(server_instance->resources, SHORT_SERVER_ID_RESOURCE_ID);
 
     lwm2m_server *server = (lwm2m_server *) malloc(sizeof(lwm2m_server));

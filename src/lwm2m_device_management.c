@@ -39,7 +39,7 @@ int on_resource_write(lwm2m_server *server, lwm2m_resource *resource, char *mess
     );
 
     /**** Copy value and call WRITE callback *****/
-    merge_resource(resource, parsed_resource, true);
+    merge_resource(resource, parsed_resource, true, true);
 
     return RESPONSE_CODE_CHANGED;
 }
@@ -49,6 +49,7 @@ int on_instance_write(lwm2m_server *server, lwm2m_instance *instance, char *mess
         return RESPONSE_CODE_UNAUTHORIZED;
     }
     lwm2m_map *parsed_resources = parse_instance(server->context, instance->object->id, message, message_len);
+    lwm2m_instance parsed_instance = {.resources = parsed_resources};
 
     /**** Error if any of resources is not writeable ****/
     int keys[parsed_resources->size];
@@ -61,7 +62,7 @@ int on_instance_write(lwm2m_server *server, lwm2m_instance *instance, char *mess
     }
 
     /**** Copy all resources and call WRITE callback ****/
-    merge_resources(instance->resources, parsed_resources, true);
+    merge_resources(instance, &parsed_instance, true, true);
 
     return RESPONSE_CODE_CHANGED;
 }
@@ -197,6 +198,7 @@ lwm2m_response on_instance_create(lwm2m_server *server, lwm2m_object *object, in
     }
 
     lwm2m_map *resources = lwm2m_map_new();
+    lwm2m_instance parsed_instance = {.resources = resources};
     lwm2m_map *template_resources = __create_resources(context, object->id);
     lwm2m_map *parsed_resources = parse_instance(context, object->id, message, message_len);
 
@@ -232,7 +234,10 @@ lwm2m_response on_instance_create(lwm2m_server *server, lwm2m_object *object, in
     if (context->servers->size > 1) {
         lwm2m_instance_create_aco_instance(server, instance);
     }
-    merge_resources(instance->resources, resources, true);
+
+    /**** Possibly object-level notify ****/
+    // TODO check if it works and in documenttation if it should work
+    merge_resources(instance, &parsed_instance, true, true);
 
     response.content_type = CONTENT_TYPE_NO_FORMAT;
     response.response_code = RESPONSE_CODE_CREATED;
@@ -257,58 +262,8 @@ lwm2m_response on_instance_delete(lwm2m_server *server, lwm2m_instance *instance
     return response;
 }
 
-lwm2m_response on_object_discover(lwm2m_object *object) {
-    lwm2m_response response = {
-            .content_type = CONTENT_TYPE_TEXT,
-            .response_code = RESPONSE_CODE_CHANGED,
-            .payload = (char*) malloc(sizeof(char) * 500),
-    };
+lwm2m_response
 
-    /**** Don't have to check any access ****/
-    serialize_lwm2m_object_discover(object, response.payload);
-    response.payload_len = (int) strlen(response.payload);
-    return response;
-}
-
-lwm2m_response on_instance_discover(lwm2m_instance *instance) {
-    lwm2m_response response = {
-            .content_type = CONTENT_TYPE_TEXT,
-            .response_code = RESPONSE_CODE_CHANGED,
-            .payload = (char*) malloc(sizeof(char) * 500),
-    };
-
-    /**** Don't have to check any access ****/
-    serialize_lwm2m_instance_discover(instance, response.payload);
-    response.payload_len = (int) strlen(response.payload);
-    return response;
-}
-
-lwm2m_response on_resource_discover(lwm2m_resource *resource) {
-    lwm2m_response response = {
-            .content_type = CONTENT_TYPE_TEXT,
-            .response_code = RESPONSE_CODE_CHANGED,
-            .payload = (char*) malloc(sizeof(char) * 500),
-    };
-
-    /**** Don't have to check any access ****/
-    serialize_lwm2m_resource_discover(resource, response.payload);
-    response.payload_len = (int) strlen(response.payload);
-    return response;
-}
-//
-//lwm2m_response on_resource_write_attributes(lwm2m_resource *resource) {
-//    lwm2m_response response = {
-//            .content_type = CONTENT_TYPE_TEXT,
-//            .response_code = RESPONSE_CODE_CONTENT,
-//            .payload = NULL,
-//            .payload_len = 0
-//    };
-//
-//    /**** Don't have to check any access ****/
-////    lwm2m_attribute
-//}
-//
-//
 
 
 

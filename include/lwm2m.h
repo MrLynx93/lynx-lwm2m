@@ -2,6 +2,7 @@
 #define LYNX_LWM2M_LWM2M_CONTEXT_H
 
 #include "map.h"
+#include "list.h"
 #include "scheduler.h"
 #include "lwm2m_object.h"
 #include <stddef.h>

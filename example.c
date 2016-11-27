@@ -80,6 +80,36 @@ int main(int argc, char *argv[]) {
 
     getchar();
 
+    lwm2m_object *example_obj = lwm2m_map_get_object(context->object_tree, 123);
+    lwm2m_instance *example_instance = lwm2m_map_get_instance(example_obj->instances, 20);
+    lwm2m_resource *int_resource = lwm2m_map_get(example_instance->resources, 0);
+    lwm2m_resource *string_resource = lwm2m_map_get(example_instance->resources, 2);
+
+    printf("Set value int\n");
+    set_value_int(int_resource, 12);
+    getchar();
+
+    printf("Set value int\n");
+    set_value_int(int_resource, 12);
+    getchar();
+
+    printf("Set value int\n");
+    set_value_int(int_resource, 12);
+    getchar();
+
+    printf("Set value int\n");
+    set_value_int(int_resource, 17);
+    getchar();
+
+//    printf("Set value float\n");
+//    set_value_double(float_resource, 512.2);
+//    getchar();
+
+
+//    printf("Set value string\n");
+//    set_value_string(string_resource, "new value");
+//    getchar();
+
     // Deregister from all servers
     int keys[context->servers->size];
     lwm2m_map_get_keys(context->servers, keys);

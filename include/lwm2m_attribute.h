@@ -5,6 +5,7 @@
 #include "lwm2m_transport.h"
 
 #define EMPTY_ATTR {NULL, NULL, NULL, NULL, NULL, NULL};
+#define LOOKUP_FULL 2
 
 
 typedef struct lwm2m_attributes {
@@ -69,7 +70,18 @@ lwm2m_response on_instance_write_attributes(lwm2m_server *server, lwm2m_instance
 lwm2m_response on_object_write_attributes(lwm2m_server *server, lwm2m_object *object, lwm2m_request request);
 
 
-
+/**
+ * Handle requests for discover
+ *
+ *
+ *
+ *
+ *
+ *
+ */
+lwm2m_response on_object_discover(lwm2m_server *server, lwm2m_object *object);
+lwm2m_response on_instance_discover(lwm2m_server *server, lwm2m_instance *instance);
+lwm2m_response on_resource_discover(lwm2m_server *server, lwm2m_resource *resource);
 
 
 #endif

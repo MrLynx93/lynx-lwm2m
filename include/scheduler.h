@@ -16,14 +16,16 @@ typedef struct task_list {
 
 /********* SCHEDULER **********/
 
-typedef void (*scheduler_func)(void *, void *, void *);
+typedef void (*scheduler_func)(void *, void *, void *, void *);
 
 typedef struct scheduler_task {
     int id;
     int period; /* period in seconds */
     time_t waking_time;
+    time_t last_waking_time;
 
     scheduler_func function;
+    void *arg0;
     void *arg1;
     void *arg2;
     void *arg3;

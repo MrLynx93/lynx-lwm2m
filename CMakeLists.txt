@@ -19,7 +19,7 @@ file(GLOB LYNX_LWM2M_SRC src/*.c)
 include_directories(include)
 link_directories(lib/${ARCH})
 
-add_library(lynx SHARED ${LYNX_LWM2M_SRC} include/lwm2m_attribute.h src/lwm2m_attribute.c)
+add_library(lynx SHARED ${LYNX_LWM2M_SRC} include/lwm2m_attribute.h src/lwm2m_attribute.c src/list.c include/list.h)
 add_executable(testapp example.c)
 
 target_link_libraries(lynx paho-mqtt3a)

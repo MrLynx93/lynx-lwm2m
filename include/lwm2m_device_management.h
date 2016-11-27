@@ -4,6 +4,19 @@
 #include "lwm2m.h"
 #include "lwm2m_transport.h"
 
+/**
+ * key may be -1 to indicate that this param has no index
+ *
+ *
+ */
+// TODO For now let's assume that params cat be only index - no reversing of list needed then
+struct execute_param {
+    int key;
+    lwm2m_value value;
+};
+
+
+
 ///*
 // * All functions except discover and write attributes return error code if some error occurred, in other case returns 0
 // * List of error codes:
@@ -43,12 +56,6 @@ lwm2m_response on_object_read(lwm2m_server *server, lwm2m_object *object);
 lwm2m_response on_instance_create(lwm2m_server *server, lwm2m_object *object, int instance_id, char *message, int message_len);
 
 lwm2m_response on_instance_delete(lwm2m_server *server, lwm2m_instance *instance);
-
-lwm2m_response on_object_discover(lwm2m_object *object);
-
-lwm2m_response on_instance_discover(lwm2m_instance *instance);
-
-lwm2m_response on_resource_discover(lwm2m_resource *resource);
 
 
 

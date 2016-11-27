@@ -69,13 +69,9 @@ void serialize_object(lwm2m_map *instances, char *message, int *message_len);
  *
  *
  */
-void serialize_lwm2m_object_discover(lwm2m_object *object, char *message);
-
-/* Creates LWM2M instance discover message and writes output in message */
-void serialize_lwm2m_instance_discover(lwm2m_instance *instance, char *message);
-
-/* Creates LWM2M resource discover message and writes output in message */
-void serialize_lwm2m_resource_discover(lwm2m_resource *resource, char *message);
+void serialize_lwm2m_object_discover(lwm2m_server *server, lwm2m_object *object, char *message);
+void serialize_lwm2m_instance_discover(lwm2m_server *server, lwm2m_instance *instance, char *message);
+void serialize_lwm2m_resource_discover(lwm2m_server *server, lwm2m_resource *resource, char *message);
 
 
 /**

@@ -170,7 +170,7 @@ lwm2m_map *parse_multiple_resource(lwm2m_context *context, int object_id, int re
         lwm2m_resource *resource_instance = create_resource(context, object_id, resource_id);
         resource_instance->id = resource_header.id;
         lwm2m_value value = parse_value(curr, resource_header.length, resource_instance->type);
-        __set_value(resource_instance, value, resource_header.length);
+        __set_value(resource_instance, &value, resource_header.length);
 
         lwm2m_map_put(resources, resource_instance->id, resource_instance);
         curr = curr + resource_header.length;
@@ -186,7 +186,7 @@ lwm2m_resource *parse_resource(lwm2m_context *context, int object_id, int resour
         resource->instances = resource_instances;
     } else {
         lwm2m_value value = parse_value_text(message, message_len, resource->type);
-        __set_value(resource, value, message_len);
+        __set_value(resource, &value, message_len);
     }
     return resource;
 }
@@ -206,7 +206,7 @@ lwm2m_map *parse_instance(lwm2m_context *context, int object_id, char *message, 
             resource->instances = parse_multiple_resource(context, object_id, resource->id, curr, resource_header.length);
         } else {
             lwm2m_value value = parse_value(curr, resource_header.length, resource->type);
-            __set_value(resource, value, resource_header.length);
+            __set_value(resource, &value, resource_header.length);
         }
         lwm2m_map_put(resources, resource->id, resource);
         curr = curr + resource_header.length;

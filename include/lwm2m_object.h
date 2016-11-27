@@ -68,9 +68,14 @@ typedef union lwm2m_value {
 //} lwm2m_attribute;
 
 
-void merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource, bool call_callback);
+list *merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource, bool call_callback, bool notify);
 
-void merge_resources(lwm2m_map *old_resources, lwm2m_map *new_resources, bool call_callback);
+void merge_resources(lwm2m_instance *old_instance, lwm2m_instance *new_instance, bool call_callback, bool notify);
+
+
+//void merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource, bool call_callback);
+//
+//void merge_resources(lwm2m_map *old_resources, lwm2m_map *new_resources, bool call_callback);
 
 
 
@@ -183,24 +188,24 @@ lwm2m_resource *lwm2m_resource_new(bool multiple);
  * Should be used only internally
  *
  *
- *
+ * return old value as lwm2m_value* pointer
  *
  */
-void __set_value_int(lwm2m_resource *resource, int value);
+lwm2m_value *__set_value_int(lwm2m_resource *resource, int value);
 
-void __set_value_bool(lwm2m_resource *resource, bool value);
+lwm2m_value *__set_value_bool(lwm2m_resource *resource, bool value);
 
-void __set_value_double(lwm2m_resource *resource, double value);
+lwm2m_value *__set_value_double(lwm2m_resource *resource, double value);
 
-void __set_value_link(lwm2m_resource *resource, lwm2m_link value);
+lwm2m_value *__set_value_link(lwm2m_resource *resource, lwm2m_link value);
 
-void __set_value_string(lwm2m_resource *resource, char *value);
+lwm2m_value *__set_value_string(lwm2m_resource *resource, char *value);
 
-void __set_value_opaque(lwm2m_resource *resource, char *value, int length);
+lwm2m_value *__set_value_opaque(lwm2m_resource *resource, char *value, int length);
 
-void __set_value(lwm2m_resource *resource, lwm2m_value value, int length);
+lwm2m_value *__set_value(lwm2m_resource *resource, lwm2m_value *value, int length);
 
-void __set_null(lwm2m_resource *resource);
+lwm2m_value *__set_null(lwm2m_resource *resource);
 
 
 /**
@@ -213,23 +218,16 @@ void __set_null(lwm2m_resource *resource);
  * has changed (ex. Light on/off)
  *
  *
+ * return true if parent should notify too
  */
-// TODO implement and save last notify time somwhere (maybe same as in register/update interface?)
-//void set_value_int(lwm2m_resource *resource, int value);
-//
-//void set_value_bool(lwm2m_resource *resource, bool value);
-//
-//void set_value_double(lwm2m_resource *resource, double value);
-//
-//void set_value_link(lwm2m_resource *resource, lwm2m_link value);
-//
-//void set_value_string(lwm2m_resource *resource, char *value);
-//
-//void set_value_opaque(lwm2m_resource *resource, char *value, int length);
-//
-//void set_value(lwm2m_resource *resource, lwm2m_value value, int length);
-//
-//void set_null(lwm2m_resource *resource);
+void set_value_int(lwm2m_resource *resource, int value);
+void set_value_bool(lwm2m_resource *resource, bool value);
+void set_value_double(lwm2m_resource *resource, double value);
+void set_value_link(lwm2m_resource *resource, lwm2m_link value);
+void set_value_string(lwm2m_resource *resource, char *value);
+void set_value_opaque(lwm2m_resource *resource, char *value, int length);
+void set_value(lwm2m_resource *resource, lwm2m_value *value, int length);
+void set_null(lwm2m_resource *resource);
 
 
 /////////////// NODE ///////////////////
