@@ -173,7 +173,7 @@ lwm2m_response on_instance_write_attributes(lwm2m_server *server, lwm2m_instance
     lwm2m_attributes new_attr = EMPTY_ATTR;
     parse_attributes(&new_attr, request.payload);
 
-    __merge_attributes(old_attr, &new_attr);
+    __merge_attributes(old_attr, &new_attr); // TODO should I change scheduler?
     return (lwm2m_response) WRITE_ATTR_RESPONSE;
 }
 

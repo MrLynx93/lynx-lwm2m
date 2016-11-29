@@ -25,6 +25,7 @@
 #define LWM2M_OPERATION_UPDATE         "ru"
 #define LWM2M_OPERATION_CREATE "mc"
 #define LWM2M_OPERATION_DELETE "md"
+#define LWM2M_OPERATION_EXECUTE "me"
 #define LWM2M_OPERATION_WRITE "mw"
 #define LWM2M_OPERATION_READ "mr"
 #define LWM2M_OPERATION_DISCOVER "mm" // todo check
@@ -98,9 +99,9 @@ lwm2m_response handle_cancel_observe_request(lwm2m_context *context, lwm2m_topic
 
 lwm2m_response handle_write_attributes_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
 
+lwm2m_response handle_execute_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
 
-
-
+list *__parse_args(lwm2m_request request); // todo static
 
 
 void perform_bootstrap_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);

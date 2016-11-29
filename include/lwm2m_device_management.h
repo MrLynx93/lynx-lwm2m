@@ -10,11 +10,6 @@
  *
  */
 // TODO For now let's assume that params cat be only index - no reversing of list needed then
-struct execute_param {
-    int key;
-    lwm2m_value value;
-};
-
 
 
 ///*
@@ -57,7 +52,7 @@ lwm2m_response on_instance_create(lwm2m_server *server, lwm2m_object *object, in
 
 lwm2m_response on_instance_delete(lwm2m_server *server, lwm2m_instance *instance);
 
-
+lwm2m_response on_resource_execute(lwm2m_server *server, lwm2m_resource *resource, list *args);
 
 
 void DUMP_SINGLE_RESOURCE(lwm2m_resource *resource);

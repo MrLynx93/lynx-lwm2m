@@ -68,7 +68,7 @@ static char *serialize_update_params(lwm2m_server *server) {
 }
 
 
-void update_func(void *task, void *context, void *server, void *nothing) {
+void update_func(void *task, void *server, void *context, void *nothing, void *nothing2) {
     update_on_server((lwm2m_context *) context, (lwm2m_server *) server);
 }
 
@@ -213,8 +213,9 @@ void on_server_register(lwm2m_server *server, int success) {
     update_task->id = generate_task_id();
     update_task->period = get_lifetime(server->server_instance) / 2;
     update_task->function = update_func;
-    update_task->arg1 = server->context;
-    update_task->arg2 = server;
+    update_task->arg0 = update_task;
+    update_task->arg1 = server;
+    update_task->arg2 = server->context;
     update_task->arg3 = NULL;
 
     lwm2m_map_put(server->context->update_tasks, server->short_server_id, update_task);

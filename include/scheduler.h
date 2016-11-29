@@ -5,6 +5,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <semaphore.h>
+#include <stdbool.h>
 
 /********* LIST **********/
 
@@ -16,7 +17,7 @@ typedef struct task_list {
 
 /********* SCHEDULER **********/
 
-typedef void (*scheduler_func)(void *, void *, void *, void *);
+typedef void (*scheduler_func)(void *, void *, void *, void *, void *);
 
 typedef struct scheduler_task {
     int id;
@@ -37,6 +38,7 @@ typedef struct lwm2m_scheduler {
     pthread_mutex_t lock;
     pthread_cond_t condition;
     sem_t guard;
+    bool stop;
 
     task_list *queue;
 } lwm2m_scheduler;
@@ -56,9 +58,10 @@ void scheduler_start(lwm2m_scheduler *scheduler);
 void schedule(lwm2m_scheduler *scheduler, scheduler_task *task);
 
 /** Executes task immediately. Delays next scheduled execution to {task.period} time **/
-void execute(lwm2m_scheduler *scheduler, scheduler_task *task);
+void execute(lwm2m_scheduler *scheduler, scheduler_task *task, void *arg);
 
 /** Cancels a task **/
 void cancel(lwm2m_scheduler *scheduler, scheduler_task *task);
 
+void stop_scheduler(lwm2m_scheduler *scheduler);
 #endif //LYNX_LWM2M_SCHEDULER_H

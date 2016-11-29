@@ -97,7 +97,7 @@ typedef void (lwm2m_resource_read_callback)(lwm2m_resource *resource);
 typedef void (lwm2m_resource_write_callback(lwm2m_resource *resource));
 
 // TODO
-typedef void (lwm2m_resource_execute_callback(lwm2m_resource *resource, char *args));
+typedef void (lwm2m_resource_execute_callback(lwm2m_resource *resource, list *args));
 
 ////////////// LWM2M OBJECT //////////////////////
 

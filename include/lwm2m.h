@@ -1,6 +1,8 @@
 #ifndef LYNX_LWM2M_LWM2M_CONTEXT_H
 #define LYNX_LWM2M_LWM2M_CONTEXT_H
 
+#define _XOPEN_SOURCE 600
+
 #include "map.h"
 #include "list.h"
 #include "scheduler.h"
@@ -107,5 +109,14 @@ typedef struct lwm2m_server {
     lwm2m_instance *server_instance;
 
 } lwm2m_server;
+
+typedef struct execute_param {
+    int key;
+    int int_value;
+    float float_value;
+    char *string_value;
+} execute_param;
+
+execute_param *param_new();
 
 #endif //LYNX_LWM2M_LWM2M_CONTEXT_H

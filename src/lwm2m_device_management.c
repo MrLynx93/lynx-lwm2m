@@ -6,6 +6,8 @@
 #define PAD_LEN 30
 #define STR_LEN 30
 
+#define EXECUTE_RESPONSE {CONTENT_TYPE_NO_FORMAT, RESPONSE_CODE_CHANGED, 1, NULL, 0};
+
 /***
      * [1]
      * If a new Object Instance is created through that operation and
@@ -13,6 +15,13 @@
      * the LWM2M Client creates an Access Control Object Instance for
      * the created Object Instance
      */
+
+execute_param *param_new() {
+    execute_param *param = (execute_param*) malloc(sizeof(execute_param));
+    param->key = -1;
+    param->string_value = NULL;
+    return param;
+}
 
 static lwm2m_map* __create_resources(lwm2m_context *context, int object_id) {
     if (object_id == SECURITY_OBJECT_ID || object_id == SERVER_OBJECT_ID || object_id == ACCESS_CONTROL_OBJECT_ID) {
@@ -262,8 +271,24 @@ lwm2m_response on_instance_delete(lwm2m_server *server, lwm2m_instance *instance
     return response;
 }
 
-lwm2m_response
+lwm2m_response on_resource_execute(lwm2m_server *server, lwm2m_resource *resource, list *args) {
+    lwm2m_response response = EXECUTE_RESPONSE;
 
+    /**** Check access for EXECUTE operation ****/
+    if (!lwm2m_check_instance_access_control(server, resource->instance, EXECUTE)) {
+        response.response_code = RESPONSE_CODE_UNAUTHORIZED;
+        return response;
+    }
+
+    /**** Check if resource is executable ****/
+    if (!lwm2m_check_resource_operation_supported(resource, EXECUTE)) {
+        response.response_code = RESPONSE_CODE_METHOD_NOT_ALLOWED;
+        return response;
+    }
+
+    resource->execute_callback(resource, args);
+    return response;
+}
 
 
 

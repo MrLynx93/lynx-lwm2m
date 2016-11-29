@@ -3,6 +3,16 @@
 #include "lwm2m.h"
 #include "lwm2m_attribute.h"
 
+static bool __fulfill_PMIN(int pmin, scheduler_task *task) {
+    if (task == NULL) {
+        return false;
+    }
+    if (task->last_waking_time == 0) {
+        return true;
+    }
+    double diff = difftime(time(0), task->last_waking_time);
+    return pmin < diff;
+}
 
 static void __set_value_any(lwm2m_resource *resource, lwm2m_value *value, int length, lwm2m_type type) {
     lwm2m_value *old_value = resource->value;
@@ -106,24 +116,34 @@ void set_value(lwm2m_resource *resource, lwm2m_value *value, int length) {
     for (list_elem *elem = servers->first; elem != NULL; elem = elem->next) {
         lwm2m_server *server = (lwm2m_server*) elem->value;
         scheduler_task *task;
+        int *pmin;
 
         /**** Notify on resource level ****/
         task = lwm2m_map_get(resource->observers, server->short_server_id);
         if (task != NULL) {
-            execute(context->scheduler, task);
-        }
-
-        /**** Notify on instance level ****/
-        task = lwm2m_map_get(resource->instance->observers, server->short_server_id);
-        if (task != NULL) {
-            execute(context->scheduler, task);
+            pmin = get_resource_pmin(server, resource, LOOKUP_FULL);
+            if (pmin == NULL || __fulfill_PMIN(*pmin, task)) {
+                execute(context->scheduler, task, NULL);
+            }
         }
 
         /**** Notify on object level ****/
         task = lwm2m_map_get(resource->instance->object->observers, server->short_server_id);
         if (task != NULL) {
-            execute(context->scheduler, task);
+            pmin = get_object_pmin(server, resource->instance->object, LOOKUP_FULL);
+            if (pmin == NULL || __fulfill_PMIN(*pmin, task)) {
+                execute(context->scheduler, task, resource->instance);
+            }
         }
+        /**** Notify on instance level ****/
+        task = lwm2m_map_get(resource->instance->observers, server->short_server_id);
+        if (task != NULL) {
+            pmin = get_instance_pmin(server, resource->instance, LOOKUP_FULL);
+            if (pmin == NULL || __fulfill_PMIN(*pmin, task)) {
+                execute(context->scheduler, task, NULL);
+            }
+        }
+
     }
 }
 
@@ -167,9 +187,7 @@ void set_null(lwm2m_resource *resource) {
 /************************** MERGE RESOURCES *******************************/
 /**************************************************************************/
 
-static bool __fulfill_PMIN(int pmin, scheduler_task *task) {
-    return task->last_waking_time == 0 || pmin > difftime(time(0), task->last_waking_time);
-}
+
 
 // new_resource is parsed one. It's convenient to just copy values and free the old ones
 
@@ -203,7 +221,7 @@ list *merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource,
                     lwm2m_map_put(old_resource_instances, new_instance->id, new_instance);
                 }
                 /**** Set NULL on some existing resource instance ****/
-                if (new_resource->value == NULL) {
+                else if (new_resource->value == NULL) {
                     __set_null(old_instance);
                 }
 
@@ -212,7 +230,7 @@ list *merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource,
                     int serv_keys[context->servers->size];
                     lwm2m_map_get_keys(context->servers, serv_keys);
                     for (int j = 0; j < context->servers->size; ++j) {
-                        lwm2m_server *server = lwm2m_map_get(context->servers, serv_keys[i]);
+                        lwm2m_server *server = lwm2m_map_get(context->servers, serv_keys[j]);
                         if (!lcontains(servers_to_notify, server->short_server_id)) {
                             ladd(servers_to_notify, server->short_server_id, server);
                         }
@@ -264,9 +282,11 @@ list *merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource,
             lwm2m_server *server = elem->value;
             scheduler_task *task = lwm2m_map_get(old_resource->observers, server->short_server_id);
 
-            int *pmin = get_resource_pmin(server, old_resource, LOOKUP_FULL);
-            if (pmin == NULL || __fulfill_PMIN(*pmin, task)) {
-                execute(context->scheduler, task);
+            if (task != NULL) {
+                int *pmin = get_resource_pmin(server, old_resource, LOOKUP_FULL);
+                if (pmin == NULL || __fulfill_PMIN(*pmin, task)) {
+                    execute(context->scheduler, task, NULL);
+                }
             }
         }
     }
@@ -299,19 +319,21 @@ void merge_resources(lwm2m_instance *old_instance, lwm2m_instance *new_instance,
             int *pmin;
 
             /**** Notify on object level ****/
-            task = lwm2m_map_get(new_instance->object->observers, server->short_server_id);
-            pmin = get_object_pmin(server, old_instance->object, LOOKUP_FULL);
-            if (pmin == NULL || __fulfill_PMIN(*pmin, task)) {
-                task->arg2 = old_instance;
-                execute(context->scheduler, task); // TODO OBJECT NOTIFY IS ON INSTANCE LEVEL. ONLY NEED TO CHANGE TOPIC INSTANCE
+            task = lwm2m_map_get(old_instance->object->observers, server->short_server_id);
+            if (task != NULL) {
+                pmin = get_object_pmin(server, old_instance->object, LOOKUP_FULL);
+                if (pmin == NULL || __fulfill_PMIN(*pmin, task)) {
+                    execute(context->scheduler, task, old_instance);
+                }
             }
 
             /**** Notify on instance level ****/
-            task = lwm2m_map_get(new_instance->observers, server->short_server_id);
-            pmin = get_instance_pmin(server, old_instance, LOOKUP_FULL);
-            if (pmin == NULL || __fulfill_PMIN(*pmin, task)) {
-                task->arg2 = old_instance;
-                execute(context->scheduler, task); // TODO OBJECT NOTIFY IS ON INSTANCE LEVEL. ONLY NEED TO CHANGE TOPIC INSTANCE
+            task = lwm2m_map_get(old_instance->observers, server->short_server_id);
+            if (task != NULL) {
+                pmin = get_instance_pmin(server, old_instance, LOOKUP_FULL);
+                if (pmin == NULL || __fulfill_PMIN(*pmin, task)) {
+                    execute(context->scheduler, task, NULL);
+                }
             }
         }
     }

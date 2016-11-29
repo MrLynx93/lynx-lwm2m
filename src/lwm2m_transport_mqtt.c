@@ -1,6 +1,7 @@
 #include <paho/MQTTAsync.h>
 #include <paho/MQTTClient.h>
 #include <lwm2m_device_management.h>
+#include <unistd.h>
 #include "lwm2m.h"
 #include "lwm2m_transport_mqtt.h"
 #include "lwm2m_transport.h"
@@ -252,6 +253,9 @@ void receive_request(lwm2m_context *context, lwm2m_topic topic, char *message, i
     if (!strcmp(LWM2M_OPERATION_WRITE_ATTRIBUTES, topic.operation)) {
         response = handle_write_attributes_request(context, topic, request);
     }
+    if (!strcmp(LWM2M_OPERATION_EXECUTE, topic.operation)) {
+        response = handle_execute_request(context, topic, request);
+    }
 
     topic.type = "res";
     publish_response(context, topic, response);
@@ -385,6 +389,16 @@ int start_mqtt(lwm2m_context *context) {
     pthread_cond_wait(&started_condition, &started_lock);
 
     pthread_mutex_unlock(&started_lock);
+    return 0;
+}
+
+int stop_mqtt(lwm2m_context *context) {
+    MQTTAsync_disconnectOptions disconn_opts = MQTTAsync_disconnectOptions_initializer;
+    MQTTAsync_disconnect(context->mqtt_client, &disconn_opts);
+    sleep(1);
+
+    MQTTAsync_destroy(context->mqtt_client);
+    sleep(1);
     return 0;
 }
 

@@ -1,7 +1,6 @@
 #include <lwm2m_register.h>
 #include <lwm2m_information_reporting.h>
 #include "lwm2m_bootstrap.h"
-#include "lwm2m_transport.h"
 #include "lwm2m_transport_mqtt.h"
 #include "lwm2m_device_management.h"
 #include "lwm2m_attribute.h"
@@ -10,6 +9,42 @@
 #define CHARSET "abcdefghijklmnopqrstuvwxyz1234567890"
 #define CHARSET_LENGTH 36
 #define TOKEN_LENGTH 8
+
+list *__parse_args(lwm2m_request request) {
+    list *args = list_new();
+
+    int count = 0;
+    char *elems[10];
+    char *buf = strtok(request.payload, ",");
+
+    while (buf != NULL) {
+        elems[count++] = buf;
+        buf = strtok(NULL, ",");
+    }
+
+    for (int i = 0; i < count; i++) {
+        execute_param *param = param_new();
+        buf = strtok(elems[i], "=");
+        param->key = atoi(buf);
+        ladd(args, param->key, param);
+
+        buf = strtok(NULL, "=");
+        /**** String parameter - begins and ends with ' ****/
+        if (buf[0] == '\'' && buf[strlen(buf) - 1] == '\'') {
+            param->string_value = (char *) malloc(sizeof(char) * strlen(buf));
+            memcpy(param->string_value, buf + 1, strlen(buf) - 2);
+        }
+        /**** Float parameter - contains '.' ****/
+        else if(strchr(buf, '.') != NULL) {
+            param->float_value = (float) atof(buf);
+        }
+        /**** Integer parameter ****/
+        else {
+            param->int_value = atoi(buf);
+        }
+    }
+    return args;
+}
 
 char *serialize_response(lwm2m_response response, int *message_len) {
     char *buffer = (char *) calloc(1000, sizeof(char)); // TODO size allocated (calloc? why?)
@@ -253,6 +288,16 @@ lwm2m_response handle_write_attributes_request(lwm2m_context *context, lwm2m_top
         return on_instance_write_attributes(server, instance, request);
     }
     return on_object_write_attributes(server, object, request);
+}
+
+lwm2m_response handle_execute_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
+    lwm2m_server *server = __resolve_server(context, topic);
+    lwm2m_object *object = __resolve_object(context, topic);
+    lwm2m_instance *instance = __resolve_instance(object, topic);
+    lwm2m_resource *resource = __resolve_resource(instance, topic);
+    list *args = __parse_args(request);
+
+    return on_resource_execute(server, resource, args);
 }
 
 ///////// PERFORM

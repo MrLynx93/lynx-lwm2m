@@ -1,5 +1,6 @@
 #include <lwm2m_client.h>
 #include <unistd.h>
+#include <lwm2m_transport_mqtt.h>
 /*
  * This example shows creating LWM2M client, which supports example object.
  * What is happening:
@@ -78,28 +79,32 @@ int main(int argc, char *argv[]) {
     lwm2m_start_client(context);
     // This should not exit, as new threads are created
 
-    getchar();
 
-    lwm2m_object *example_obj = lwm2m_map_get_object(context->object_tree, 123);
-    lwm2m_instance *example_instance = lwm2m_map_get_instance(example_obj->instances, 20);
-    lwm2m_resource *int_resource = lwm2m_map_get(example_instance->resources, 0);
-    lwm2m_resource *string_resource = lwm2m_map_get(example_instance->resources, 2);
+//    lwm2m_object *example_obj = lwm2m_map_get_object(context->object_tree, 123);
+//    lwm2m_instance *example_instance = lwm2m_map_get_instance(example_obj->instances, 20);
+//    lwm2m_resource *int_resource = lwm2m_map_get(example_instance->resources, 0);
+//    lwm2m_resource *string_resource = lwm2m_map_get(example_instance->resources, 2);
 
-    printf("Set value int\n");
-    set_value_int(int_resource, 12);
-    getchar();
-
-    printf("Set value int\n");
-    set_value_int(int_resource, 12);
-    getchar();
-
-    printf("Set value int\n");
-    set_value_int(int_resource, 12);
-    getchar();
-
-    printf("Set value int\n");
-    set_value_int(int_resource, 17);
-    getchar();
+//    printf("Setting value. Should notify all\n");
+//    set_value_int(int_resource, 11);
+//    sleep(6);
+//
+//    printf("Setting value. Should notify object\n");
+//    set_value_int(int_resource, 12);
+//    sleep(6);
+//
+//    printf("Setting value. Should notify object and instance\n");
+//    set_value_int(int_resource, 13);
+//    sleep(16);
+//
+//
+//    printf("Setting value. Should notify object and instance and resource\n");
+//    set_value_int(int_resource, 14);
+//    sleep(30);
+//
+//    printf("Setting value. Should not notify (lt)\n");
+//    set_value_int(int_resource, 17);
+//    getchar();
 
 //    printf("Set value float\n");
 //    set_value_double(float_resource, 512.2);
@@ -110,6 +115,7 @@ int main(int argc, char *argv[]) {
 //    set_value_string(string_resource, "new value");
 //    getchar();
 
+    getchar();
     // Deregister from all servers
     int keys[context->servers->size];
     lwm2m_map_get_keys(context->servers, keys);
@@ -118,6 +124,11 @@ int main(int argc, char *argv[]) {
         deregister(server);
     }
     sleep(2);
+    stop_scheduler(context->scheduler);
+    sleep(10);
+    stop_mqtt(context);
+    sleep(10);
+    return 0;
 }
 
 
@@ -137,9 +148,10 @@ void switch_light(lwm2m_resource *resource) {
     }
 }
 
-void update_firmwire(lwm2m_resource *resource, char *args) {
-    char* version = "1.2"; // In reality you would parse it from args
-    // In this place you would start procedure of updating firmwire
+void update_firmwire(lwm2m_resource *resource, list *args) {
+    char *url = ((execute_param*) lfind(args, 0))->string_value;
+    int times = ((execute_param *) lfind(args, 1))->int_value;
+    printf("[res %s] I would execute ping on %s %d times, but I cant for now :(", resource->name, url, times);
 }
 
 

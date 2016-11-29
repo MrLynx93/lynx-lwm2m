@@ -162,7 +162,7 @@ static void notify_instance_on_server(scheduler_task *task, lwm2m_server *server
     /**** Parse only resources that are readable ****/
     lwm2m_map *resources_to_parse = lwm2m_map_new();
     int keys[instance->resources->size];
-    lwm2m_map_get_keys(instance->resources, keys);
+    lwm2m_map_get_keys(instance->resources, keys); // todo nullpointer
     for (int i = 0; i < instance->resources->size; ++i) {
         lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, keys[i]);
         if (lwm2m_check_resource_operation_supported(resource, READ)) {
@@ -202,16 +202,29 @@ static void notify_resource_on_server(scheduler_task *task, lwm2m_server *server
     perform_notify_response(server->context, topic, response);
     task->last_waking_time = time(0);
 }
-//
-//static void notify_object_func(void *task, void *server, void *instance, void *token) {
-//    notify_instance_on_server((scheduler_task*) task, (lwm2m_server *)server, (lwm2m_instance *)instance, (char*) token);
-//}
 
-static void notify_instance_func(void *task, void *server, void *instance, void *token) {
+static void notify_object_func(void *task, void *server, void *object, void *token, void *instance) {
+    if (instance == NULL) {
+        /**** Notify all instances ****/
+        lwm2m_object* o = (lwm2m_object*) object;
+        int keys[o->instances->size];
+        lwm2m_map_get_keys(o->instances, keys);
+        for (int i = 0; i < o->instances->size; ++i) {
+            lwm2m_instance *inst = lwm2m_map_get(o->instances, keys[i]);
+            notify_instance_on_server((scheduler_task*) task, server, inst, token);
+        }
+    } else {
+        /**** Notify on instance-level ****/
+        notify_instance_on_server((scheduler_task*) task, (lwm2m_server *)server, (lwm2m_instance *)instance, (char*) token);
+    }
+    ((scheduler_task*) task)->last_waking_time = time(0);
+}
+
+static void notify_instance_func(void *task, void *server, void *instance, void *token, void *nothing) {
     notify_instance_on_server((scheduler_task*) task, (lwm2m_server *)server, (lwm2m_instance *)instance, (char*) token);
 }
 
-static void notify_resource_func(void *task, void *server, void *resource, void *token) {
+static void notify_resource_func(void *task, void *server, void *resource, void *token, void *nothing) {
     notify_resource_on_server((scheduler_task*) task, (lwm2m_server *)server, (lwm2m_resource *)resource, (char*) token);
 }
 
@@ -301,11 +314,11 @@ lwm2m_response on_object_observe(lwm2m_server *server, lwm2m_object *object, cha
     scheduler_task *notify_task = (scheduler_task *) malloc(sizeof(scheduler_task));
     notify_task->id = generate_task_id();
     notify_task->period = *get_object_pmax(server, object, 2);
-    notify_task->function = notify_instance_func;
+    notify_task->function = notify_object_func;
     notify_task->last_waking_time = 0;
     notify_task->arg0 = notify_task;
     notify_task->arg1 = server;
-    notify_task->arg2 = NULL; // TODO IT WILL BE SET ON EACH NOTIFY
+    notify_task->arg2 = object; // TODO IT WILL BE SET ON EACH NOTIFY
     notify_task->arg3 = token;
 
     schedule(server->context->scheduler, notify_task);
