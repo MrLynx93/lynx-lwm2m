@@ -46,75 +46,70 @@ list *__parse_args(lwm2m_request request) {
     return args;
 }
 
-char *serialize_response(lwm2m_response response, int *message_len) {
-    char *buffer = (char *) calloc(1000, sizeof(char)); // TODO size allocated (calloc? why?)
-    buffer[0] = (char) response.content_type; // TODO int to format in pdf
-
-    buffer[1] = 0;
+char *serialize_response(lwm2m_response response, char* message, int *message_len) {
+    message[0] = (char) response.content_type; // TODO int to format in pdf
+    message[1] = 0;
     if (response.response_code / 100 == 200)  {
-        buffer[1] &= 0b10000000;
+        message[1] &= 0b10000000;
     }
-    buffer[1] += response.response_code % 100;
+    message[1] += response.response_code % 100;
 
-    memcpy(buffer + 2, response.payload, (size_t) response.payload_len);
+    memcpy(message + 2, response.payload, (size_t) response.payload_len);
     *message_len = response.payload_len + 2;
-    return buffer;
+    return message;
 }
 
 static lwm2m_server *__resolve_server(lwm2m_context *context, lwm2m_topic topic) {
-    return (lwm2m_server *) lwm2m_map_get(context->servers, atoi(topic.server_id));
+    return (lwm2m_server *) lfind(context->servers, atoi(topic.server_id));
 }
 
 static lwm2m_object *__resolve_object(lwm2m_context *context, lwm2m_topic topic) {
-    return lwm2m_map_get_object(context->object_tree, topic.object_id);
+    return lfind(context->object_tree, topic.object_id);
 }
 
 static lwm2m_instance *__resolve_instance(lwm2m_object *object, lwm2m_topic topic) {
     if (object == NULL || topic.instance_id == -1) {
         return NULL;
     }
-    return lwm2m_map_get_instance(object->instances, topic.instance_id);
+    return lfind(object->instances, topic.instance_id);
 }
 
 static lwm2m_resource *__resolve_resource(lwm2m_instance *instance, lwm2m_topic topic) {
     if (instance == NULL || topic.resource_id == -1) {
         return NULL;
     }
-    return lwm2m_map_get_resource(instance->resources, topic.resource_id);
+    return lfind(instance->resources, topic.resource_id);
 }
 
-static char *serialize_request(lwm2m_request request, int *message_len) {
-    char *buffer = (char *) calloc(1000, sizeof(char));
-    buffer[0] = (char) request.content_type;
-    memcpy(buffer + 1, request.payload, request.payload_len);
-    *message_len = (int) strlen(buffer + 1) + 1;
-    return buffer;
+static char *serialize_request(lwm2m_request request, char *message, int *message_len) {
+    message[0] = (char) request.content_type;
+    memcpy(message + 1, request.payload, request.payload_len);
+    *message_len = (int) strlen(message + 1) + 1;
+    return message;
 }
 
-static char *serialize_register_request(lwm2m_register_request request, int *message_len) {
-    char *buffer = (char *) calloc(1000, sizeof(char));
-    sprintf(buffer + 1, "%s?%s", request.header, request.payload);
-    buffer[0] = (char) request.content_type;
-    *message_len = (int) (strlen(buffer + 1) + 1);
-    return buffer;
+static char *serialize_register_request(lwm2m_register_request request, char *message, int *message_len) {
+    sprintf(message + 1, "%s?%s", request.header, request.payload);
+    message[0] = (char) request.content_type;
+    *message_len = (int) (strlen(message + 1) + 1);
+    return message;
 }
 
-char *serialize_topic(lwm2m_topic topic) {
-    char *buffer = (char *) malloc(100 * sizeof(char));
-    sprintf(buffer, "lynx/%s/%s/%s/%s/%s", topic.operation, topic.type, topic.token, topic.client_id, topic.server_id);
+char *serialize_topic(lwm2m_topic topic, char *message) {
+    sprintf(message, "lynx/%s/%s/%s/%s/%s", topic.operation, topic.type, topic.token, topic.client_id, topic.server_id);
     if (topic.object_id != -1) {
-        strcat(buffer, "/");
-        strcat(buffer, itoa(topic.object_id));
+        strcat(message, "/");
+        strcat(message, itoa(topic.object_id));
     }
     if (topic.instance_id != -1) {
-        strcat(buffer, "/");
-        strcat(buffer, itoa(topic.instance_id));
+        strcat(message, "/");
+        strcat(message, itoa(topic.instance_id));
     }
     if (topic.resource_id != -1) {
-        strcat(buffer, "/");
-        strcat(buffer, itoa(topic.resource_id));
+        strcat(message, "/");
+        strcat(message, itoa(topic.resource_id));
     }
-    return buffer;
+    return message;
 }
 
 char *generate_token() {
@@ -131,8 +126,8 @@ lwm2m_response handle_bootstrap_delete_request(lwm2m_context *context, lwm2m_top
     if (topic.instance_id == -1) {
         on_bootstrap_delete_all(context);
     } else {
-        lwm2m_object *object = lwm2m_map_get_object(context->object_tree, topic.object_id);
-        lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, topic.instance_id);
+        lwm2m_object *object = lfind(context->object_tree, topic.object_id);
+        lwm2m_instance *instance = lfind(object->instances, topic.instance_id);
         on_bootstrap_delete(context, instance);
     }
 
@@ -146,17 +141,17 @@ lwm2m_response handle_bootstrap_delete_request(lwm2m_context *context, lwm2m_top
 }
 
 lwm2m_response handle_bootstrap_write_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
-    lwm2m_object *object = lwm2m_map_get_object(context->object_tree, topic.object_id);
+    lwm2m_object *object = lfind(context->object_tree, topic.object_id);
     if (topic.instance_id != -1 && topic.resource_id != -1) {
-        lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, topic.instance_id);
-        lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, topic.resource_id);
-        on_bootstrap_resource_write(context, resource, request.payload, (int) request.payload_len);
+        lwm2m_instance *instance = lfind(object->instances, topic.instance_id);
+        lwm2m_resource *resource = lfind(instance->resources, topic.resource_id);
+        on_bootstrap_resource_write(resource, request.payload, (int) request.payload_len);
     }
     else if (topic.instance_id != -1) {
-        on_bootstrap_instance_write(context, object, topic.instance_id, request.payload, (int) request.payload_len);
+        on_bootstrap_instance_write(object, topic.instance_id, request.payload, (int) request.payload_len);
     }
     else {
-        on_bootstrap_object_write(context, object, request.payload, (int) request.payload_len);
+        on_bootstrap_object_write(object, request.payload, (int) request.payload_len);
     }
 
     lwm2m_response response = {
@@ -187,12 +182,12 @@ lwm2m_response handle_write_request(lwm2m_context *context, lwm2m_topic topic, l
             .payload_len = 0,
     };
 
-    lwm2m_server *server = (lwm2m_server *) lwm2m_map_get(context->servers, atoi(topic.server_id));
-    lwm2m_object *object = lwm2m_map_get_object(context->object_tree, topic.object_id);
-    lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, topic.instance_id);
+    lwm2m_server *server = (lwm2m_server *) lfind(context->servers, atoi(topic.server_id));
+    lwm2m_object *object = lfind(context->object_tree, topic.object_id);
+    lwm2m_instance *instance = lfind(object->instances, topic.instance_id);
 
     if (topic.resource_id != -1) {
-        lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, topic.resource_id);
+        lwm2m_resource *resource = lfind(instance->resources, topic.resource_id);
         response.response_code = on_resource_write(server, resource, request.payload, (int) request.payload_len);
     } else {
         response.response_code = on_instance_write(server, instance, request.payload, (int) request.payload_len);
@@ -201,16 +196,16 @@ lwm2m_response handle_write_request(lwm2m_context *context, lwm2m_topic topic, l
 }
 
 lwm2m_response handle_read_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
-    lwm2m_server *server = (lwm2m_server *) lwm2m_map_get(context->servers, atoi(topic.server_id));
-    lwm2m_object *object = lwm2m_map_get_object(context->object_tree, topic.object_id);
+    lwm2m_server *server = (lwm2m_server *) lfind(context->servers, atoi(topic.server_id));
+    lwm2m_object *object = lfind(context->object_tree, topic.object_id);
 
     if (topic.instance_id != -1 && topic.resource_id != -1) {
-        lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, topic.instance_id);
-        lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, topic.resource_id);
+        lwm2m_instance *instance = lfind(object->instances, topic.instance_id);
+        lwm2m_resource *resource = lfind(instance->resources, topic.resource_id);
         return on_resource_read(server, resource);
     }
     else if (topic.instance_id != -1) {
-        lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, topic.instance_id);
+        lwm2m_instance *instance = lfind(object->instances, topic.instance_id);
         return on_instance_read(server, instance);
     } else {
         return on_object_read(server, object);
@@ -302,56 +297,105 @@ lwm2m_response handle_execute_request(lwm2m_context *context, lwm2m_topic topic,
 
 ///////// PERFORM
 
+static void __free_request(lwm2m_request *request) {
+    if (request->payload_len > 0) {
+        free(request->payload);
+    }
+}
+
+static void __free_register_request(lwm2m_register_request *request) {
+    if (request->payload_len > 0) {
+        free(request->payload);
+    }
+    if (request->header != NULL) {
+        free(request->header);
+    }
+}
+
+static void __free_response(lwm2m_response *response) {
+    free(response->payload);
+}
+
+static void __free_topic(lwm2m_topic *topic) {
+    free(topic->token);
+}
+
 void perform_bootstrap_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
+    char message[1000];
+    char topic_str[100];
     int message_len;
-    char *topic_str = serialize_topic(topic);
-    char *message = serialize_request(request, &message_len);
+
+    serialize_topic(topic, topic_str);
+    serialize_request(request, message, &message_len);
+    __free_request(&request);
+    __free_topic(&topic);
+
     publish(context, topic_str, message, message_len);
 }
 
 void perform_deregister_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
+    char message[1000];
+    char topic_str[100];
     int message_len;
-    char *topic_str = serialize_topic(topic);
-    char *message = serialize_request(request, &message_len);
+
+    serialize_topic(topic, topic_str);
+    serialize_request(request, message, &message_len);
+    __free_request(&request);
+    __free_topic(&topic);
+
     publish(context, topic_str, message, message_len);
 }
 
 void perform_register_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_register_request request) {
+    char message[1000];
+    char topic_str[100];
     int message_len;
-    char *topic_str = serialize_topic(topic);
-    char *message = serialize_register_request(request, &message_len);
+
+    serialize_topic(topic, topic_str);
+    serialize_register_request(request, message, &message_len);
+    __free_register_request(&request);
+    __free_topic(&topic);
 
     publish(context, topic_str, message, message_len);
 }
 
 void perform_update_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_register_request request) {
+    char message[1000];
+    char topic_str[100];
     int message_len;
-    char *topic_str = serialize_topic(topic);
-    char *message = serialize_register_request(request, &message_len);
+
+    serialize_topic(topic, topic_str);
+    serialize_register_request(request, message, &message_len);
+    __free_register_request(&request);
+    __free_topic(&topic);
 
     publish(context, topic_str, message, message_len);
 }
 
 void perform_notify_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response response) {
+    char message[1000];
+    char topic_str[100];
     int message_len;
-    char *topic_str = serialize_topic(topic);
-    char *message = serialize_response(response, &message_len);
+
+    serialize_topic(topic, topic_str);
+    serialize_response(response, message, &message_len);
+    __free_response(&response);
 
     publish(context, topic_str, message, message_len);
 }
 
 void handle_deregister_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response response) {
-    lwm2m_server *server = lwm2m_map_get(context->servers, atoi(topic.server_id));
+    lwm2m_server *server = lfind(context->servers, atoi(topic.server_id));
     on_server_deregister(server, response.response_code);
 }
 
 void handle_register_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response response) {
-    lwm2m_server *server = lwm2m_map_get(context->servers, atoi(topic.server_id));
+    lwm2m_server *server = lfind(context->servers, atoi(topic.server_id));
     on_server_register(server, response.response_code);
 }
 
 void handle_update_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response response) {
-    lwm2m_server *server = lwm2m_map_get(context->servers, atoi(topic.server_id));
+    lwm2m_server *server = lfind(context->servers, atoi(topic.server_id));
     on_server_update(server, response.response_code);
 }
 

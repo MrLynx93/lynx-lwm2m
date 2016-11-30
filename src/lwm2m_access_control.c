@@ -57,58 +57,56 @@ bool lwm2m_check_resource_operation_supported(lwm2m_resource *resource, int oper
 }
 
 lwm2m_object *lwm2m_get_aco_object(lwm2m_context* context) {
-    return (lwm2m_object*) lwm2m_map_get(context->object_tree, ACCESS_CONTROL_OBJECT_ID);
+    return (lwm2m_object*) lfind(context->object_tree, ACCESS_CONTROL_OBJECT_ID);
 }
 
 lwm2m_resource* lwm2m_get_object_acl_resource(lwm2m_object* object) {
-    return lwm2m_map_get_resource(object->aco_instance->resources, ACL_RESOURCE_ID);
+    return lfind(object->aco_instance->resources, ACL_RESOURCE_ID);
 }
 
 lwm2m_resource *lwm2m_get_instance_acl_resource(lwm2m_instance *instance) {
-    return lwm2m_map_get_resource(instance->aco_instance->resources, ACL_RESOURCE_ID);
+    return lfind(instance->aco_instance->resources, ACL_RESOURCE_ID);
 }
 
 lwm2m_resource *lwm2m_get_acl_resource_instance(lwm2m_resource *acl_resource, lwm2m_server *server) {
-    return lwm2m_map_get_resource(acl_resource->instances, server->short_server_id);
+    return lfind(acl_resource->instances, server->short_server_id);
 }
 
 lwm2m_resource *get_default_acl_resource_instance(lwm2m_context *context, lwm2m_instance* instance) {
     lwm2m_resource* acl_multiple_resource = lwm2m_get_instance_acl_resource(instance);
-    return lwm2m_map_get_resource(acl_multiple_resource->instances, SECURITY_OBJECT_ID);
+    return lfind(acl_multiple_resource->instances, SECURITY_OBJECT_ID);
 }
 
 
 /////////////// OTHERS ///////////////////
 
 int lwm2m_get_access_control_owner(lwm2m_instance *instance) {
-    lwm2m_resource* resource = (lwm2m_resource*) lwm2m_map_get(instance->aco_instance->resources, ACO_RESOURCE_ID);
+    lwm2m_resource* resource = (lwm2m_resource*) lfind(instance->aco_instance->resources, ACO_RESOURCE_ID);
     return resource->value->int_value;
 }
 
 lwm2m_instance *lwm2m_object_create_aco_instance(lwm2m_server* server, lwm2m_object* object) {
-    lwm2m_instance* aco_instance = lwm2m_instance_new(server->context, lwm2m_get_aco_object(server->context)->id);
-    aco_instance->resources = server->context->create_standard_resources_callback(ACCESS_CONTROL_OBJECT_ID);
-    __set_value_int(lwm2m_map_get_resource(aco_instance->resources, OBJECT_ID_RESOURCE_ID), object->id);
-    __set_value_int(lwm2m_map_get_resource(aco_instance->resources, INSTANCE_ID_RESOURCE_ID), 0);
-    __set_value_int(lwm2m_map_get_resource(aco_instance->resources, ACO_RESOURCE_ID), server->short_server_id);
+    lwm2m_instance* aco_instance = lwm2m_instance_new(lwm2m_get_aco_object(server->context));
+    __set_value_int(lfind(aco_instance->resources, OBJECT_ID_RESOURCE_ID), object->id);
+    __set_value_int(lfind(aco_instance->resources, INSTANCE_ID_RESOURCE_ID), 0);
+    __set_value_int(lfind(aco_instance->resources, ACO_RESOURCE_ID), server->short_server_id);
     // TODO setting default ACL resource instances
     return aco_instance;
 }
 
 lwm2m_instance *lwm2m_instance_create_aco_instance(lwm2m_server* server, lwm2m_instance* instance) {
-    lwm2m_instance* aco_instance = lwm2m_instance_new(server->context, lwm2m_get_aco_object(server->context)->id);
-    aco_instance->resources = server->context->create_standard_resources_callback(ACCESS_CONTROL_OBJECT_ID);
-    __set_value_int(lwm2m_map_get_resource(aco_instance->resources, OBJECT_ID_RESOURCE_ID), instance->object->id);
-    __set_value_int(lwm2m_map_get_resource(aco_instance->resources, INSTANCE_ID_RESOURCE_ID), instance->id);
-    __set_value_int(lwm2m_map_get_resource(aco_instance->resources, ACO_RESOURCE_ID), server->short_server_id);
+    lwm2m_instance* aco_instance = lwm2m_instance_new(lwm2m_get_aco_object(server->context));
+    __set_value_int(lfind(aco_instance->resources, OBJECT_ID_RESOURCE_ID), instance->object->id);
+    __set_value_int(lfind(aco_instance->resources, INSTANCE_ID_RESOURCE_ID), instance->id);
+    __set_value_int(lfind(aco_instance->resources, ACO_RESOURCE_ID), server->short_server_id);
 
     /***** Create ACL multiple resource *****/
-    lwm2m_map *acl = lwm2m_map_get_resource(aco_instance->resources, ACL_RESOURCE_ID)->instances;
+    list *acl = ((lwm2m_resource*) lfind(aco_instance->resources, ACL_RESOURCE_ID))->instances;
 
     /***** Add ACL resource instance with all previliges *****/
     lwm2m_resource *server_resource_instance = lwm2m_resource_new(false);
     __set_value_int(server_resource_instance, READ | WRITE | EXECUTE | DELETE);
-    lwm2m_map_put(acl, server->short_server_id, server_resource_instance);
+    ladd(acl, server->short_server_id, server_resource_instance);
 
     return aco_instance;
 }

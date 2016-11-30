@@ -6,271 +6,212 @@
 
 ////////////////// PREDEFINED OBJECTS ////////////////////
 
-static lwm2m_map *create_standard_objects() {
-    // Define security object
-    lwm2m_object *security_object = lwm2m_object_new();
-    security_object->id = SECURITY_OBJECT_ID;
-    security_object->mandatory = true;
-    security_object->multiple = true;
-    security_object->object_urn = "urn:oma:lwm2m:oma:0";
-    security_object->attributes = lwm2m_map_new();
+static lwm2m_resource *create_security_object_resources() {
+    lwm2m_resource *resources = (lwm2m_resource *) malloc(13 * sizeof(lwm2m_resource));
 
-    // Define server object
-    lwm2m_object *server_object = lwm2m_object_new();
-    server_object->id = SERVER_OBJECT_ID;
-    server_object->mandatory = true;
-    server_object->multiple = true;
-    server_object->object_urn = "urn:oma:lwm2m:oma:1";
-    server_object->attributes = lwm2m_map_new();
+    // TODO FOR ALL
+//    resource->execute_callback = NULL;
+//    resource->write_callback = NULL;
+//    resource->read_callback = NULL;
 
-    // Define access control object
-    lwm2m_object *access_control_object = lwm2m_object_new();
-    access_control_object->id = ACCESS_CONTROL_OBJECT_ID;
-    server_object->mandatory = false;
-    access_control_object->multiple = true;
-    access_control_object->object_urn = "urn:oma:lwm2m:oma:2";
-    access_control_object->attributes = lwm2m_map_new();
+    resources[0].multiple = false;
+    resources[0].id = 0;
+    resources[0].multiple = false;
+    resources[0].name = "LWM2M Server URI";
+    resources[0].type = STRING;
+    resources[0].mandatory = true;
+    resources[0].operations = NOOP;
 
-    // Create list with objects (todo map?)
-    lwm2m_map *objects = lwm2m_map_new();
-    lwm2m_map_put(objects, 0, security_object);
-    lwm2m_map_put(objects, 1, server_object);
-    lwm2m_map_put(objects, 2, access_control_object);
-    return objects;
-}
+    resources[1].multiple = false;
+    resources[1].id = 1;
+    resources[1].name = "Bootstrap Server";
+    resources[1].type = BOOLEAN;
+    resources[1].mandatory = true;
+    resources[1].operations = NOOP;
 
-static lwm2m_map *create_security_object_resources() {
-    lwm2m_map* resources = lwm2m_map_new();
-    lwm2m_resource *resource;
-
-    resource = lwm2m_resource_new(false);
-    resource->id = 0;
-    resource->name = "LWM2M Server URI";
-    resource->type = STRING;
-    resource->mandatory = true;
-    resource->operations = NOOP;
-    lwm2m_map_put(resources, 0, (void*)resource);
-
-    resource = lwm2m_resource_new(false);
-    resource->id = 1;
-    resource->name = "Bootstrap Server";
-    resource->type = BOOLEAN;
-    resource->mandatory = true;
-    resource->operations = NOOP;
-    lwm2m_map_put(resources, 1, (void*)resource);
-
-    resource = lwm2m_resource_new(false);
-    resource->id = 2;
-    resource->name = "Security Mode";
-    resource->type = INTEGER;
-    resource->mandatory = false; // TODO FOR NOW ONLY
-    resource->operations = NOOP;
-    lwm2m_map_put(resources, 2, (void*)resource);
-
-    resource = lwm2m_resource_new(false);
-    resource->id = 3;
-    resource->name = "Public Key or Identity";
-    resource->type = OPAQUE;
-    resource->mandatory = false; // TODO FOR NOW ONLY
-    resource->operations = NOOP;
-    lwm2m_map_put(resources, 3, (void*)resource);
-
-    resource = lwm2m_resource_new(false);
-    resource->id = 4;
-    resource->name = "Server Public Key";
-    resource->type = OPAQUE;
-    resource->mandatory = false; // TODO FOR NOW ONLY
-    resource->operations = NOOP;
-    lwm2m_map_put(resources, 4, (void*)resource);
-
-    resource = lwm2m_resource_new(false);
-    resource->id = 5;
-    resource->name = "Secret Key";
-    resource->type = OPAQUE;
-    resource->mandatory = false; // TODO FOR NOW ONLY
-    resource->operations = NOOP;
-    lwm2m_map_put(resources, 5, (void*)resource);
-
-    resource = lwm2m_resource_new(false);
-    resource->id = 6;
-    resource->name = "SMS Security Mode";
-    resource->type = INTEGER;
-    resource->mandatory = false;
-    resource->operations = NOOP;
-    lwm2m_map_put(resources, 6, (void*)resource);
-
-    resource = lwm2m_resource_new(false);
-    resource->id = 7;
-    resource->name = "SMS Key Binding Parameters";
-    resource->type = OPAQUE;
-    resource->mandatory = false;
-    resource->operations = NOOP;
-    lwm2m_map_put(resources, 7, (void*)resource);
-
-
-    resource = lwm2m_resource_new(false);
-    resource->id = 8;
-    resource->name = "SMS Binding Secret Key(s)";
-    resource->type = OPAQUE;
-    resource->mandatory = false;
-    resource->operations = NOOP;
-    lwm2m_map_put(resources, 8, (void*)resource);
-
-    resource = lwm2m_resource_new(false);
-    resource->id = 9;
-    resource->name = "LWM2M Server SMS Number";
-    resource->type = STRING;
-    resource->mandatory = false;
-    resource->operations = NOOP;
-    lwm2m_map_put(resources, 9, (void*)resource);
-
-    resource = lwm2m_resource_new(false);
-    resource->id = 10;
-    resource->name = "Short Server ID";
-    resource->type = INTEGER;
-    resource->mandatory = false;
-    resource->operations = NOOP;
-    lwm2m_map_put(resources, 10, (void*)resource);
-
-
-    resource = lwm2m_resource_new(false);
-    resource->id = 11;
-    resource->name = "Client Hold Off Time";
-    resource->type = INTEGER;
-    resource->mandatory = false;
-    resource->operations = NOOP;
-    lwm2m_map_put(resources, 11, (void*)resource);
-
-    resource = lwm2m_resource_new(false);
-    resource->id = 12;
-    resource->name = "Bootstrap Server Account Timeout";
-    resource->type = INTEGER;
-    resource->mandatory = false;
-    resource->operations = NOOP;
-    lwm2m_map_put(resources, 12, (void*)resource);
+    resources[2].multiple = false;
+    resources[2].id = 2;
+    resources[2].name = "Security Mode";
+    resources[2].type = INTEGER;
+    resources[2].mandatory = false; // TODO FOR NOW ONLY
+    resources[2].operations = NOOP;
+    
+    resources[3].multiple = false;
+    resources[3].id = 3;
+    resources[3].name = "Public Key or Identity";
+    resources[3].type = OPAQUE;
+    resources[3].mandatory = false; // TODO FOR NOW ONLY
+    resources[3].operations = NOOP;
+    
+    resources[4].multiple = false;
+    resources[4].id = 4;
+    resources[4].name = "Server Public Key";
+    resources[4].type = OPAQUE;
+    resources[4].mandatory = false; // TODO FOR NOW ONLY
+    resources[4].operations = NOOP;
+    
+    resources[5].multiple = false;
+    resources[5].id = 5;
+    resources[5].name = "Secret Key";
+    resources[5].type = OPAQUE;
+    resources[5].mandatory = false; // TODO FOR NOW ONLY
+    resources[5].operations = NOOP;
+    
+    resources[6].multiple = false;
+    resources[6].id = 6;
+    resources[6].name = "SMS Security Mode";
+    resources[6].type = INTEGER;
+    resources[6].mandatory = false;
+    resources[6].operations = NOOP;
+    
+    resources[7].multiple = false;
+    resources[7].id = 7;
+    resources[7].name = "SMS Key Binding Parameters";
+    resources[7].type = OPAQUE;
+    resources[7].mandatory = false;
+    resources[7].operations = NOOP;
+    
+    resources[8].multiple = false;
+    resources[8].id = 8;
+    resources[8].name = "SMS Binding Secret Key(s)";
+    resources[8].type = OPAQUE;
+    resources[8].mandatory = false;
+    resources[8].operations = NOOP;
+    
+    resources[9].multiple = false;
+    resources[9].id = 9;
+    resources[9].name = "LWM2M Server SMS Number";
+    resources[9].type = STRING;
+    resources[9].mandatory = false;
+    resources[9].operations = NOOP;
+    
+    resources[10].multiple = false;
+    resources[10].id = 10;
+    resources[10].name = "Short Server ID";
+    resources[10].type = INTEGER;
+    resources[10].mandatory = false;
+    resources[10].operations = NOOP;
+    
+    resources[11].multiple = false;
+    resources[11].id = 11;
+    resources[11].name = "Client Hold Off Time";
+    resources[11].type = INTEGER;
+    resources[11].mandatory = false;
+    resources[11].operations = NOOP;
+    
+    resources[12].multiple = false;
+    resources[12].id = 12;
+    resources[12].name = "Bootstrap Server Account Timeout";
+    resources[12].type = INTEGER;
+    resources[12].mandatory = false;
+    resources[12].operations = NOOP;
 
     return resources;
 }
 
-static lwm2m_map *create_server_object_resources() {
-    lwm2m_map* resources = lwm2m_map_new();
-    lwm2m_resource *resource;
+static lwm2m_resource *create_server_object_resources() {
+    lwm2m_resource* resources = (lwm2m_resource*) malloc(9 * sizeof(lwm2m_resource));
 
-    resource = lwm2m_resource_new(false);
-    resource->id = 0;
-    resource->name = "Short Server ID";
-    resource->type = INTEGER;
-    resource->mandatory = true;
-    resource->operations = READ;
-    lwm2m_map_put(resources, 0, (void*)resource);
+    resources[0].multiple = false;
+    resources[0].id = 0;
+    resources[0].name = "Short Server ID";
+    resources[0].type = INTEGER;
+    resources[0].mandatory = true;
+    resources[0].operations = READ;
 
-    resource = lwm2m_resource_new(false);
-    resource->id = 1;
-    resource->name = "Lifetime";
-    resource->type = INTEGER;
-    resource->mandatory = true;
-    resource->operations = READ | WRITE;
-    lwm2m_map_put(resources, 1, (void*)resource);
+    resources[1].multiple = false;
+    resources[1].id = 1;
+    resources[1].name = "Lifetime";
+    resources[1].type = INTEGER;
+    resources[1].mandatory = true;
+    resources[1].operations = READ | WRITE;
 
-    resource = lwm2m_resource_new(false);
-    resource->id = 2;
-    resource->name = "Default Minimum Period";
-    resource->type = INTEGER;
-    resource->mandatory = false;
-    resource->operations = READ | WRITE;
-    lwm2m_map_put(resources, 2, (void*)resource);
+    resources[2].multiple = false;
+    resources[2].id = 2;
+    resources[2].name = "Default Minimum Period";
+    resources[2].type = INTEGER;
+    resources[2].mandatory = false;
+    resources[2].operations = READ | WRITE;
 
-    resource = lwm2m_resource_new(false);
-    resource->id = 3;
-    resource->name = "Default Maximum Period";
-    resource->type = INTEGER;
-    resource->mandatory = false;
-    resource->operations = READ | WRITE;
-    lwm2m_map_put(resources, 3, (void*)resource);
+    resources[3].multiple = false;
+    resources[3].id = 3;
+    resources[3].name = "Default Maximum Period";
+    resources[3].type = INTEGER;
+    resources[3].mandatory = false;
+    resources[3].operations = READ | WRITE;
 
-    resource = lwm2m_resource_new(false);
-    resource->id = 4;
-    resource->name = "Disable";
-    resource->type = NONE;
-    resource->mandatory = false;
-    resource->operations = EXECUTE;
-    lwm2m_map_put(resources, 4, (void*)resource);
+    resources[4].multiple = false;
+    resources[4].id = 4;
+    resources[4].name = "Disable";
+    resources[4].type = NONE;
+    resources[4].mandatory = false;
+    resources[4].operations = EXECUTE;
 
-    resource = lwm2m_resource_new(false);
-    resource->id = 5;
-    resource->name = "Disable Timeout";
-    resource->type = INTEGER;
-    resource->mandatory = false;
-    resource->operations = READ | WRITE;
-    lwm2m_map_put(resources, 5, (void*)resource);
+    resources[5].multiple = false;
+    resources[5].id = 5;
+    resources[5].name = "Disable Timeout";
+    resources[5].type = INTEGER;
+    resources[5].mandatory = false;
+    resources[5].operations = READ | WRITE;
 
-    resource = lwm2m_resource_new(false);
-    resource->id = 6;
-    resource->name = "Notification Storing When Disabled or Offline";
-    resource->type = BOOLEAN;
-    resource->mandatory = true;
-    resource->operations = READ | WRITE;
-    lwm2m_map_put(resources, 6, (void*)resource);
+    resources[6].multiple = false;
+    resources[6].id = 6;
+    resources[6].name = "Notification Storing When Disabled or Offline";
+    resources[6].type = BOOLEAN;
+    resources[6].mandatory = true;
+    resources[6].operations = READ | WRITE;
 
-    resource = lwm2m_resource_new(false);
-    resource->id = 7;
-    resource->name = "Binding";
-    resource->type = STRING;
-    resource->mandatory = true;
-    resource->operations = READ | WRITE;
-    lwm2m_map_put(resources, 7, (void*)resource);
+    resources[7].multiple = false;
+    resources[7].id = 7;
+    resources[7].name = "Binding";
+    resources[7].type = STRING;
+    resources[7].mandatory = true;
+    resources[7].operations = READ | WRITE;
 
-    resource = lwm2m_resource_new(false);
-    resource->id = 8;
-    resource->name = "Registration Update Trigger";
-    resource->type = NONE;
-    resource->mandatory = true;
-    resource->operations = EXECUTE;
-    lwm2m_map_put(resources, 8, (void*)resource);
+    resources[8].multiple = false;
+    resources[8].id = 8;
+    resources[8].name = "Registration Update Trigger";
+    resources[8].type = NONE;
+    resources[8].mandatory = true;
+    resources[8].operations = EXECUTE;
 
     return resources;
 }
 
-static lwm2m_map *create_access_control_object_resources() {
-    lwm2m_map* resources = lwm2m_map_new();
-    lwm2m_resource *resource;
+static lwm2m_resource *create_access_control_object_resources() {
+    lwm2m_resource *resources = (lwm2m_resource*) malloc(4 * sizeof(lwm2m_resource));
 
-    resource = lwm2m_resource_new(false);
-    resource->id = 0;
-    resource->name = "Object ID";
-    resource->type = INTEGER;
-    resource->mandatory = true;
-    resource->operations = READ;
-    lwm2m_map_put(resources, 0, (void*)resource);
+    resources[0].multiple = false;
+    resources[0].id = 0;
+    resources[0].name = "Object ID";
+    resources[0].type = INTEGER;
+    resources[0].mandatory = true;
+    resources[0].operations = READ;
 
-    resource = lwm2m_resource_new(false);
-    resource->id = 1;
-    resource->name = "Object Instance ID";
-    resource->type = INTEGER;
-    resource->mandatory = true;
-    resource->operations = READ;
-    lwm2m_map_put(resources, 1, (void*)resource);
+    resources[1].multiple = false;
+    resources[1].id = 1;
+    resources[1].name = "Object Instance ID";
+    resources[1].type = INTEGER;
+    resources[1].mandatory = true;
+    resources[1].operations = READ;
 
-    resource = lwm2m_resource_new(true);
-    resource->id = 2;
-    resource->name = "ACL";
-    resource->type = INTEGER;
-    resource->mandatory = false;
-    resource->operations = READ | WRITE;
-    lwm2m_map_put(resources, 2, (void*)resource);
+    resources[2].id = 2;
+    resources[2].name = "ACL";
+    resources[2].type = INTEGER;
+    resources[2].mandatory = false;
+    resources[2].operations = READ | WRITE;
 
-    resource = lwm2m_resource_new(false);
-    resource->id = 3;
-    resource->name = "Access Control Owner";
-    resource->type = INTEGER;
-    resource->mandatory = true;
-    resource->operations = READ | WRITE;
-    lwm2m_map_put(resources, 3, (void*)resource);
+    resources[3].multiple = false;
+    resources[3].id = 3;
+    resources[3].name = "Access Control Owner";
+    resources[3].type = INTEGER;
+    resources[3].mandatory = true;
+    resources[3].operations = READ | WRITE;
 
     return resources;
 }
 
-static lwm2m_map *create_standard_resources(int object_id) {
+static lwm2m_resource *create_standard_resources(int object_id) {
     switch (object_id) {
         case SECURITY_OBJECT_ID:
             return create_security_object_resources();
@@ -283,24 +224,60 @@ static lwm2m_map *create_standard_resources(int object_id) {
     }
 }
 
-static int create_object_tree(lwm2m_context *context) {
-    lwm2m_map *standard_objects = create_standard_objects();
-    lwm2m_map *user_defined_objects = context->create_objects_callback();
-    int keys[standard_objects->size + user_defined_objects->size];
+static list *create_standard_objects() {
+    // Define security object
+    lwm2m_object *security_object = lwm2m_object_new();
+    security_object->id = SECURITY_OBJECT_ID;
+    security_object->mandatory = true;
+    security_object->multiple = true;
+    security_object->object_urn = "urn:oma:lwm2m:oma:0";
+    security_object->attributes = list_new();
+    security_object->resource_def = create_standard_resources(SECURITY_OBJECT_ID);
+    security_object->resource_def_len = 13;
 
-    lwm2m_map_get_keys(standard_objects, keys);
-    for (int i = 0; i < standard_objects->size; i++) {
-        lwm2m_object *object = (lwm2m_object*) lwm2m_map_get(standard_objects, keys[i]);
+    // Define server object
+    lwm2m_object *server_object = lwm2m_object_new();
+    server_object->id = SERVER_OBJECT_ID;
+    server_object->mandatory = true;
+    server_object->multiple = true;
+    server_object->object_urn = "urn:oma:lwm2m:oma:1";
+    server_object->attributes = list_new();
+    server_object->resource_def = create_standard_resources(SERVER_OBJECT_ID);
+    server_object->resource_def_len = 9;
+
+    // Define access control object
+    lwm2m_object *access_control_object = lwm2m_object_new();
+    access_control_object->id = ACCESS_CONTROL_OBJECT_ID;
+    access_control_object->mandatory = false;
+    access_control_object->multiple = true;
+    access_control_object->object_urn = "urn:oma:lwm2m:oma:2";
+    access_control_object->attributes = list_new();
+    access_control_object->resource_def = create_standard_resources(ACCESS_CONTROL_OBJECT_ID);
+    access_control_object->resource_def_len = 4;
+
+    // Create list with objects
+    list *objects = list_new();
+    ladd(objects, 0, security_object);
+    ladd(objects, 1, server_object);
+    ladd(objects, 2, access_control_object);
+    return objects;
+}
+
+static int create_object_tree(lwm2m_context *context) {
+    list *standard_objects = create_standard_objects();
+    list *user_defined_objects = context->create_objects_callback();
+
+    for (list_elem *elem = standard_objects->first; elem != NULL; elem = elem->next) {
+        lwm2m_object *object = elem->value;
         object->context = context;
-        object->instances = lwm2m_map_new();
-        lwm2m_map_put(context->object_tree, keys[i], (void*)object);
+        object->instances = list_new();
+        ladd(context->object_tree, elem->key, object);
     }
-    lwm2m_map_get_keys(user_defined_objects, keys);
-    for (int i = 0; i < user_defined_objects->size; i++) {
-        lwm2m_object *object = (lwm2m_object*) lwm2m_map_get(user_defined_objects, keys[i]);
+    for (list_elem *elem = user_defined_objects->first; elem != NULL; elem = elem->next) {
+        lwm2m_object *object = elem->value;
         object->context = context;
-        object->instances = lwm2m_map_new();
-        lwm2m_map_put(context->object_tree, keys[i], (void*)object);
+        object->instances = list_new();
+        ladd(context->object_tree, elem->key, object);
     }
     return 0;
 }
@@ -310,10 +287,9 @@ static int create_object_tree(lwm2m_context *context) {
 
 lwm2m_context *lwm2m_create_context() {
     lwm2m_context *context = (lwm2m_context *) malloc(sizeof(lwm2m_context));
-    context->create_standard_resources_callback = create_standard_resources;
-    context->object_tree = lwm2m_map_new();
-    context->servers = lwm2m_map_new();
-    context->update_tasks = lwm2m_map_new();
+    context->object_tree = list_new();
+    context->servers = list_new();
+    context->update_tasks = list_new();
     context->is_bootstrap_ready = true;
     context->is_bootstrapped = false;
 

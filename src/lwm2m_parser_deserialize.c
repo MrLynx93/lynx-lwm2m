@@ -12,12 +12,10 @@
  * - operations allowed
  * - multiple/single
  */
-static lwm2m_resource* create_resource(lwm2m_context *context, int object_id, int resource_id) {
-    if (object_id == SECURITY_OBJECT_ID || object_id == SERVER_OBJECT_ID || object_id == ACCESS_CONTROL_OBJECT_ID) {
-        return lwm2m_map_get_resource(context->create_standard_resources_callback(object_id), resource_id);
-    } else {
-        return lwm2m_map_get_resource(context->create_resources_callback(object_id), resource_id);
-    }
+static lwm2m_resource* create_resource(lwm2m_object *object, int resource_id) {
+    lwm2m_resource *resource = (lwm2m_resource *) malloc(sizeof(lwm2m_resource));
+    memcpy(resource, object->resource_def + resource_id, sizeof(lwm2m_resource));
+    return resource;
 }
 
 typedef struct tlv_header {
@@ -159,31 +157,30 @@ static lwm2m_value parse_value(char *message, int message_len, lwm2m_type type) 
 }
 
 // TODO in multiple resource map there should be map <ID, lwm2m_resource*>
-lwm2m_map *parse_multiple_resource(lwm2m_context *context, int object_id, int resource_id, char *message, int message_len) {
-    lwm2m_map *resources = lwm2m_map_new();
+list *parse_multiple_resource(lwm2m_object *object, int resource_id, char *message, int message_len) {
+    list *resources = list_new();
     tlv_header resource_header;
 
     char *curr = message;
     while (curr < message + message_len) {
         curr = parse_tlv_header(curr, &resource_header);
 
-        lwm2m_resource *resource_instance = create_resource(context, object_id, resource_id);
+        lwm2m_resource *resource_instance = create_resource(object, resource_id);
         resource_instance->id = resource_header.id;
         lwm2m_value value = parse_value(curr, resource_header.length, resource_instance->type);
         __set_value(resource_instance, &value, resource_header.length);
 
-        lwm2m_map_put(resources, resource_instance->id, resource_instance);
+        ladd(resources, resource_instance->id, resource_instance);
         curr = curr + resource_header.length;
     }
     return resources;
 }
 
 // TODO String/TLV format
-lwm2m_resource *parse_resource(lwm2m_context *context, int object_id, int resource_id, char *message, int message_len) {
-    lwm2m_resource *resource = create_resource(context, object_id, resource_id);
+lwm2m_resource *parse_resource(lwm2m_object *object, int resource_id, char *message, int message_len) {
+    lwm2m_resource *resource = create_resource(object, resource_id);
     if (resource->multiple) {
-        lwm2m_map *resource_instances = parse_multiple_resource(context, object_id, resource_id, message, message_len);
-        resource->instances = resource_instances;
+        resource->instances = parse_multiple_resource(object, resource_id, message, message_len);
     } else {
         lwm2m_value value = parse_value_text(message, message_len, resource->type);
         __set_value(resource, &value, message_len);
@@ -192,31 +189,31 @@ lwm2m_resource *parse_resource(lwm2m_context *context, int object_id, int resour
 }
 
 /** Returns map of resources **/
-lwm2m_map *parse_instance(lwm2m_context *context, int object_id, char *message, int message_len) {
-    lwm2m_map *resources = lwm2m_map_new();
+list *parse_instance(lwm2m_object *object, char *message, int message_len) {
+    list *resources = list_new();
     tlv_header resource_header;
     
     char *curr = message;
     while (curr < message + message_len) {
         curr = parse_tlv_header(curr, &resource_header);
 
-        lwm2m_resource *resource = create_resource(context, object_id, resource_header.id);
+        lwm2m_resource *resource = create_resource(object, resource_header.id);
 
         if (resource_header.type == MULTIPLE_RESOURCE_TYPE) {
-            resource->instances = parse_multiple_resource(context, object_id, resource->id, curr, resource_header.length);
+            resource->instances = parse_multiple_resource(object, resource->id, curr, resource_header.length);
         } else {
             lwm2m_value value = parse_value(curr, resource_header.length, resource->type);
             __set_value(resource, &value, resource_header.length);
         }
-        lwm2m_map_put(resources, resource->id, resource);
+        ladd(resources, resource->id, resource);
         curr = curr + resource_header.length;
     }
     return resources;    
 }
 
 /** Returns map of instances **/
-lwm2m_map *parse_object(lwm2m_context *context, int object_id, char *message, int message_len) {
-    lwm2m_map *instances = lwm2m_map_new();
+list *parse_object(lwm2m_object *object, char *message, int message_len) {
+    list *instances = list_new();
 
     char *curr = message;
     while (curr < message + message_len) {
@@ -225,9 +222,9 @@ lwm2m_map *parse_object(lwm2m_context *context, int object_id, char *message, in
 
         lwm2m_instance *instance = (lwm2m_instance *) malloc(sizeof(lwm2m_instance));
         instance->id = instance_header.id;
-        instance->resources = parse_instance(context, object_id, curr, instance_header.length);
+        instance->resources = parse_instance(object, curr, instance_header.length);
 
-        lwm2m_map_put(instances, instance->id, instance);
+        ladd(instances, instance->id, instance);
         curr = curr + instance_header.length;
     }
     return instances;

@@ -4,7 +4,62 @@
 #include "lwm2m_bootstrap.h"
 #include "lwm2m_parser.h"
 
-// TODO sdsssssssssssssssssssssssssssssssssssssssssssssssss
+static void __free_attribute(lwm2m_attributes *attribute) {
+    if (attribute->pmin != NULL) free(attribute->pmin);
+    if (attribute->pmax != NULL) free(attribute->pmin);
+    if (attribute->dim != NULL) free(attribute->pmin);
+    if (attribute->stp != NULL) free(attribute->pmin);
+    if (attribute->lt != NULL) free(attribute->pmin);
+    if (attribute->gt != NULL) free(attribute->pmin);
+    free(attribute);
+}
+
+static void __free_attributes(list *attributes) {
+    for (list_elem *elem = attributes->first; elem != NULL; elem = elem->next) {
+        __free_attribute(elem->value);
+    }
+    list_free(attributes);
+}
+
+static void __free_parsed_resource(lwm2m_resource *resource) {
+    if (resource->multiple) {
+        if (resource->instances != NULL) {
+            for (list_elem *elem = resource->instances->first; elem != NULL; elem = elem->next) {
+                lwm2m_resource *instance = elem->value;
+                if (instance->value != NULL) {
+                    free(instance->value);
+                }
+                free(instance);
+            }
+            list_free(resource->instances);
+        }
+    }
+    else if (resource->value != NULL) {
+        free(resource->value);
+    }
+    free(resource);
+}
+
+static void __free_parsed_resources(list *resources) {
+    for (list_elem *elem = resources->first; elem != NULL; elem = elem->next) {
+        __free_parsed_resource(elem->value);
+    }
+    list_free(resources);
+}
+
+static void __free_instance(lwm2m_instance *instance) {
+    __free_attributes(instance->attributes);
+    __free_parsed_resources(instance->resources);
+    list_free(instance->observers);
+    free(instance);
+}
+
+static void __free_instances(list* instances) {
+    for (list_elem *elem = instances->first; elem != NULL; elem = elem->next) {
+        __free_instance(elem->value);
+    }
+}
+
 /****
  *
  * Only in Bootstrap Interface, Delete operation MAY target to “/” URI to delete all
@@ -38,16 +93,10 @@ regardless of an existence of the targeting Object Instance(s) or Resource and a
  * @param object_id
  * @return
  */
-static lwm2m_map* __create_resources(lwm2m_context *context, int object_id) {
-    if (object_id == SECURITY_OBJECT_ID || object_id == SERVER_OBJECT_ID || object_id == ACCESS_CONTROL_OBJECT_ID) {
-        return context->create_standard_resources_callback(object_id);
-    } else {
-        return context->create_resources_callback(object_id);
-    }
-}
+
 
 static bool has_server_instances(lwm2m_context *context) {
-    lwm2m_object *server_object = lwm2m_map_get_object(context->object_tree, SERVER_OBJECT_ID);
+    lwm2m_object *server_object = lfind(context->object_tree, SERVER_OBJECT_ID);
     return server_object->instances->size > 0;
 }
 
@@ -78,62 +127,56 @@ static void free_value(lwm2m_value *value, lwm2m_type type) {
 //    lwm2m_map_free(attributes);
 //}
 
-static void delete_resource(lwm2m_context *context, lwm2m_resource *resource) {
-    if (!resource->multiple) {
-        free_value(resource->value, resource->type);
-    }
-    if (resource->multiple) {
-        lwm2m_map *instances = resource->instances;
-        int keys[instances->size];
-
-        for (int i = 0; i < instances->size; ++i) {
-            free_value(lwm2m_map_get(instances, keys[i]), resource->type);
-        }
-    }
+//static void delete_resource(lwm2m_context *context, lwm2m_resource *resource) {
+//    if (!resource->multiple) {
+//        free_value(resource->value, resource->type);
+//    }
+//    if (resource->multiple) {
+//        lwm2m_map *instances = resource->instances;
+//        int keys[instances->size];
+//
+//        for (int i = 0; i < instances->size; ++i) {
+//            free_value(lwm2m_map_get(instances, keys[i]), resource->type);
+//        }
+//    }
 //    if (resource->attributes != NULL) {
 //        free_attributes(resource->attributes);
 //    }
-}
+//}
 
-static void delete_instance(lwm2m_context *context, lwm2m_instance *instance) {
-    int keys[instance->resources->size];
-    lwm2m_map_get_keys(instance->resources, keys);
-
-    for (int i = 0; i < instance->resources->size; ++i) {
-        lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, keys[i]);
-        delete_resource(context, resource);
-    }
-//    if (instance->attributes != NULL) {
-//        free_attributes(instance->attributes);
+//static void delete_instance(lwm2m_context *context, lwm2m_instance *instance) {
+//    int keys[instance->resources->size];
+//    lwm2m_map_get_keys(instance->resources, keys);
+//
+//    __free_parsed_resources(instance->resources);
+//
+//
+//
+//    for (int i = 0; i < instance->resources->size; ++i) {
+//        lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, keys[i]);
+//        delete_resource(context, resource);
 //    }
-}
-
-static void delete_object(lwm2m_context *context, lwm2m_object *object) {
-    int keys[object->instances->size];
-    lwm2m_map_get_keys(object->instances, keys);
-
-    for (int i = 0; i < object->instances->size; ++i) {
-        lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, keys[i]);
-        delete_instance(context, instance);
-    }
-}
+////    if (instance->attributes != NULL) {
+////        free_attributes(instance->attributes);
+////    }
+//}
+//
+//static void delete_object(lwm2m_context *context, lwm2m_object *object) {
+//    __free_instances(object->instances);
+//}
 
 
-static int __bootstrap_create_instance(lwm2m_context *context, lwm2m_object *object, lwm2m_map *parsed_resources, int instance_id) {
-    lwm2m_map *resources = lwm2m_map_new();
-    lwm2m_instance parsed_instance = {.resources = resources};
-    lwm2m_map *template_resources = __create_resources(context, object->id);
+static int __bootstrap_create_instance(lwm2m_object *object, lwm2m_instance *parsed_instance, int instance_id) {
+    lwm2m_instance *instance = lwm2m_instance_new_with_id(object, instance_id);
 
     /***** If one instance is allowed, then instance's ID=0 *****/
     if (object->multiple == false) {
-        instance_id = 0;
+        instance->id = 0;
     }
 
-    int keys[template_resources->size];
-    lwm2m_map_get_keys(template_resources, keys);
-    for (int i = 0; i < template_resources->size; ++i) {
-        lwm2m_resource *template_resource = lwm2m_map_get_resource(template_resources, keys[i]);
-        lwm2m_resource *parsed_resource = lwm2m_map_get_resource(parsed_resources, keys[i]);
+    for (list_elem *elem = instance->resources->first; elem != NULL; elem = elem->next) {
+        lwm2m_resource *template_resource = elem->value;
+        lwm2m_resource *parsed_resource =  lfind(parsed_instance->resources, elem->key);
 
         /***** Error if not all mandatory resources are provided  ******/
         if (template_resource->mandatory && template_resource->type != NONE && parsed_resource == NULL) {
@@ -141,31 +184,22 @@ static int __bootstrap_create_instance(lwm2m_context *context, lwm2m_object *obj
         }
 
         /**** Don't check if resource is writeable ****/
-        if (parsed_resource != NULL) {
-            lwm2m_map_put(resources, parsed_resource->id, parsed_resource);
-        }
     }
-    lwm2m_instance *new_instance = lwm2m_instance_new_with_id(context, object->id, instance_id);
-    new_instance->object = object;
-    lwm2m_map_put(object->instances, new_instance->id, new_instance);
-
-    merge_resources(new_instance, &parsed_instance, true, false);
+    merge_resources(instance, parsed_instance, true, false);
     return RESPONSE_CODE_CREATED;
 }
 
 ///////////// CALLBACKS ////////////////////
 
-int on_bootstrap_object_write(lwm2m_context *context, lwm2m_object *object, char *message, int message_len) {
-    lwm2m_map *parsed_instances = parse_object(context, object->id, message, message_len);
+int on_bootstrap_object_write(lwm2m_object *object, char *message, int message_len) {
+    list *parsed_instances = parse_object(object, message, message_len);
 
-    int keys[parsed_instances->size];
-    lwm2m_map_get_keys(parsed_instances, keys);
-    for (int i = 0; i < parsed_instances->size; ++i) {
-        lwm2m_instance *old_instance = lwm2m_map_get_instance(object->instances, keys[i]);
-        lwm2m_instance *new_instance = lwm2m_map_get_instance(parsed_instances, keys[i]);
+    for (list_elem *elem = parsed_instances->first; elem != NULL; elem = elem->next) {
+        lwm2m_instance *old_instance = lfind(object->instances, elem->key);
+        lwm2m_instance *new_instance = elem->value;
 
         if (old_instance == NULL) {
-            __bootstrap_create_instance(context, object, new_instance->resources, new_instance->id);
+            __bootstrap_create_instance(object, new_instance, new_instance->id);
         } else {
             merge_resources(old_instance, new_instance, true, false);
         }
@@ -173,60 +207,51 @@ int on_bootstrap_object_write(lwm2m_context *context, lwm2m_object *object, char
     return RESPONSE_CODE_CHANGED;
 }
 
-int on_bootstrap_instance_write(lwm2m_context *context, lwm2m_object *object, int instance_id, char *message, int message_len) {
-    lwm2m_instance *old_instance = lwm2m_map_get_instance(object->instances, instance_id);
-    lwm2m_map *parsed_resources = parse_instance(context, object->id, message, message_len);
-    lwm2m_instance parsed_instance = {.resources = parsed_resources};
+int on_bootstrap_instance_write(lwm2m_object *object, int instance_id, char *message, int message_len) {
+    lwm2m_instance *old_instance = lfind(object->instances, instance_id);
+    lwm2m_instance parsed_instance = {
+            .resources = parse_instance(object, message, message_len)
+    };
 
     if (old_instance == NULL) {
-        return __bootstrap_create_instance(context, object, parsed_resources, instance_id);
+        return __bootstrap_create_instance(object, &parsed_instance, instance_id);
     } else {
         merge_resources(old_instance, &parsed_instance, true, false);
     }
+    __free_parsed_resources(parsed_instance.resources);
     return RESPONSE_CODE_CHANGED;
 }
 
-int on_bootstrap_resource_write(lwm2m_context *context, lwm2m_resource *resource, char *message, int message_len) {
+int on_bootstrap_resource_write(lwm2m_resource *resource, char *message, int message_len) {
     /**** Parse and copy values ****/
     lwm2m_resource *parsed_resource;
     if (resource->multiple) {
         parsed_resource = (lwm2m_resource *) malloc(sizeof(lwm2m_resource));
-        parsed_resource->instances = parse_multiple_resource(
-                context,
-                resource->instance->object->id,
-                resource->id,
-                message,
-                message_len
-        );
+        parsed_resource->instances = parse_multiple_resource(resource->instance->object, resource->id, message, message_len);
     } else {
-        parsed_resource = parse_resource(
-                context,
-                resource->instance->object->id,
-                resource->id,
-                message,
-                message_len
-        );
+        parsed_resource = parse_resource(resource->instance->object, resource->id, message, message_len);
     }
     merge_resource(resource, parsed_resource, true, false);
+    __free_parsed_resource(parsed_resource);
     return RESPONSE_CODE_CHANGED;
 }
 
 // TODO EXCEPT Bootstrap server account
 int on_bootstrap_delete_all(lwm2m_context *context) {
-    int object_ids[context->object_tree->size];
-
-    lwm2m_map_get_keys(context->object_tree, object_ids);
-    for (int i = 0; i < context->object_tree->size; ++i) {
-        lwm2m_object *object = lwm2m_map_get_object(context->object_tree, object_ids[i]);
-        delete_object(context, object);
+    for (list_elem *elem = context->object_tree->first; elem != NULL; elem = elem->next) {
+        lwm2m_object *object = elem->value;
+        __free_instances(object->instances);
     }
     return 0;
 }
 
 int on_bootstrap_delete(lwm2m_context *context, lwm2m_instance *instance) {
-    delete_instance(context, instance);
+    lwm2m_object *object = instance->object;
+    lremove(object->instances, instance->id);
+    __free_instance(instance);
     return 0;
 }
+
 
 int on_bootstrap_finish(lwm2m_context *context) {
     pthread_mutex_lock(&context->bootstrap_mutex);

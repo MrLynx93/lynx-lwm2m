@@ -25,7 +25,6 @@ testmem: example
 
 testproc: example
 	cd bin/x64; valgrind --tool=callgrind ./example
-	#cd bin/x64; ms_print massif.out > massif.txt
 
 clean:
 	rm -rf bin

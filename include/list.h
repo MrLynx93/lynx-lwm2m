@@ -16,6 +16,8 @@ typedef struct list {
 
 list *list_new();
 
+void list_free(list *l);
+
 /**
  * - ladd
  * - lfind

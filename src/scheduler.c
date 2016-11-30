@@ -45,15 +45,12 @@ time_t find_earliest_waking_time(task_list *list) {
     task_element *curr = list->first;
     time_t earliest_time = curr->task->waking_time;
 
-    printf("LLLLLLLLLLLLLLLLLLLLLLLLLLLLLL");
     while (curr != NULL) {
         if (difftime(earliest_time, curr->task->waking_time) > 0) {
             earliest_time = curr->task->waking_time;
         }
-        printf("waking=%ld earliest=%ld now=%ld\n", curr->task->waking_time, earliest_time, time(0));
         curr = curr->next;
     }
-    printf("===============================");
     return earliest_time;
 }
 
@@ -70,7 +67,6 @@ void await(lwm2m_scheduler *scheduler) {
         waking_time_spec.tv_sec = waking_time + 1; // hack, because sometimes pthread_cond_timedwait wake up one second too early
         waking_time_spec.tv_nsec = 0;
 
-        printf("will wake up at %ld now is %ld\n", (long) waking_time_spec.tv_sec, time(0));
         pthread_cond_timedwait(&scheduler->condition, &scheduler->lock, &waking_time_spec);
     }
 }
@@ -118,7 +114,6 @@ void process_tasks(lwm2m_scheduler *scheduler) {
             // Execute without waking - we are already awake here
             curr->task->function(curr->task->arg0, curr->task->arg1, curr->task->arg2, curr->task->arg3, NULL);
             curr->task->waking_time = time(0) + curr->task->period;
-            printf("setting waking time to %ld now=%ld period=%d\n", curr->task->waking_time, time(0), curr->task->period);
         }
         curr = curr->next;
     }

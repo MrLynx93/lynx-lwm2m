@@ -61,15 +61,14 @@
 
 #include "lwm2m_attribute.h"
 
-lwm2m_map *create_example_objects();
-lwm2m_map *create_example_resources(int object_id);
+list *create_example_objects();
+lwm2m_resource *create_example_resources(int object_id);
 int perform_factory_bootstrap(lwm2m_context *context);
 
 int main(int argc, char *argv[]) {
     lwm2m_context *context = lwm2m_create_context();
     context->has_smartcard = false;
     context->create_objects_callback = create_example_objects;
-    context->create_resources_callback = create_example_resources;
     context->factory_bootstrap_callback = perform_factory_bootstrap;
     context->smartcard_bootstrap_callback = NULL;
     context->client_id = "lynx_ep";
@@ -116,18 +115,15 @@ int main(int argc, char *argv[]) {
 //    getchar();
 
     getchar();
+    printf("Stopping...\n");
     // Deregister from all servers
-    int keys[context->servers->size];
-    lwm2m_map_get_keys(context->servers, keys);
-    for (int i = 0; i < context->servers->size; ++i) {
-        lwm2m_server *server = lwm2m_map_get(context->servers, keys[i]);
+    for (list_elem *elem = context->servers->first; elem != NULL; elem = elem->next) {
+        lwm2m_server *server = elem->value;
         deregister(server);
     }
     sleep(2);
-    stop_scheduler(context->scheduler);
-    sleep(10);
     stop_mqtt(context);
-    sleep(10);
+    stop_scheduler(context->scheduler);
     return 0;
 }
 
@@ -210,113 +206,102 @@ int perform_factory_bootstrap(lwm2m_context *context) {
 
 //////////////// DEFINITION OF SUPPORTED OBJECTS ////////////////
 
-lwm2m_map *create_example_objects() {
-    lwm2m_map *objects = lwm2m_map_new();
+list *create_example_objects() {
+    list *objects = list_new();
 
     lwm2m_object *example_object = lwm2m_object_new();
     example_object->id = 123;
     example_object->mandatory = false;
     example_object->multiple = true;
     example_object->object_urn = "urn:oma:lwm2m:oma:123";
-    example_object->attributes = lwm2m_map_new();
+    example_object->attributes = list_new();
+    example_object->resource_def = create_example_resources(123);
+    example_object->resource_def_len = 10;
 
     // Set object's minimum period attribute to 10 sec
     // TODO new way of declaring attributes
 //    lwm2m_attribute *pmin_attribute = new_int_attribute("pmin", 10, ATTR_READ | ATTR_WRITE);
 //    lwm2m_map_put_string(example_object->attributes, "pmin", pmin_attribute);
 
-    lwm2m_map_put(objects, example_object->id, (void*) example_object);
+    ladd(objects, example_object->id, (void*) example_object);
     return objects;
 }
 
 // TODO demonstrate read and write resource callbacks
-lwm2m_map *create_example_resources(int object_id) {
+lwm2m_resource *create_example_resources(int object_id) {
     if (object_id == 123) {
-        lwm2m_map *resources = lwm2m_map_new();
-        lwm2m_resource *resource;
+        lwm2m_resource *resources = (lwm2m_resource*) malloc(10 * sizeof(lwm2m_resource));
 
-        resource = lwm2m_resource_new(false);
-        resource->id = 0;
-        resource->name = "Battery level";
-        resource->type = INTEGER;
-        resource->mandatory = true;
-        resource->operations = READ | WRITE;
-        resource->read_callback = measure_battery_level;
-        lwm2m_map_put(resources, 0, resource);
+        resources[0].multiple = false;
+        resources[0].id = 0;
+        resources[0].name = "Battery level";
+        resources[0].type = INTEGER;
+        resources[0].mandatory = true;
+        resources[0].operations = READ | WRITE;
+        resources[0].read_callback = measure_battery_level;
 
-        resource = lwm2m_resource_new(false);
-        resource->id = 1;
-        resource->name = "Double example resource";
-        resource->type = DOUBLE;
-        resource->mandatory = true;
-        resource->operations = READ | WRITE;
-        lwm2m_map_put(resources, 1, resource);
+        resources[1].multiple = false;
+        resources[1].id = 1;
+        resources[1].name = "Double example resource";
+        resources[1].type = DOUBLE;
+        resources[1].mandatory = true;
+        resources[1].operations = READ | WRITE;
 
-        resource = lwm2m_resource_new(false);
-        resource->id = 2;
-        resource->name = "String example resource";
-        resource->type = STRING;
-        resource->mandatory = true;
-        resource->operations = READ | WRITE;
-        lwm2m_map_put(resources, 2, resource);
+        resources[2].multiple = false;
+        resources[2].id = 2;
+        resources[2].name = "String example resource";
+        resources[2].type = STRING;
+        resources[2].mandatory = true;
+        resources[2].operations = READ | WRITE;
 
-        resource = lwm2m_resource_new(false);
-        resource->id = 3;
-        resource->name = "Light on";
-        resource->type = BOOLEAN;
-        resource->mandatory = true;
-        resource->operations = READ | WRITE;
-        resource->write_callback = switch_light;
-        lwm2m_map_put(resources, 3, resource);
+        resources[3].multiple = false;
+        resources[3].id = 3;
+        resources[3].name = "Light on";
+        resources[3].type = BOOLEAN;
+        resources[3].mandatory = true;
+        resources[3].operations = READ | WRITE;
+        resources[3].write_callback = switch_light;
 
-        resource = lwm2m_resource_new(false);
-        resource->id = 4;
-        resource->name = "Opaque example resource";
-        resource->type = OPAQUE;
-        resource->mandatory = true;
-        resource->operations = READ | WRITE;
-        lwm2m_map_put(resources, 4, resource);
+        resources[4].multiple = false;
+        resources[4].id = 4;
+        resources[4].name = "Opaque example resource";
+        resources[4].type = OPAQUE;
+        resources[4].mandatory = true;
+        resources[4].operations = READ | WRITE;
 
-        resource = lwm2m_resource_new(false);
-        resource->id = 5;
-        resource->name = "Firmwire update resource";
-        resource->type = NONE;
-        resource->mandatory = false;
-        resource->operations = EXECUTE;
-        resource->execute_callback = update_firmwire;
-        lwm2m_map_put(resources, 5, resource);
+        resources[5].multiple = false;
+        resources[5].id = 5;
+        resources[5].name = "Firmwire update resource";
+        resources[5].type = NONE;
+        resources[5].mandatory = false;
+        resources[5].operations = EXECUTE;
+        resources[5].execute_callback = update_firmwire;
 
-        resource = lwm2m_resource_new(false);
-        resource->id = 6;
-        resource->name = "Link example resource";
-        resource->type = LINK;
-        resource->mandatory = true;
-        resource->operations = READ | WRITE;
-        lwm2m_map_put(resources, 6, resource);
+        resources[6].multiple = false;
+        resources[6].id = 6;
+        resources[6].name = "Link example resource";
+        resources[6].type = LINK;
+        resources[6].mandatory = true;
+        resources[6].operations = READ | WRITE;
 
-        resource = lwm2m_resource_new(false);
-        resource->id = 7;
-        resource->name = "Not mandatory integer example resource";
-        resource->type = INTEGER;
-        resource->mandatory = false;
-        resource->operations = READ | WRITE;
-        lwm2m_map_put(resources, 7, resource);
+        resources[7].multiple = false;
+        resources[7].id = 7;
+        resources[7].name = "Not mandatory integer example resource";
+        resources[7].type = INTEGER;
+        resources[7].mandatory = false;
+        resources[7].operations = READ | WRITE;
 
-        resource = lwm2m_resource_new(true);
-        resource->id = 8;
-        resource->name = "Multiple string example resource";
-        resource->type = STRING;
-        resource->mandatory = true;
-        resource->operations = READ | WRITE;
-        lwm2m_map_put(resources, 8, resource);
+        resources[8].id = 8;
+        resources[8].name = "Multiple string example resource";
+        resources[8].type = STRING;
+        resources[8].mandatory = true;
+        resources[8].operations = READ | WRITE;
 
-        resource = lwm2m_resource_new(true);
-        resource->id = 9;
-        resource->name = "Readonly string example resource";
-        resource->type = STRING;
-        resource->mandatory = false;
-        resource->operations = READ;
-        lwm2m_map_put(resources, 9, resource);
+        resources[9].id = 9;
+        resources[9].name = "Readonly string example resource";
+        resources[9].type = STRING;
+        resources[9].mandatory = false;
+        resources[9].operations = READ;
 
         return resources;
     }

@@ -27,14 +27,10 @@ void parse_attributes(lwm2m_attributes *attributes, char *message);
  * Note 3:
  * TODO make parse_resource_text function and create ifs t orecide if use (parse_multiple_resource or parse_resource_text)
  */
-
-lwm2m_resource *parse_resource(lwm2m_context *context, int object_id, int resource_id, char *message, int message_len);
-
-lwm2m_map *parse_multiple_resource(lwm2m_context *context, int object_id, int resource_id, char *message, int message_len);
-
-lwm2m_map *parse_instance(lwm2m_context *context, int object_id, char *message, int message_len);
-
-lwm2m_map *parse_object(lwm2m_context *context, int object_id, char *message, int message_len);
+list *parse_multiple_resource(lwm2m_object *object, int resource_id, char *message, int message_len);
+lwm2m_resource *parse_resource(lwm2m_object *object, int resource_id, char *message, int message_len);
+list *parse_instance(lwm2m_object *object, char *message, int message_len);
+list *parse_object(lwm2m_object *object, char *message, int message_len);
 
 /**
  * ENTITY -> TEXT/TLV
@@ -56,11 +52,11 @@ void serialize_resource_text(lwm2m_resource *resource, char *message, int *messa
 
 void serialize_single_resource(lwm2m_resource *resource, char *message, int *message_len);
 
-void serialize_multiple_resource(lwm2m_map *resources, char *message, int *message_len);
+void serialize_multiple_resource(list *resources, char *message, int *message_len);
 
-void serialize_instance(lwm2m_map *resources, char *message, int *message_len);
+void serialize_instance(list *resources, char *message, int *message_len);
 
-void serialize_object(lwm2m_map *instances, char *message, int *message_len);
+void serialize_object(list *instances, char *message, int *message_len);
 
 
 /**

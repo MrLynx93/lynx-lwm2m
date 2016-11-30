@@ -9,6 +9,17 @@ list *list_new() {
     return list;
 }
 
+void list_free(list *l) {
+    list_elem *curr = l->first;
+    list_elem *next = NULL;
+    while (curr != NULL) {
+        next = curr->next;
+        free(curr);
+        curr = next;
+    }
+    free(l);
+}
+
 bool lcontains(list *l, int key) {
     list_elem *curr = l->first;
     while (curr != NULL) {
@@ -19,11 +30,10 @@ bool lcontains(list *l, int key) {
 }
 
 void ladd(list *l, int key, void *value) {
-    list_elem *elem = (list_elem*) malloc(sizeof(struct list_elem));
+    list_elem *elem = (list_elem*) malloc(sizeof(list_elem));
     elem->value = value;
     elem->key = key;
 
-    list_elem *curr = l->first;
     if (l->first == NULL) {
         elem->next = NULL;
     } else {

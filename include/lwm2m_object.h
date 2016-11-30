@@ -73,6 +73,9 @@ list *merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource,
 void merge_resources(lwm2m_instance *old_instance, lwm2m_instance *new_instance, bool call_callback, bool notify);
 
 
+void notify_instance_object(lwm2m_context *context, lwm2m_instance *instance, list *servers);
+
+
 //void merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource, bool call_callback);
 //
 //void merge_resources(lwm2m_map *old_resources, lwm2m_map *new_resources, bool call_callback);
@@ -104,13 +107,16 @@ typedef void (lwm2m_resource_execute_callback(lwm2m_resource *resource, list *ar
 struct lwm2m_object {
     int id;
     lwm2m_context *context;
-    lwm2m_map *instances;
-    lwm2m_map *attributes;
+    list *instances;
+    list *attributes;
     lwm2m_instance *aco_instance;
     char *object_urn;
     bool multiple;
     bool mandatory;
-    lwm2m_map *observers;
+    list *observers;
+
+    int resource_def_len;
+    lwm2m_resource *resource_def; // definitions of resources
 };
 
 /* Constructor */
@@ -125,17 +131,17 @@ void lwm2m_delete_object(lwm2m_object *object);
 struct lwm2m_instance {
     int id;
     lwm2m_object *object;
-    lwm2m_map *resources;
-    lwm2m_map *attributes;
-    lwm2m_map *observers;
+    list *resources;
+    list *attributes;
+    list *observers;
     lwm2m_instance *aco_instance;
 };
 
 /* Constructor */
-lwm2m_instance *lwm2m_instance_new(lwm2m_context *context, int object_id);
+lwm2m_instance *lwm2m_instance_new(lwm2m_object *object);
 
 /* Constructor */
-lwm2m_instance *lwm2m_instance_new_with_id(lwm2m_context *context, int object_id, int instance_id);
+lwm2m_instance *lwm2m_instance_new_with_id(lwm2m_object *object, int instance_id);
 
 /* Removes instance from object together with resources and access control instance */
 void lwm2m_delete_instance(lwm2m_instance *instance);
@@ -144,19 +150,19 @@ lwm2m_instance *refer_link(lwm2m_link link);
 
 ////////////// LWM2M RESOURCE //////////////////////
 
-typedef struct lwm2m_resource_single {
-    lwm2m_value value;
-    int length; // for string and opaque
-} lwm2m_resource_single;
-
-typedef struct lwm2m_resource_multiple {
-    lwm2m_map *instances;
-} lwm2m_resource_multiple;
-
-typedef union lwm2m_resource_real {
-    lwm2m_resource_single single;
-    lwm2m_resource_multiple multiple;
-} lwm2m_resource_real;
+//typedef struct lwm2m_resource_single {
+//    lwm2m_value value;
+//    int length; // for string and opaque
+//} lwm2m_resource_single;
+//
+//typedef struct lwm2m_resource_multiple {
+//    lwm2m_map *instances;
+//} lwm2m_resource_multiple;
+//
+//typedef union lwm2m_resource_real {
+//    lwm2m_resource_single single;
+//    lwm2m_resource_multiple multiple;
+//} lwm2m_resource_real;
 
 struct lwm2m_resource {
     int id;
@@ -165,11 +171,11 @@ struct lwm2m_resource {
     lwm2m_value *value;
     lwm2m_type type;
     int length;
-    lwm2m_map *instances;
-    lwm2m_map *observers; // Map of shortServerId -> notify_task
+    list *instances;
+    list *observers; // Map of shortServerId -> notify_task
 
     char *name;
-    lwm2m_map *attributes; // TODO Map of serverId -> struct lwm2m_attributes
+    list *attributes; // TODO Map of serverId -> struct lwm2m_attributes
     int operations;
     bool multiple;
     int mandatory;
@@ -247,11 +253,11 @@ typedef enum lwm2m_node_type {
 
 /////////////// MAP UTILITY FUNCTIONS ////////////////
 
-lwm2m_resource *lwm2m_map_get_resource(lwm2m_map *map, int key);
-
-lwm2m_instance *lwm2m_map_get_instance(lwm2m_map *map, int key);
-
-lwm2m_object *lwm2m_map_get_object(lwm2m_map *map, int key);
+//lwm2m_resource *lwm2m_map_get_resource(lwm2m_map *map, int key);
+//
+//lwm2m_instance *lwm2m_map_get_instance(lwm2m_map *map, int key);
+//
+//lwm2m_object *lwm2m_map_get_object(lwm2m_map *map, int key);
 
 //lwm2m_attribute *lwm2m_map_get_attribute(lwm2m_map *map, char *key);
 

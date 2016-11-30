@@ -10,15 +10,15 @@
 
 
 static lwm2m_attributes *__resource_attr_for_server(lwm2m_server *server, lwm2m_resource *resource) {
-    return (lwm2m_attributes *) lwm2m_map_get(resource->attributes, server->short_server_id);
+    return (lwm2m_attributes *) lfind(resource->attributes, server->short_server_id);
 }
 
 static lwm2m_attributes *__instance_attr_for_server(lwm2m_server *server, lwm2m_instance *instance) {
-    return (lwm2m_attributes *) lwm2m_map_get(instance->attributes, server->short_server_id);
+    return (lwm2m_attributes *) lfind(instance->attributes, server->short_server_id);
 }
 
 static lwm2m_attributes *__object_attr_for_server(lwm2m_server *server, lwm2m_object *object) {
-    return (lwm2m_attributes *) lwm2m_map_get(object->attributes, server->short_server_id);
+    return (lwm2m_attributes *) lfind(object->attributes, server->short_server_id);
 }
 
 /***************** PMIN AND PMAX *****************/
@@ -79,7 +79,7 @@ int *get_object_pmax(lwm2m_server *server, lwm2m_object *object, int lookup) {
 
 int *get_default_pmin(lwm2m_server *server) {
     lwm2m_instance *server_instance = server->server_instance;
-    lwm2m_resource *resource = lwm2m_map_get_resource(server_instance->resources, DEFAULT_PMIN_RES);
+    lwm2m_resource *resource = lfind(server_instance->resources, DEFAULT_PMIN_RES);
     if (resource->value != NULL) {
         return (int *) resource->value;
     }
@@ -88,7 +88,7 @@ int *get_default_pmin(lwm2m_server *server) {
 
 int *get_default_pmax(lwm2m_server *server) {
     lwm2m_instance *server_instance = server->server_instance;
-    lwm2m_resource *resource = lwm2m_map_get_resource(server_instance->resources, DEFAULT_PMAX_RES);
+    lwm2m_resource *resource = lfind(server_instance->resources, DEFAULT_PMAX_RES);
     if (resource->value != NULL) {
         return (int *) resource->value;
     }
@@ -153,7 +153,7 @@ lwm2m_response on_resource_write_attributes(lwm2m_server *server, lwm2m_resource
     if (old_attr == NULL) {
         old_attr = malloc(sizeof(lwm2m_attributes));
         *old_attr = (lwm2m_attributes) EMPTY_ATTR;
-        lwm2m_map_put(resource->attributes, server->short_server_id, old_attr);
+        ladd(resource->attributes, server->short_server_id, old_attr);
     }
     lwm2m_attributes new_attr = EMPTY_ATTR;
     parse_attributes(&new_attr, request.payload);
@@ -168,7 +168,7 @@ lwm2m_response on_instance_write_attributes(lwm2m_server *server, lwm2m_instance
     if (old_attr == NULL) {
         old_attr = malloc(sizeof(lwm2m_attributes));
         *old_attr = (lwm2m_attributes) EMPTY_ATTR;
-        lwm2m_map_put(instance->attributes, server->short_server_id, old_attr);
+        ladd(instance->attributes, server->short_server_id, old_attr);
     }
     lwm2m_attributes new_attr = EMPTY_ATTR;
     parse_attributes(&new_attr, request.payload);
@@ -183,7 +183,7 @@ lwm2m_response on_object_write_attributes(lwm2m_server *server, lwm2m_object *ob
     if (old_attr == NULL) {
         old_attr = malloc(sizeof(lwm2m_attributes));
         *old_attr = (lwm2m_attributes) EMPTY_ATTR;
-        lwm2m_map_put(object->attributes, server->short_server_id, old_attr);
+        ladd(object->attributes, server->short_server_id, old_attr);
     }
     lwm2m_attributes new_attr = EMPTY_ATTR;
     parse_attributes(&new_attr, request.payload);

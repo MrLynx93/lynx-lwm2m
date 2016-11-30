@@ -7,7 +7,7 @@
 #include "scheduler.h"
 
 static bool has_server_instances(lwm2m_context *context) {
-    lwm2m_object *server_object = lwm2m_map_get_object(context->object_tree, SERVER_OBJECT_ID);
+    lwm2m_object *server_object = lfind(context->object_tree, SERVER_OBJECT_ID);
     return server_object->instances->size > 0;
 }
 
@@ -20,15 +20,15 @@ static void wait_for_registered(lwm2m_context *context) {
 }
 
 static int get_lifetime(lwm2m_instance *server_instance) {
-    return lwm2m_map_get_resource(server_instance->resources, LIFETIME_RESOURCE_ID)->value->int_value;
+    return ((lwm2m_resource*) lfind(server_instance->resources, LIFETIME_RESOURCE_ID))->value->int_value;
 }
 
 static char *get_binding_mode(lwm2m_instance *server_instance) {
-    return lwm2m_map_get_resource(server_instance->resources, BINDING_RESOURCE_ID)->value->string_value;
+    return ((lwm2m_resource*) lfind(server_instance->resources, BINDING_RESOURCE_ID))->value->string_value;
 }
 
 static char *get_endpoint_client_name(lwm2m_instance *server_instance) {
-    return lwm2m_map_get_resource(server_instance->resources, BINDING_RESOURCE_ID)->value->string_value;
+    return ((lwm2m_resource*) lfind(server_instance->resources, BINDING_RESOURCE_ID))->value->string_value;
 }
 
 static char *serialize_registration_params(lwm2m_server *server) {
@@ -94,7 +94,7 @@ void deregister_on_server(lwm2m_context *context, lwm2m_server *server) {
     perform_deregister_request(context, topic, request);
 }
 void register_on_server(lwm2m_context *context, lwm2m_instance *server_instance) {
-    lwm2m_resource *id_resource = lwm2m_map_get_resource(server_instance->resources, SHORT_SERVER_ID_RESOURCE_ID);
+    lwm2m_resource *id_resource = lfind(server_instance->resources, SHORT_SERVER_ID_RESOURCE_ID);
 
     lwm2m_server *server = (lwm2m_server *) malloc(sizeof(lwm2m_server));
     server->context = context;
@@ -103,6 +103,9 @@ void register_on_server(lwm2m_context *context, lwm2m_instance *server_instance)
     subscribe_server(context, server);
 
     char *objects_and_instances = serialize_lwm2m_objects_and_instances(context);
+    char *objects_and_instances_copy = (char *) calloc(200, sizeof(char));
+    strcpy(objects_and_instances_copy, objects_and_instances);
+
     char *registration_params = serialize_registration_params(server);
 
     server->last_update_data = (lwm2m_register_data) {
@@ -125,22 +128,27 @@ void register_on_server(lwm2m_context *context, lwm2m_instance *server_instance)
     lwm2m_register_request request = {
             .content_type = CONTENT_TYPE_TEXT,
             .header       = registration_params,
-            .payload      = objects_and_instances,
-            .payload_len  = strlen(objects_and_instances),
+            .payload      = objects_and_instances_copy,
+            .payload_len  = strlen(objects_and_instances_copy),
     };
 
     perform_register_request(context, topic, request);
-    lwm2m_map_put(context->servers, server->short_server_id, server);
+    ladd(context->servers, server->short_server_id, server);
 };
 
 void update_on_server(lwm2m_context *context, lwm2m_server *server) {
     char *objects_and_instances = serialize_lwm2m_objects_and_instances(context);
-    char *request_payload = objects_and_instances;
     char *update_params = serialize_update_params(server);
+
+    char *request_payload = NULL;
 
     if (!strcmp(objects_and_instances, server->last_update_data.object_and_instances)) {
         request_payload = "";
+    } else {
+        request_payload = malloc(strlen(objects_and_instances) + 1);
+        strcpy(request_payload, objects_and_instances);
     }
+    free(server->last_update_data.object_and_instances);
 
     server->last_update_data = (lwm2m_register_data) {
             .endpoint_client_name = context->endpoint_client_name,
@@ -177,14 +185,11 @@ int lwm2m_register(lwm2m_context *context) {
         context->state = REGISTERING;
 
         // Register on all servers in context asynchronously
-        lwm2m_object *server_object = lwm2m_map_get_object(context->object_tree, SERVER_OBJECT_ID);
-        lwm2m_map *server_object_instances = server_object->instances;
+        lwm2m_object *server_object = lfind(context->object_tree, SERVER_OBJECT_ID);
+        list *server_object_instances = server_object->instances;
 
-        int keys[server_object_instances->size];
-        lwm2m_map_get_keys(server_object_instances, keys);
-
-        for (int i = 0; i < server_object_instances->size; i++) {
-            lwm2m_instance *server_instance = lwm2m_map_get_instance(server_object_instances, keys[i]);
+        for (list_elem *elem = server_object_instances->first; elem != NULL; elem = elem->next) {
+            lwm2m_instance *server_instance = elem->value;
             register_on_server(context, server_instance);
         }
 
@@ -199,8 +204,8 @@ int lwm2m_register(lwm2m_context *context) {
 }
 
 void on_server_deregister(lwm2m_server* server, int response_code) {
-    lwm2m_map_remove(server->context->servers, server->short_server_id);
-    scheduler_task *update_task = lwm2m_map_get(server->context->update_tasks, server->short_server_id);
+    lremove(server->context->servers, server->short_server_id);
+    scheduler_task *update_task = lfind(server->context->update_tasks, server->short_server_id);
     cancel(server->context->scheduler, update_task);
     printf("Deregistered from server=%d\n", server->short_server_id);
     // TODO free task
@@ -218,7 +223,7 @@ void on_server_register(lwm2m_server *server, int success) {
     update_task->arg2 = server->context;
     update_task->arg3 = NULL;
 
-    lwm2m_map_put(server->context->update_tasks, server->short_server_id, update_task);
+    ladd(server->context->update_tasks, server->short_server_id, update_task);
     schedule(server->context->scheduler, update_task);
 
     pthread_mutex_lock(&server->context->register_mutex);

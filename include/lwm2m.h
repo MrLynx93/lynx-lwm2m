@@ -49,10 +49,10 @@ typedef enum lwm2m_state {
 /////////// CALLBACKS (DEFINITION OF OBJETS) ///////////
 
 /* Used whenever new LWM2M instance is created to create resources for that instance */
-typedef lwm2m_map *(lwm2m_create_resources_callback(int object_id));
+typedef list *(lwm2m_create_resources_callback(int object_id));
 
 /* Used to define custom LWM2M objects. Called when client starts and creates object tree */
-typedef lwm2m_map *(lwm2m_create_objects_callback(void));
+typedef list *(lwm2m_create_objects_callback(void));
 
 /////////////////// CONTEXT /////////////////////////
 
@@ -64,18 +64,21 @@ typedef struct lwm2m_register_data {
 } lwm2m_register_data;
 
 typedef struct lwm2m_context {
-    lwm2m_map *servers; // shortServerId -> server
-    lwm2m_map *server_addresses; // "localhost:234" -> server
+    list *servers; // shortServerId -> server
+//    lwm2m_map *server_addresses; // "localhost:234" -> server
 
-    lwm2m_map *object_tree;
+    list *object_tree;
     lwm2m_state state;
     int has_smartcard;
     int is_bootstrap_ready;
     int is_bootstrapped;
 
+
+    list *resources; // Its list[resource[]] - resource definitions for objects
+
     /* Definitions of objects */
-    lwm2m_create_resources_callback *create_standard_resources_callback; // TODO move to function
-    lwm2m_create_resources_callback *create_resources_callback;
+//    lwm2m_create_resources_callback *create_standard_resources_callback; // TODO move to function
+//    lwm2m_create_resources_callback *create_resources_callback;
     lwm2m_create_objects_callback *create_objects_callback;
 
     /* Used bootstrap to provide client with LWM2M instances */
@@ -95,7 +98,7 @@ typedef struct lwm2m_context {
     pthread_cond_t register_finished_condition;
     int registered_servers_num;
 
-    lwm2m_map *update_tasks;
+    list *update_tasks;
 
     pthread_mutex_t bootstrap_mutex;
     pthread_cond_t bootstrap_finished_condition;

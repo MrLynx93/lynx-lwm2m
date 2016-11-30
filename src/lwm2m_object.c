@@ -1,7 +1,6 @@
 #include <lwm2m_information_reporting.h>
-#include "lwm2m_object.h"
-#include "lwm2m.h"
 #include "lwm2m_attribute.h"
+#include "stdbool.h"
 
 static bool __fulfill_PMIN(int pmin, scheduler_task *task) {
     if (task == NULL) {
@@ -12,17 +11,6 @@ static bool __fulfill_PMIN(int pmin, scheduler_task *task) {
     }
     double diff = difftime(time(0), task->last_waking_time);
     return pmin < diff;
-}
-
-static void __set_value_any(lwm2m_resource *resource, lwm2m_value *value, int length, lwm2m_type type) {
-    lwm2m_value *old_value = resource->value;
-    if (resource->value == NULL) {
-        resource->value = (lwm2m_value *) malloc(sizeof(lwm2m_value));
-    }
-    *resource->value = *value;
-    resource->length = length;
-
-
 }
 
 /****************** SETTING VALUE WITHOUT NOTIFY **************************/
@@ -119,7 +107,7 @@ void set_value(lwm2m_resource *resource, lwm2m_value *value, int length) {
         int *pmin;
 
         /**** Notify on resource level ****/
-        task = lwm2m_map_get(resource->observers, server->short_server_id);
+        task = lfind(resource->observers, server->short_server_id);
         if (task != NULL) {
             pmin = get_resource_pmin(server, resource, LOOKUP_FULL);
             if (pmin == NULL || __fulfill_PMIN(*pmin, task)) {
@@ -128,7 +116,7 @@ void set_value(lwm2m_resource *resource, lwm2m_value *value, int length) {
         }
 
         /**** Notify on object level ****/
-        task = lwm2m_map_get(resource->instance->object->observers, server->short_server_id);
+        task = lfind(resource->instance->object->observers, server->short_server_id);
         if (task != NULL) {
             pmin = get_object_pmin(server, resource->instance->object, LOOKUP_FULL);
             if (pmin == NULL || __fulfill_PMIN(*pmin, task)) {
@@ -136,7 +124,7 @@ void set_value(lwm2m_resource *resource, lwm2m_value *value, int length) {
             }
         }
         /**** Notify on instance level ****/
-        task = lwm2m_map_get(resource->instance->observers, server->short_server_id);
+        task = lfind(resource->instance->observers, server->short_server_id);
         if (task != NULL) {
             pmin = get_instance_pmin(server, resource->instance, LOOKUP_FULL);
             if (pmin == NULL || __fulfill_PMIN(*pmin, task)) {
@@ -204,21 +192,19 @@ list *merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource,
 
     /**** Multiple resource *****/
     if (old_resource->multiple) {
-        lwm2m_map *old_resource_instances = old_resource->instances;
-        lwm2m_map *new_resource_instances = new_resource->instances;
+        list *old_resource_instances = old_resource->instances;
+        list *new_resource_instances = new_resource->instances;
 
         /**** For each resource instance in multiple resource ****/
-        int keys[new_resource_instances->size];
-        lwm2m_map_get_keys(new_resource_instances, keys);
-        for (int i = 0; i < new_resource_instances->size; ++i) {
-            lwm2m_resource *new_instance = lwm2m_map_get_resource(new_resource_instances, keys[i]);
-            lwm2m_resource *old_instance = lwm2m_map_get_resource(old_resource_instances, keys[i]);
+        for (list_elem *elem = new_resource_instances->first; elem != NULL; elem = elem->next) {
+            lwm2m_resource *new_instance = elem->value;
+            lwm2m_resource *old_instance = lfind(old_resource_instances, elem->key);
 
             /**** Add new instance OR setting NULL should cause notify ****/
             if (old_instance == NULL || new_resource->value == NULL) {
                 /**** Added new resource instance. Should notify both resource and instance *****/
                 if (old_instance == NULL) {
-                    lwm2m_map_put(old_resource_instances, new_instance->id, new_instance);
+                    ladd(old_resource_instances, new_instance->id, new_instance);
                 }
                 /**** Set NULL on some existing resource instance ****/
                 else if (new_resource->value == NULL) {
@@ -227,10 +213,8 @@ list *merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource,
 
                 /**** Add all servers to notify ****/
                 if (notify) {
-                    int serv_keys[context->servers->size];
-                    lwm2m_map_get_keys(context->servers, serv_keys);
-                    for (int j = 0; j < context->servers->size; ++j) {
-                        lwm2m_server *server = lwm2m_map_get(context->servers, serv_keys[j]);
+                    for (list_elem *elem_s = context->servers->first; elem_s != NULL; elem_s = elem_s->next) {
+                        lwm2m_server *server = elem_s->value;
                         if (!lcontains(servers_to_notify, server->short_server_id)) {
                             ladd(servers_to_notify, server->short_server_id, server);
                         }
@@ -245,13 +229,14 @@ list *merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource,
                 /**** Adding servers that passed numeric observing conditions ****/
                 if (notify) {
                     list *servers = should_notify(old_resource, old_value, new_instance->value);
-                    for (list_elem *elem = servers->first; elem != NULL; elem = elem->next) {
-                        lwm2m_server *server = elem->value;
+                    for (list_elem *elem_s = servers->first; elem_s != NULL; elem_s = elem_s->next) {
+                        lwm2m_server *server = elem_s->value;
                         if (!lcontains(servers_to_notify, server->short_server_id)) {
                             ladd(servers_to_notify, server->short_server_id, server);
                         }
                     }
                 }
+                free(old_value);
             }
         }
     } 
@@ -271,6 +256,7 @@ list *merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource,
                 }
             }
         }
+        free(old_value);
     }
     /**** Call write callback. For example to turn on light when writing to LightOn resource ****/
     if (call_callback && old_resource->write_callback != NULL) {
@@ -280,7 +266,7 @@ list *merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource,
     if (notify) {
         for (list_elem *elem = servers_to_notify->first; elem != NULL; elem = elem->next) {
             lwm2m_server *server = elem->value;
-            scheduler_task *task = lwm2m_map_get(old_resource->observers, server->short_server_id);
+            scheduler_task *task = lfind(old_resource->observers, server->short_server_id);
 
             if (task != NULL) {
                 int *pmin = get_resource_pmin(server, old_resource, LOOKUP_FULL);
@@ -293,49 +279,56 @@ list *merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource,
     return servers_to_notify;
 }
 
+// TODO move to another file?
+void notify_instance_object(lwm2m_context *context, lwm2m_instance *instance, list *servers) {
+    for (list_elem *elem = servers->first; elem != NULL; elem = elem->next) {
+        lwm2m_server *server = elem->value;
+        scheduler_task *task;
+        int *pmin;
+
+        /**** Notify on object level ****/
+        task = lfind(instance->object->observers, server->short_server_id);
+        if (task != NULL) {
+            pmin = get_object_pmin(server, instance->object, LOOKUP_FULL);
+            if (pmin == NULL || __fulfill_PMIN(*pmin, task)) {
+                execute(context->scheduler, task, instance);
+            }
+        }
+
+        /**** Notify on instance level ****/
+        task = lfind(instance->observers, server->short_server_id);
+        if (task != NULL) {
+            pmin = get_instance_pmin(server, instance, LOOKUP_FULL);
+            if (pmin == NULL || __fulfill_PMIN(*pmin, task)) {
+                execute(context->scheduler, task, NULL);
+            }
+        }
+    }
+}
+
+
 void merge_resources(lwm2m_instance *old_instance, lwm2m_instance *new_instance, bool call_callback, bool notify) {
     list *servers_to_notify = notify ? list_new() : NULL;
     lwm2m_context *context = old_instance->object->context;
 
-    int keys[new_instance->resources->size];
-    lwm2m_map_get_keys(new_instance->resources, keys);
-    for (int i = 0; i < new_instance->resources->size; ++i) {
-        lwm2m_resource *old_resource = lwm2m_map_get_resource(old_instance->resources, keys[i]);
-        lwm2m_resource *new_resource = lwm2m_map_get_resource(new_instance->resources, keys[i]);
+    for (list_elem *elem = new_instance->resources->first; elem != NULL; elem = elem->next) {
+        lwm2m_resource *old_resource = lfind(old_instance->resources, elem->key);
+        lwm2m_resource *new_resource = elem->value;
         list *servers = merge_resource(old_resource, new_resource, call_callback, notify);
 
         /**** Add to list of servers to notify ****/
         if (notify) {
-            for (list_elem *elem = servers->first; elem != NULL; elem = elem->next) {
-                ladd(servers_to_notify, elem->key, elem->value);
+            for (list_elem *elem2 = servers->first; elem2 != NULL; elem2 = elem2->next) {
+                if (lfind(servers_to_notify, elem->key) == NULL) {
+                    ladd(servers_to_notify, elem2->key, elem2->value);
+                }
             }
+            free(servers);
         }
     }
-
     if (notify) {
-        for (list_elem *elem = servers_to_notify->first; elem != NULL; elem = elem->next) {
-            lwm2m_server *server = elem->value;
-            scheduler_task *task;
-            int *pmin;
-
-            /**** Notify on object level ****/
-            task = lwm2m_map_get(old_instance->object->observers, server->short_server_id);
-            if (task != NULL) {
-                pmin = get_object_pmin(server, old_instance->object, LOOKUP_FULL);
-                if (pmin == NULL || __fulfill_PMIN(*pmin, task)) {
-                    execute(context->scheduler, task, old_instance);
-                }
-            }
-
-            /**** Notify on instance level ****/
-            task = lwm2m_map_get(old_instance->observers, server->short_server_id);
-            if (task != NULL) {
-                pmin = get_instance_pmin(server, old_instance, LOOKUP_FULL);
-                if (pmin == NULL || __fulfill_PMIN(*pmin, task)) {
-                    execute(context->scheduler, task, NULL);
-                }
-            }
-        }
+        notify_instance_object(context, old_instance, servers_to_notify);
+        list_free(servers_to_notify);
     }
 }
 
@@ -354,20 +347,21 @@ void merge_resources(lwm2m_instance *old_instance, lwm2m_instance *new_instance,
 
 static void free_lwm2m_object(lwm2m_object *object) {
 //    free(object->object_urn);
-    free(object->instances);
+    list_free(object->instances);
     free(object);
 }
 
 static void free_lwm2m_instance(lwm2m_instance *instance) {
-    free(instance->resources);
-    free(instance->observers);
+    list_free(instance->resources);
+    list_free(instance->observers);
     free(instance);
 }
 
+// TODO ONE FREE TO RULE THEM ALL??
 static void free_lwm2m_resource(lwm2m_resource *resource) {
-    lwm2m_map_free(resource->observers); // TODO CANCEL ALL OBSERVE
+    list_free(resource->observers); // TODO CANCEL ALL OBSERVE
     if (resource->multiple) {
-        lwm2m_map_free(resource->instances); // TODO FREE ALL RESOURCE INSTANCES
+        list_free(resource->instances); // TODO FREE ALL RESOURCE INSTANCES
     }
     free(resource);
 }
@@ -404,34 +398,50 @@ static bool is_standard_object(int object_id) {
 ////////////// LWM2M OBJECT //////////////////////
 // TODO why would you delete object?
 void lwm2m_delete_object(lwm2m_object *object) {
-    lwm2m_map *object_tree = object->context->object_tree;
+    list *object_tree = object->context->object_tree;
 
     // delete ACO instance associated with object
-    lwm2m_map *aco_instances = ((lwm2m_object *) lwm2m_map_get(object_tree, ACCESS_CONTROL_OBJECT_ID))->instances;
-    lwm2m_map_remove(aco_instances, object->aco_instance->id);
+    list *aco_instances = ((lwm2m_object *) lfind(object_tree, ACCESS_CONTROL_OBJECT_ID))->instances;
+    lremove(aco_instances, object->aco_instance->id);
     free_lwm2m_instance(object->aco_instance);
 
     // delete all instances in object
     int keys[object->instances->size];
     for (int i = 0, instance_id = keys[i]; i < object->instances->size; i++) {
-        lwm2m_instance *instance = (lwm2m_instance *) lwm2m_map_get(object->instances, instance_id);
+        lwm2m_instance *instance = (lwm2m_instance *) lfind(object->instances, instance_id);
         lwm2m_delete_instance(instance);
     }
 
     // delete object
-    lwm2m_map_remove(object_tree, object->id);
+    lremove(object_tree, object->id);
     free_lwm2m_object(object);
 }
 
 lwm2m_object *lwm2m_object_new() {
     lwm2m_object *object = (lwm2m_object *) malloc(sizeof(lwm2m_object));
-    object->attributes = lwm2m_map_new();
-    object->observers = lwm2m_map_new();
+    object->attributes = list_new();
+    object->observers = list_new();
     return object;
 }
 
 
 ////////////// LWM2M INSTANCE //////////////////////
+
+static list *__create_resources_from_def(lwm2m_object *object, lwm2m_instance *instance) {
+    list *resources = list_new();
+    for (int id = 0; id < object->resource_def_len; ++id) {
+        lwm2m_resource *resource = (lwm2m_resource *) malloc(sizeof(lwm2m_resource));
+        memcpy(resource, object->resource_def + id, sizeof(lwm2m_resource));
+        resource->instances = resource->multiple ? list_new() : NULL;
+        resource->instance = instance;
+        resource->attributes = list_new();
+        resource->observers = list_new();
+        resource->value = NULL;
+        resource->length = 0;
+        ladd(resources, id, resource);
+    }
+    return resources;
+}
 
 /**
  * - alloc instance
@@ -442,49 +452,41 @@ lwm2m_object *lwm2m_object_new() {
  * DOES NOT set instance->object and object->instances
  *
  */
-lwm2m_instance *lwm2m_instance_new_with_id(lwm2m_context *context, int object_id, int instance_id) {
+// TODO WHY DOES NOT? NOW IT SETS
+lwm2m_instance *lwm2m_instance_new_with_id(lwm2m_object *object, int instance_id) {
     lwm2m_instance *instance = (lwm2m_instance *) malloc(sizeof(lwm2m_instance));
     instance->id = instance_id;
-    instance->attributes = lwm2m_map_new();
-    instance->observers = lwm2m_map_new();
-    instance->resources = is_standard_object(object_id)
-                          ? context->create_standard_resources_callback(object_id)
-                          : context->create_resources_callback(object_id);
-
-    /**** Set resource->instance ****/
-    int keys[instance->resources->size];
-    lwm2m_map_get_keys(instance->resources, keys);
-    for (int i = 0; i < instance->resources->size; ++i) {
-        lwm2m_map_get_resource(instance->resources, keys[i])->instance = instance;
-    }
+    instance->object = object;
+    instance->attributes = list_new();
+    instance->observers = list_new();
+    instance->resources = __create_resources_from_def(object, instance);
+    ladd(object->instances, instance->id, instance);
     return instance;
 }
 
-lwm2m_instance *lwm2m_instance_new(lwm2m_context *context, int object_id) {
+lwm2m_instance *lwm2m_instance_new(lwm2m_object *object) {
     int newId = 6; // TODO
-    return lwm2m_instance_new_with_id(context, object_id, newId);
+    return lwm2m_instance_new_with_id(object, newId);
 }
 
 void lwm2m_delete_instance(lwm2m_instance *instance) {
     /**** If instance is not ACO instance, then delete associated ACO instance ****/
     /**** If ACO instance exists, then remove (it may not exist if there is only one server??) ****/
     if (instance->object->id != ACCESS_CONTROL_OBJECT_ID && instance->aco_instance != NULL) {
-        lwm2m_map *object_tree = instance->object->context->object_tree;
-        lwm2m_map *aco_instances = ((lwm2m_object *) lwm2m_map_get(object_tree, ACCESS_CONTROL_OBJECT_ID))->instances;
-        lwm2m_map_remove(aco_instances, instance->aco_instance->id);
+        list *object_tree = instance->object->context->object_tree;
+        list *aco_instances = ((lwm2m_object *) lfind(object_tree, ACCESS_CONTROL_OBJECT_ID))->instances;
+        lremove(aco_instances, instance->aco_instance->id);
         free_lwm2m_instance(instance->aco_instance);
     }
 
     // delete all resources in instance
-    int keys[instance->resources->size];
-    lwm2m_map_get_keys(instance->resources, keys);
-    for (int i = 0; i < instance->resources->size; i++) {
-        lwm2m_resource *resource = (lwm2m_resource *) lwm2m_map_get(instance->resources, keys[i]);
+    for (list_elem *elem = instance->resources->first; elem != NULL; elem = elem->next) {
+        lwm2m_resource *resource = elem->value;
         free_lwm2m_resource(resource);
     }
 
     // delete instance
-    lwm2m_map_remove(instance->object->instances, instance->id);
+    lremove(instance->object->instances, instance->id);
     free_lwm2m_instance(instance);
 }
 
@@ -495,9 +497,9 @@ void lwm2m_delete_instance(lwm2m_instance *instance) {
 
 lwm2m_resource *lwm2m_resource_new(bool multiple) {
     lwm2m_resource *resource = (lwm2m_resource *) malloc(sizeof(lwm2m_resource));
-    resource->instances = multiple ? lwm2m_map_new() : NULL;
-    resource->attributes = lwm2m_map_new();
-    resource->observers = lwm2m_map_new();
+    resource->instances = multiple ? list_new() : NULL;
+    resource->attributes = list_new();
+    resource->observers = list_new();
     resource->value = NULL;
     resource->length = 0;
     resource->multiple = multiple;
@@ -509,21 +511,20 @@ lwm2m_resource *lwm2m_resource_new(bool multiple) {
 
 /////////////// MAP UTILITY FUNCTIONS ////////////////
 
-lwm2m_resource *lwm2m_map_get_resource(lwm2m_map *map, int key) {
-    return (lwm2m_resource*) lwm2m_map_get(map, key);
-}
-
-lwm2m_instance *lwm2m_map_get_instance(lwm2m_map *map, int key) {
-    return (lwm2m_instance *) lwm2m_map_get(map, key);
-}
-
-lwm2m_object *lwm2m_map_get_object(lwm2m_map *map, int key) {
-    return (lwm2m_object *) lwm2m_map_get(map, key);
-}
+//lwm2m_resource *lwm2m_map_get_resource(lwm2m_map *map, int key) {
+//    return (lwm2m_resource*) lwm2m_map_get(map, key);
+//}
+//
+//lwm2m_instance *lwm2m_map_get_instance(lwm2m_map *map, int key) {
+//    return (lwm2m_instance *) lwm2m_map_get(map, key);
+//}
+//
+//lwm2m_object *lwm2m_map_get_object(lwm2m_map *map, int key) {
+//    return (lwm2m_object *) lfind(map, key);
+//}
 
 //lwm2m_attribute *lwm2m_map_get_attribute(lwm2m_map *map, char *key) {
 //    return (lwm2m_attribute *) lwm2m_map_get_string(map, key);
 //}
-
 
 // TODO SET VALUE HERE

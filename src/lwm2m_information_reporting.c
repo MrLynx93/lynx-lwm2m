@@ -43,10 +43,8 @@ list *should_notify(lwm2m_resource *resource, lwm2m_value *old_value, lwm2m_valu
     list *servers = list_new();
 
     /**** For each server check if should notify ****/
-    int keys[context->servers->size];
-    lwm2m_map_get_keys(context->servers, keys);
-    for (int i = 0; i < context->servers->size; ++i) {
-        lwm2m_server *server = lwm2m_map_get(context->servers, keys[i]);
+    for (list_elem *elem = context->servers->first; elem != NULL; elem = elem->next) {
+        lwm2m_server *server = elem->value;
 
         /**** If value changed from NULL or to NULL, then notify ****/
         if (new_value == NULL && old_value != NULL) {
@@ -160,13 +158,11 @@ static void notify_instance_on_server(scheduler_task *task, lwm2m_server *server
     };
 
     /**** Parse only resources that are readable ****/
-    lwm2m_map *resources_to_parse = lwm2m_map_new();
-    int keys[instance->resources->size];
-    lwm2m_map_get_keys(instance->resources, keys); // todo nullpointer
-    for (int i = 0; i < instance->resources->size; ++i) {
-        lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, keys[i]);
+    list *resources_to_parse = list_new();
+    for (list_elem *elem = instance->resources->first; elem != NULL; elem = elem->next) {
+        lwm2m_resource *resource = elem->value;
         if (lwm2m_check_resource_operation_supported(resource, READ)) {
-            lwm2m_map_put(resources_to_parse, resource->id, resource);
+            ladd(resources_to_parse, resource->id, resource);
         }
     }
     serialize_instance(resources_to_parse, response.payload, &response.payload_len);
@@ -203,14 +199,15 @@ static void notify_resource_on_server(scheduler_task *task, lwm2m_server *server
     task->last_waking_time = time(0);
 }
 
+#define FOREACH(...) for (list_elem* elem, elem != NULL; elem = elem->next) { __VA_ARGS__ }
+
+
 static void notify_object_func(void *task, void *server, void *object, void *token, void *instance) {
     if (instance == NULL) {
         /**** Notify all instances ****/
         lwm2m_object* o = (lwm2m_object*) object;
-        int keys[o->instances->size];
-        lwm2m_map_get_keys(o->instances, keys);
-        for (int i = 0; i < o->instances->size; ++i) {
-            lwm2m_instance *inst = lwm2m_map_get(o->instances, keys[i]);
+        for (list_elem *elem = o->instances->first; elem != NULL; elem = elem->next) {
+            lwm2m_instance *inst = elem->value;
             notify_instance_on_server((scheduler_task*) task, server, inst, token);
         }
     } else {
@@ -267,7 +264,7 @@ lwm2m_response on_resource_observe(lwm2m_server *server, lwm2m_resource *resourc
 
     // TODO create map of observe tasks? should be useful in write attributes
     schedule(server->context->scheduler, notify_task);
-    lwm2m_map_put(resource->observers, server->short_server_id, notify_task);
+    ladd(resource->observers, server->short_server_id, notify_task);
     return response;
 }
 
@@ -298,7 +295,7 @@ lwm2m_response on_instance_observe(lwm2m_server *server, lwm2m_instance *instanc
 
     // TODO create map of observe tasks? should be useful in write attributes
     schedule(server->context->scheduler, notify_task);
-    lwm2m_map_put(instance->observers, server->short_server_id, notify_task);
+    ladd(instance->observers, server->short_server_id, notify_task);
     return response;
 }
 
@@ -322,7 +319,7 @@ lwm2m_response on_object_observe(lwm2m_server *server, lwm2m_object *object, cha
     notify_task->arg3 = token;
 
     schedule(server->context->scheduler, notify_task);
-    lwm2m_map_put(object->observers, server->short_server_id, notify_task);
+    ladd(object->observers, server->short_server_id, notify_task);
     return response;
 }
 
@@ -335,9 +332,9 @@ lwm2m_response on_object_cancel_observe(lwm2m_server *server, lwm2m_object *obje
     };
 
     lwm2m_scheduler *scheduler = server->context->scheduler;
-    scheduler_task *notify_task = (scheduler_task *) lwm2m_map_get(object->observers, server->short_server_id);
+    scheduler_task *notify_task = (scheduler_task *) lfind(object->observers, server->short_server_id);
     cancel(scheduler, notify_task);
-    lwm2m_map_remove(object->observers, server->short_server_id);
+    lremove(object->observers, server->short_server_id);
     free(notify_task);
     return response;
 }
@@ -351,9 +348,9 @@ lwm2m_response on_instance_cancel_observe(lwm2m_server *server, lwm2m_instance *
     };
 
     lwm2m_scheduler *scheduler = server->context->scheduler;
-    scheduler_task *notify_task = (scheduler_task *) lwm2m_map_get(instance->observers, server->short_server_id);
+    scheduler_task *notify_task = (scheduler_task *) lfind(instance->observers, server->short_server_id);
     cancel(scheduler, notify_task);
-    lwm2m_map_remove(instance->observers, server->short_server_id);
+    lremove(instance->observers, server->short_server_id);
     free(notify_task);
     return response;
 }
@@ -367,9 +364,9 @@ lwm2m_response on_resource_cancel_observe(lwm2m_server *server, lwm2m_resource *
     };
 
     lwm2m_scheduler *scheduler = server->context->scheduler;
-    scheduler_task *notify_task = (scheduler_task *) lwm2m_map_get(resource->observers, server->short_server_id);
+    scheduler_task *notify_task = (scheduler_task *) lfind(resource->observers, server->short_server_id);
     cancel(scheduler, notify_task);
-    lwm2m_map_remove(resource->observers, server->short_server_id);
+    lremove(resource->observers, server->short_server_id);
     free(notify_task);
     return response;
 }

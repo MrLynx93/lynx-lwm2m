@@ -1,14 +1,6 @@
 #include "lwm2m.h"
 #include "lwm2m_parser.h"
 
-static lwm2m_map* __create_resources(lwm2m_context *context, int object_id) {
-    if (object_id == SECURITY_OBJECT_ID || object_id == SERVER_OBJECT_ID || object_id == ACCESS_CONTROL_OBJECT_ID) {
-        return context->create_standard_resources_callback(object_id);
-    } else {
-        return context->create_resources_callback(object_id);
-    }
-}
-
 static void __append_object_attr(char *message, lwm2m_server *server, lwm2m_object *object, int lookup) {
     char buffer[10];
 
@@ -86,13 +78,9 @@ void serialize_lwm2m_object_discover(lwm2m_server *server, lwm2m_object *object,
     sprintf(message, "<%d/>", object->id);
     __append_object_attr(message, server, object, 0);
 
-    lwm2m_map *resources = __create_resources(object->context, object->id);
-    int keys[resources->size];
     char buffer[10];
-    lwm2m_map_get_keys(resources, keys);
-    for (int i = 0; i < resources->size; ++i) {
-        lwm2m_resource *resource = lwm2m_map_get_resource(resources, keys[i]);
-        sprintf(buffer, "<%d/0/%d>", object->id, resource->id);
+    for (int id = 0; id < object->resource_def_len; ++id) {
+        sprintf(buffer, "<%d/0/%d>", object->id, id);
         strcat(message, ",");
         strcat(message, buffer);
     }
@@ -103,10 +91,8 @@ void serialize_lwm2m_instance_discover(lwm2m_server *server, lwm2m_instance *ins
     __append_instance_attr(message, server, instance, 0);
 
     char buffer[10];
-    int keys[instance->resources->size];
-    lwm2m_map_get_keys(instance->resources, keys);
-    for (int i = 0; i < instance->resources->size; ++i) {
-        lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, keys[i]);
+    for (list_elem *elem = instance->resources->first; elem != NULL; elem = elem->next) {
+        lwm2m_resource *resource = elem->value;
         sprintf(buffer, "<%d/%d/%d>", instance->object->id, instance->id, resource->id);
         strcat(message, ",");
         strcat(message, buffer);

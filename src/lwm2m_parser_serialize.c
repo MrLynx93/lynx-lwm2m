@@ -168,23 +168,21 @@ void serialize_single_resource(lwm2m_resource *resource, char *message, int *mes
  * TLV FORMAT
  * Resource is already checked and READABLE
  */
-void serialize_multiple_resource(lwm2m_map *resources, char *message, int *message_len) {
+void serialize_multiple_resource(list *resources, char *message, int *message_len) {
     char *value_buffer = malloc(sizeof(char) * 100);
     char *header_buffer = malloc(sizeof(char) * 20);
     int header_length, value_length;
     int total_length = 0;
 
-    int keys[resources->size];
-    lwm2m_map_get_keys(resources, keys);
-    for (int i = 0; i < resources->size; ++i) {
+    for (list_elem *elem = resources->first; elem != NULL; elem = elem->next) {
         // Serialize resource instance
-        lwm2m_resource *resource_instance = lwm2m_map_get_resource(resources, keys[i]);
+        lwm2m_resource *resource_instance = elem->value;
         serialize_single_resource(resource_instance, value_buffer, &value_length);
         serialize_header(resource_instance->id, RESOURCE_INSTANCE_TYPE, value_length, header_buffer, &header_length);
 
         // Copy these to message
-        memcpy(message, header_buffer, header_length);
-        memcpy(message + header_length, value_buffer, value_length);
+        memcpy(message, header_buffer, (size_t) header_length);
+        memcpy(message + header_length, value_buffer, (size_t) value_length);
         message += header_length + value_length;
         total_length += header_length + value_length;
 
@@ -199,16 +197,14 @@ void serialize_multiple_resource(lwm2m_map *resources, char *message, int *messa
  * 1. Instance is already granted READ access control for reading server
  * 2. Resources are already filtered out so they support READ operation
  */
-void serialize_instance(lwm2m_map *resources, char *message, int *message_len) {
+void serialize_instance(list *resources, char *message, int *message_len) {
     char *value_buffer = malloc(sizeof(char) * 1000);
     char *header_buffer = malloc(sizeof(char) * 20);
     int header_length, value_length;
     int total_length = 0;
 
-    int keys[resources->size];
-    lwm2m_map_get_keys(resources, keys);
-    for (int i = 0; i < resources->size; ++i) {
-        lwm2m_resource *resource = lwm2m_map_get_resource(resources, keys[i]);
+    for (list_elem *elem = resources->first; elem != NULL; elem = elem->next) {
+        lwm2m_resource *resource = elem->value;
 
         // Serialize resource
         if (resource->multiple) {
@@ -221,8 +217,8 @@ void serialize_instance(lwm2m_map *resources, char *message, int *message_len) {
         }
 
         // Copy these to message
-        memcpy(message, header_buffer, header_length);
-        memcpy(message + header_length, value_buffer, value_length);
+        memcpy(message, header_buffer, (size_t) header_length);
+        memcpy(message + header_length, value_buffer, (size_t) value_length);
         message += header_length + value_length;
         total_length += header_length + value_length;
     }
@@ -237,19 +233,15 @@ void serialize_instance(lwm2m_map *resources, char *message, int *message_len) {
  * 1. Granted READ access control for reading server
  * 2. Resources are already filtered out so they support READ operation
  */
-void serialize_object(lwm2m_map *instances, char *message, int* message_len) {
+void serialize_object(list *instances, char *message, int* message_len) {
     char *value_buffer = malloc(sizeof(char) * 1000);
     char *header_buffer = malloc(sizeof(char) * 20);
     int header_length, value_length;
     int total_length = 0;
 
-    int instance_len;
-    int keys[instances->size];
-    lwm2m_map_get_keys(instances, keys);
-    for (int i = 0; i < instances->size; ++i) {
+    for (list_elem *elem = instances->first; elem != NULL; elem = elem->next) {
         // Serialize instance
-        lwm2m_instance *instance = lwm2m_map_get_instance(instances, keys[i]);
-
+        lwm2m_instance *instance = elem->value;
         serialize_instance(instance->resources, value_buffer, &value_length);
         serialize_header(instance->id, OBJECT_INSTANCE_TYPE, value_length, header_buffer, &header_length);
 

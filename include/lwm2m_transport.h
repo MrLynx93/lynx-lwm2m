@@ -71,9 +71,9 @@ typedef struct lwm2m_topic {
 
 // TODO what about tokens????
 
-char *serialize_topic(lwm2m_topic topic);
+char *serialize_topic(lwm2m_topic topic, char *message);
 
-char *serialize_response(lwm2m_response response, int *message_len);
+char *serialize_response(lwm2m_response response, char *message, int *message_len);
 
 char *generate_token();
 
