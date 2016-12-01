@@ -3,7 +3,6 @@
 #include <lwm2m_access_control.h>
 #include <lwm2m_parser.h>
 
-
 static bool __fulfill_GT(float gt, lwm2m_value *new_value, lwm2m_type type) {
     if (type == INTEGER) {
         return gt < new_value->int_value;
@@ -85,60 +84,12 @@ list *should_notify(lwm2m_resource *resource, lwm2m_value *old_value, lwm2m_valu
 }
 
 
-//
-// * Notify functions - these are called periodically
-// *
-// *
-// *
-// */
-//static void notify_object_on_server(scheduler_task *task, lwm2m_server *server, lwm2m_object* object, char *token) {
-//    lwm2m_response response = {
-//            .content_type = CONTENT_TYPE_TLV,
-//            .response_code = RESPONSE_CODE_CONTENT,
-//            .payload = malloc(sizeof(char) * 1000),
-//    };
-//
-//    lwm2m_topic topic = {
-//            .operation   = LWM2M_OPERATION_OBSERVE,
-//            .type        = "res",
-//            .client_id   = server->context->client_id,
-//            .server_id   = itoa(server->short_server_id),
-//            .token       = token,
-//            .object_id   = object->id,
-//            .instance_id = -1,
-//            .resource_id = -1
-//    };
-//
-//    lwm2m_map *instances_to_parse = lwm2m_map_new();
-//    int keys[object->instances->size];
-//    lwm2m_map_get_keys(object->instances, keys);
-//    for (int i = 0; i < object->instances->size; ++i) {
-//        lwm2m_instance *instance = lwm2m_map_get_instance(object->instances, keys[i]);
-//
-//        /**** Parse only instances, that have granted READ access ****/
-//        if (lwm2m_check_instance_access_control(server, instance, READ)) {
-//            lwm2m_instance *instance_to_parse = (lwm2m_instance *) malloc(sizeof(lwm2m_instance));
-//            instance_to_parse->resources = lwm2m_map_new();
-//            instance_to_parse->id = instance->id;
-//
-//            int res_keys[instance->resources->size];
-//            lwm2m_map_get_keys(instance->resources, res_keys);
-//            for (int j = 0; j < instance->resources->size; ++j) {
-//                lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, res_keys[j]);
-//
-//                /**** Parse only resources that are readable ****/
-//                if (lwm2m_check_resource_operation_supported(resource, READ)) {
-//                    lwm2m_map_put(instance_to_parse->resources, resource->id, resource);
-//                }
-//            }
-//            lwm2m_map_put(instances_to_parse, instance_to_parse->id, instance_to_parse);
-//        }
-//    }
-//    serialize_object(instances_to_parse, response.payload, &response.payload_len);
-//    perform_notify_response(server->context, topic, response);
-//    task->last_waking_time = time(0);
-//}
-
+/**
+ * Notify functions - these are called periodically
+ *
+ *
+ *
+ */
 static void notify_instance_on_server(scheduler_task *task, lwm2m_server *server, lwm2m_instance* instance, char *token) {
     lwm2m_response response = {
             .content_type = CONTENT_TYPE_TLV,
@@ -199,7 +150,6 @@ static void notify_resource_on_server(scheduler_task *task, lwm2m_server *server
     task->last_waking_time = time(0);
 }
 
-#define FOREACH(...) for (list_elem* elem, elem != NULL; elem = elem->next) { __VA_ARGS__ }
 
 
 static void notify_object_func(void *task, void *server, void *object, void *token, void *instance) {
@@ -252,6 +202,9 @@ lwm2m_response on_resource_observe(lwm2m_server *server, lwm2m_resource *resourc
     }
 
     /**** Scheule notify task ****/
+    char *token_copy = malloc(strlen(token) + 1);
+    strcpy(token_copy, token);
+
     scheduler_task *notify_task = (scheduler_task *) malloc(sizeof(scheduler_task));
     notify_task->id = generate_task_id();
     notify_task->period = *get_resource_pmax(server, resource, 2);
@@ -260,7 +213,7 @@ lwm2m_response on_resource_observe(lwm2m_server *server, lwm2m_resource *resourc
     notify_task->arg0 = notify_task;
     notify_task->arg1 = server;
     notify_task->arg2 = resource;
-    notify_task->arg3 = token;
+    notify_task->arg3 = token_copy;
 
     // TODO create map of observe tasks? should be useful in write attributes
     schedule(server->context->scheduler, notify_task);
@@ -283,6 +236,9 @@ lwm2m_response on_instance_observe(lwm2m_server *server, lwm2m_instance *instanc
     }
 
     /**** Scheule notify task ****/
+    char *token_copy = malloc(strlen(token) + 1);
+    strcpy(token_copy, token);
+
     scheduler_task *notify_task = (scheduler_task *) malloc(sizeof(scheduler_task));
     notify_task->id = generate_task_id();
     notify_task->period = *get_instance_pmax(server, instance, 2);
@@ -291,7 +247,7 @@ lwm2m_response on_instance_observe(lwm2m_server *server, lwm2m_instance *instanc
     notify_task->arg0 = notify_task;
     notify_task->arg1 = server;
     notify_task->arg2 = instance;
-    notify_task->arg3 = token;
+    notify_task->arg3 = token_copy;
 
     // TODO create map of observe tasks? should be useful in write attributes
     schedule(server->context->scheduler, notify_task);
@@ -308,6 +264,9 @@ lwm2m_response on_object_observe(lwm2m_server *server, lwm2m_object *object, cha
     };
 
     /**** Scheule notify task ****/
+    char *token_copy = malloc(strlen(token) + 1);
+    strcpy(token_copy, token);
+
     scheduler_task *notify_task = (scheduler_task *) malloc(sizeof(scheduler_task));
     notify_task->id = generate_task_id();
     notify_task->period = *get_object_pmax(server, object, 2);
@@ -316,7 +275,7 @@ lwm2m_response on_object_observe(lwm2m_server *server, lwm2m_object *object, cha
     notify_task->arg0 = notify_task;
     notify_task->arg1 = server;
     notify_task->arg2 = object; // TODO IT WILL BE SET ON EACH NOTIFY
-    notify_task->arg3 = token;
+    notify_task->arg3 = token_copy;
 
     schedule(server->context->scheduler, notify_task);
     ladd(object->observers, server->short_server_id, notify_task);

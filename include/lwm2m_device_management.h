@@ -55,6 +55,7 @@ lwm2m_response on_instance_delete(lwm2m_server *server, lwm2m_instance *instance
 lwm2m_response on_resource_execute(lwm2m_server *server, lwm2m_resource *resource, list *args);
 
 
+// TODO move???
 void DUMP_SINGLE_RESOURCE(lwm2m_resource *resource);
 
 void DUMP_MULTIPLE_RESOURCE(lwm2m_resource *resource);
@@ -64,48 +65,5 @@ void DUMP_INSTANCE(lwm2m_instance *instance);
 void DUMP_OBJECT(lwm2m_object *object);
 
 void DUMP_ALL(lwm2m_context *context);
-//
-////////////// DELETE ///////////
-//
-///* Checks access control and deletes instance from object tree */
-//int on_lwm2m_instance_delete(lwm2m_server* server, lwm2m_instance* instance);
-//
-//
-////////////// CREATE ///////////
-//
-///* Checks access control, parses instance from TLV format message and creates new instance in object tree */
-//int on_lwm2m_instance_create(lwm2m_server* server, lwm2m_object* object, char* message, int* created_instance_id);
-//
-//
-///////////// DISCOVER //////////
-//
-///* Writes object discover message to message argument (don't need access control) */
-//int on_lwm2m_object_discover(lwm2m_server* server, lwm2m_object* object, char** message);
-//
-///* Writes instance discover message to message argument (don't need access control) */
-//int on_lwm2m_instance_discover(lwm2m_server* server, lwm2m_instance* instance, char** message);
-//
-///* Writes resource discover message to message argument (don't need access control) */
-//int on_lwm2m_resource_discover(lwm2m_server* server, lwm2m_resource* resource, char** message);
-//
-//
-///////////// WRITE ATTRIBUTES ///////////
-//
-///* Reads message and writes attributes into object */
-//int on_lwm2m_object_write_attributes(lwm2m_server* server, lwm2m_object* object, char* message);
-//
-///* Reads message and writes attributes into instance */
-//int on_lwm2m_instance_write_attributes(lwm2m_server* server, lwm2m_instance* instance, char* message);
-//
-///* Reads message and writes attributes into resource */
-//int on_lwm2m_resource_write_attributes(lwm2m_server* server, lwm2m_resource* resource, char* message);
-//
-///////////////// EXECUTE ////////////////////
-//
-//typedef struct lwm2m_execute_parameter {
-//    char* name;
-//    char* value; // TODO many types
-//} lwm2m_execute_parameter;
-//
-//
+
 #endif //LYNX_LWM2M_DEVICE_MANAGEMENT_H

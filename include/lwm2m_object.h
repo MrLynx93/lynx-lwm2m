@@ -1,8 +1,6 @@
 #ifndef LYNX_LWM2M_LWM2M_OBJECT_H
 #define LYNX_LWM2M_LWM2M_OBJECT_H
 
-#include "map.h"
-
 #include <stdbool.h>
 
 
@@ -59,37 +57,13 @@ typedef union lwm2m_value {
 
 ////////////// ATTRIBUTE //////////////////////
 
-//typedef struct lwm2m_attribute {
-//    char* name;
-//    int name_len;
-//    int access_mode;
-//    lwm2m_type type;
-//    lwm2m_value* numeric_value;
-//} lwm2m_attribute;
-
-
 list *merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource, bool call_callback, bool notify);
 
 void merge_resources(lwm2m_instance *old_instance, lwm2m_instance *new_instance, bool call_callback, bool notify);
 
-
 void notify_instance_object(lwm2m_context *context, lwm2m_instance *instance, list *servers);
 
 
-//void merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource, bool call_callback);
-//
-//void merge_resources(lwm2m_map *old_resources, lwm2m_map *new_resources, bool call_callback);
-
-
-
-
-//lwm2m_attribute *new_int_attribute(char* name, int value, int access_mode);
-//
-///* Definition of general attribute value types */
-//lwm2m_type lwm2m_get_attribute_type(char *attribute_name);
-//
-///* Definition of general attribute types */
-//bool is_notify_attribute(char* attribute_name);
 
 /////////////// CALLBACKS ///////////////////
 
@@ -149,20 +123,6 @@ void lwm2m_delete_instance(lwm2m_instance *instance);
 lwm2m_instance *refer_link(lwm2m_link link);
 
 ////////////// LWM2M RESOURCE //////////////////////
-
-//typedef struct lwm2m_resource_single {
-//    lwm2m_value value;
-//    int length; // for string and opaque
-//} lwm2m_resource_single;
-//
-//typedef struct lwm2m_resource_multiple {
-//    lwm2m_map *instances;
-//} lwm2m_resource_multiple;
-//
-//typedef union lwm2m_resource_real {
-//    lwm2m_resource_single single;
-//    lwm2m_resource_multiple multiple;
-//} lwm2m_resource_real;
 
 struct lwm2m_resource {
     int id;
@@ -250,16 +210,5 @@ typedef enum lwm2m_node_type {
     RESOURCE,
     RESOURCE_INSTANCE
 } lwm2m_node_type;
-
-/////////////// MAP UTILITY FUNCTIONS ////////////////
-
-//lwm2m_resource *lwm2m_map_get_resource(lwm2m_map *map, int key);
-//
-//lwm2m_instance *lwm2m_map_get_instance(lwm2m_map *map, int key);
-//
-//lwm2m_object *lwm2m_map_get_object(lwm2m_map *map, int key);
-
-//lwm2m_attribute *lwm2m_map_get_attribute(lwm2m_map *map, char *key);
-
 
 #endif //LYNX_LWM2M_LWM2M_OBJECT_H

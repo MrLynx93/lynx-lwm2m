@@ -3,10 +3,9 @@
 
 #define _XOPEN_SOURCE 600
 
-#include "map.h"
-#include "list.h"
-#include "scheduler.h"
-#include "lwm2m_object.h"
+#include <list.h>
+#include <scheduler.h>
+#include <lwm2m_object.h>
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -65,7 +64,6 @@ typedef struct lwm2m_register_data {
 
 typedef struct lwm2m_context {
     list *servers; // shortServerId -> server
-//    lwm2m_map *server_addresses; // "localhost:234" -> server
 
     list *object_tree;
     lwm2m_state state;
@@ -73,19 +71,13 @@ typedef struct lwm2m_context {
     int is_bootstrap_ready;
     int is_bootstrapped;
 
-
-    list *resources; // Its list[resource[]] - resource definitions for objects
-
-    /* Definitions of objects */
-//    lwm2m_create_resources_callback *create_standard_resources_callback; // TODO move to function
-//    lwm2m_create_resources_callback *create_resources_callback;
     lwm2m_create_objects_callback *create_objects_callback;
 
     /* Used bootstrap to provide client with LWM2M instances */
     int (*factory_bootstrap_callback)(struct lwm2m_context *);
     int (*smartcard_bootstrap_callback)(struct lwm2m_context *);
 
-
+    // TODO move it to some config?
     char* broker_address;
     char* client_id;
     char* endpoint_client_name;

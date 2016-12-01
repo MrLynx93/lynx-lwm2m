@@ -138,18 +138,7 @@ static void subscribe_init(lwm2m_context *context) {
 }
 
 static void on_publish_success(void *context, MQTTAsync_successData *response) {
-// librar
-//
-//    MQTTAsync_message message = response->alt.pub.message;
-//    char *destination = response->alt.pub.destinationName;
-//    printf("Success\n");
-
-//    if (message.payload != NULL) {
-//        free(message.payload);
-//    }
-//    if (destination != NULL) {
-//        free(destination);
-//    }
+    ; // TODO
 }
 
 static void on_publish_failure(void* context,  MQTTAsync_failureData* response) {
@@ -177,10 +166,12 @@ void publish_connected(lwm2m_context *context) {
             .onFailure = on_publish_failure,
             .context = context
     };
-    char *topic = (char*) malloc(100);
+    char topic[100];
     sprintf(topic, "lynx/clients/%s", context->client_id);
+
     char message[2];
     sprintf(message, "1");
+
     MQTTAsync_send(*(context->mqtt_client), topic, 1, message, 1, 0, &opts);
     printf("[%s] Received  %s\n", buffer, topic);
 }
@@ -208,7 +199,11 @@ static int on_message(void *context, char *topicName, int topicLen, MQTTAsync_me
 }
 
 
-
+static void __free_response(lwm2m_response* response) {
+    if (response->payload != NULL && response->payload_len > 0) {
+        free(response->payload);
+    }
+}
 ////////////////////////// MAIN //////////////////////////////
 
 void publish_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response response) {
@@ -226,6 +221,7 @@ void publish_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response 
     MQTTAsync_send(*(context->mqtt_client), topic_str, message_len, message, 1, 0, &opts);
     __print_time();
     printf("Published %s\n", topic_str);
+
 
 }
 
@@ -280,6 +276,7 @@ void receive_request(lwm2m_context *context, lwm2m_topic topic, char *message, i
 
     topic.type = "res";
     publish_response(context, topic, response);
+    __free_response(&response);
 }
 
 void receive_response(lwm2m_context *context, lwm2m_topic topic, char *message, int message_len) {
@@ -294,6 +291,15 @@ void receive_response(lwm2m_context *context, lwm2m_topic topic, char *message, 
     if (!strcmp(LWM2M_OPERATION_DEREGISTER, topic.operation)) {
         handle_deregister_response(context, topic, response);
     }
+//    __free_response() TODO should I? or mqtt does free?
+}
+
+static void __free_topic(lwm2m_topic *topic) {
+    free(topic->operation);
+    free(topic->type);
+    free(topic->client_id);
+    free(topic->server_id);
+    free(topic->token);
 }
 
 void receive_message(lwm2m_context *context, char* topic_string, char* message, int message_len) {
@@ -305,6 +311,7 @@ void receive_message(lwm2m_context *context, char* topic_string, char* message, 
     if (!strcmp("res", topic.type)) {
         receive_response(context, topic, message, message_len);
     }
+    __free_topic(&topic);
 }
 
 void subscribe_server(lwm2m_context *context, lwm2m_server *server) {

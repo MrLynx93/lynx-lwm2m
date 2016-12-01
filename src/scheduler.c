@@ -1,9 +1,10 @@
 #include "scheduler.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
+// todo is it needed?
 #define _XOPEN_SOURCE 500
+
 /****************** LIST IMPLEMENTATION *********************/
 
 void list_add(task_list *list, scheduler_task *task) {

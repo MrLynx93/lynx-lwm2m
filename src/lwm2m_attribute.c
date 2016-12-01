@@ -97,7 +97,6 @@ int *get_default_pmax(lwm2m_server *server) {
 
 /***************** RESOURCE SPECIFIC ATTRIBUTES *****************/
 
-
 int *get_resource_dim(lwm2m_server *server, lwm2m_resource *resource) {
     lwm2m_attributes *attr = __resource_attr_for_server(server, resource);
     return attr == NULL ? NULL : attr->dim;
@@ -177,6 +176,7 @@ lwm2m_response on_instance_write_attributes(lwm2m_server *server, lwm2m_instance
     return (lwm2m_response) WRITE_ATTR_RESPONSE;
 }
 
+
 lwm2m_response on_object_write_attributes(lwm2m_server *server, lwm2m_object *object, lwm2m_request request) {
     /**** Don't have to check any access ****/
     lwm2m_attributes *old_attr = __object_attr_for_server(server, object);
@@ -188,7 +188,7 @@ lwm2m_response on_object_write_attributes(lwm2m_server *server, lwm2m_object *ob
     lwm2m_attributes new_attr = EMPTY_ATTR;
     parse_attributes(&new_attr, request.payload);
 
-    __merge_attributes(__object_attr_for_server(server, object), &new_attr);
+    __merge_attributes(old_attr, &new_attr);
     return (lwm2m_response) WRITE_ATTR_RESPONSE;
 }
 

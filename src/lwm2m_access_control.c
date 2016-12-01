@@ -1,20 +1,6 @@
 #include "lwm2m.h"
-#include "lwm2m_object.h"
 #include "lwm2m_access_control.h"
 
-
-///////////// CHECKING ACCESS CONTROL ///////////////////
-
-//int lwm2m_check_object_access_control(lwm2m_server *server, lwm2m_object *object) { // TODO what to do here
-//    TODO
-//
-//    lwm2m_resource_multiple *acl_resource = lwm2m_get_instance_acl_resource(instance); // TODO check if instance or object
-//    lwm2m_resource_single *acl_resource_instance = lwm2m_get_acl_resource_instance(acl_resource, server);
-//    if (!(acl_resource_instance->value.int_value & CREATE)) {
-//        return ACCESS_RIGHT_PERMISSION_DENIED;
-//    }
-//    return 0;
-//}
 
 /////////// GETTING ACCESS CONTROL OBJECT AND RESOURCES ////////////
 

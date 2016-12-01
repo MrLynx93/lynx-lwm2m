@@ -23,11 +23,6 @@ static int get_int_bytes(int value) {
     return 8;
 }
 
-static union double_bytes {
-    double val;
-    char bytes[8];
-} double_bytes;
-
 static void serialize_header(int id, int type, int value_len, char *message, int *message_len) {
     message[0] = 0;
     message[0] |= type;

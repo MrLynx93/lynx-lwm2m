@@ -20,8 +20,8 @@ example: x64
 
 	
 testmem: example
-	cd bin/x64; valgrind --tool=massif --massif-out-file=massif.out ./example
-	cd bin/x64; ms_print massif.out > massif.txt
+	cd bin/x64; valgrind --tool=massif --massif-out-file=massif.out --threshold=0.01 ./example
+	cd bin/x64; ms_print --threshold=0.01 massif.out > massif.txt
 
 testproc: example
 	cd bin/x64; valgrind --tool=callgrind ./example
@@ -29,3 +29,7 @@ testproc: example
 clean:
 	rm -rf bin
 	mkdir bin bin/x64
+
+lines:
+	find src -name '*.c' | xargs wc -l
+	find include -name '*.h' | xargs wc -l

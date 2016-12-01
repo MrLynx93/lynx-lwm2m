@@ -1,4 +1,5 @@
 .idea
 notes.txt
-bin/
+temp.txt
+bin
 *.o

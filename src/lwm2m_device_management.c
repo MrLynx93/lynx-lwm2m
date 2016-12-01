@@ -8,38 +8,29 @@
 
 #define EXECUTE_RESPONSE {CONTENT_TYPE_NO_FORMAT, RESPONSE_CODE_CHANGED, 1, NULL, 0};
 
-static void __free_attribute(lwm2m_attributes *attribute) {
-    if (attribute->pmin != NULL) free(attribute->pmin);
-    if (attribute->pmax != NULL) free(attribute->pmin);
-    if (attribute->dim != NULL) free(attribute->pmin);
-    if (attribute->stp != NULL) free(attribute->pmin);
-    if (attribute->lt != NULL) free(attribute->pmin);
-    if (attribute->gt != NULL) free(attribute->pmin);
-    free(attribute);
-}
 
-static void __free_attributes(list *attributes) {
-    for (list_elem *elem = attributes->first; elem != NULL; elem = elem->next) {
-        __free_attribute(elem->value);
+static void __free_value(lwm2m_value *value, lwm2m_type type) {
+    if (type == STRING || type == OPAQUE) {
+        free(value->string_value);
     }
-    list_free(attributes);
+    free(value);
 }
 
 static void __free_parsed_resource(lwm2m_resource *resource) {
     if (resource->multiple) {
         if (resource->instances != NULL) {
             for (list_elem *elem = resource->instances->first; elem != NULL; elem = elem->next) {
-                lwm2m_resource *instance = elem->value;
-                if (instance->value != NULL) {
-                    free(instance->value);
+                lwm2m_resource *resource_instance = elem->value;
+                if (resource_instance->value != NULL) {
+                    __free_value(resource_instance->value, resource->type);
                 }
-                free(instance);
+                free(resource_instance);
             }
             list_free(resource->instances);
         }
     }
     else if (resource->value != NULL) {
-        free(resource->value);
+        __free_value(resource->value, resource->type);
     }
     free(resource);
 }
@@ -50,22 +41,6 @@ static void __free_parsed_resources(list *resources) {
     }
     list_free(resources);
 }
-
-static void __free_instance(lwm2m_instance *instance) {
-    __free_attributes(instance->attributes);
-    __free_parsed_resources(instance->resources);
-    list_free(instance->observers);
-    free(instance);
-}
-
-static void __free_instances(list* instances) {
-    for (list_elem *elem = instances->first; elem != NULL; elem = elem->next) {
-        __free_instance(elem->value);
-    }
-}
-
-
-
 
 
 
@@ -119,6 +94,7 @@ int on_instance_write(lwm2m_server *server, lwm2m_instance *instance, char *mess
     for (list_elem *elem = parsed_resources->first; elem != NULL; elem = elem->next) {
         lwm2m_resource *resource = elem->value;
         if (!lwm2m_check_resource_operation_supported(resource, WRITE)) {
+            __free_parsed_resources(parsed_resources);
             return RESPONSE_CODE_METHOD_NOT_ALLOWED;
         };
     }
@@ -178,10 +154,20 @@ lwm2m_response on_instance_read(lwm2m_server *server, lwm2m_instance *instance) 
         }
     }
     serialize_instance(resources_to_parse, response.payload, &response.payload_len);
+    list_free(resources_to_parse);
 
     response.content_type = CONTENT_TYPE_TLV;
     response.response_code = RESPONSE_CODE_CHANGED;
     return response;
+}
+
+static void __free_instances_to_parse(list *instances) {
+    for (list_elem *elem = instances->first; elem != NULL; elem = elem->next) {
+        lwm2m_instance *instance = elem->value;
+        list_free(instance->resources);
+        free(instance);
+    }
+    list_free(instances);
 }
 
 lwm2m_response on_object_read(lwm2m_server *server, lwm2m_object *object) {
@@ -215,8 +201,7 @@ lwm2m_response on_object_read(lwm2m_server *server, lwm2m_object *object) {
     serialize_object(instances_to_parse, response.payload, &response.payload_len);
 
     /**** Free parsed instances ****/
-    __free_instances(instances_to_parse);
-    list_free(instances_to_parse);
+    __free_instances_to_parse(instances_to_parse);
     return response;
 }
 
@@ -267,7 +252,7 @@ lwm2m_response on_instance_create(lwm2m_server *server, lwm2m_object *object, in
 
         /***** Ignore read-only resource *******/
         if (parsed_resource != NULL && template_resource->operations & WRITE) {
-            ladd(parsed_instance.resources, parsed_instance.id, parsed_resource);
+            ladd(parsed_instance.resources, parsed_resource->id, parsed_resource);
         }
         // TODO Can resource be mandatory and read-only?
     }
@@ -323,16 +308,7 @@ lwm2m_response on_resource_execute(lwm2m_server *server, lwm2m_resource *resourc
     return response;
 }
 
-
-
-
-
-
-
-
-
-
-void subst(char *s, char from, char to) {
+static void __subst(char *s, char from, char to) {
     while (*s == from)
         *s++ = to;
 }
@@ -343,7 +319,7 @@ void DUMP_MULTIPLE_RESOURCE(lwm2m_resource *resource) {
 
     sprintf(header, "/%d/%d/%d", resource->instance->object->id, resource->instance->id, resource->id);
     sprintf(buffer, "%0*d", (int) (PAD_LEN + STR_LEN + 2 - strlen(header)), 0);
-    subst(buffer, '0', '.');
+    __subst(buffer, '0', '.');
     printf("%s%s\n", header, buffer);
 
     for (list_elem *elem = resource->instances->first; elem != NULL; elem = elem->next) {
@@ -352,7 +328,7 @@ void DUMP_MULTIPLE_RESOURCE(lwm2m_resource *resource) {
 
         sprintf(header, "/%d/%d/%d/%d", resource->instance->object->id, resource->instance->id, resource->id, instance->id);
         sprintf(buffer, "%0*d", (int) (PAD_LEN - strlen(header)), 0);
-        subst(buffer, '0', '.');
+        __subst(buffer, '0', '.');
 
         if (resource->type == OPAQUE) {
             printf("%s%s[", header, buffer);
@@ -386,7 +362,7 @@ void DUMP_SINGLE_RESOURCE(lwm2m_resource *resource) {
     sprintf(header, "/%d/%d/%d", resource->instance->object->id, resource->instance->id, resource->id);
 
     sprintf(buffer, "%0*d", (int) (PAD_LEN - strlen(header)), 0);
-    subst(buffer, '0', '.');
+    __subst(buffer, '0', '.');
     if (resource->type == OPAQUE) {
         printf("%s%s[", header, buffer);
         if (value_len == 0) {
@@ -412,7 +388,7 @@ void DUMP_INSTANCE(lwm2m_instance *instance) {
     char header[20], buffer[100];
     sprintf(header, "/%d/%d", instance->object->id, instance->id);
     sprintf(buffer, "%0*d", (int) (PAD_LEN - strlen(header) + STR_LEN + 2), 0);
-    subst(buffer, '0', '.');
+    __subst(buffer, '0', '.');
     printf("%s%s\n", header, buffer);
 
     for (list_elem *elem = instance->resources->first; elem != NULL; elem = elem->next) {
@@ -429,7 +405,7 @@ void DUMP_OBJECT(lwm2m_object *object) {
     char header[20], buffer[100];
     sprintf(header, "/%d", object->id);
     sprintf(buffer, "%0*d", (int) (PAD_LEN - strlen(header) + STR_LEN + 2), 0);
-    subst(buffer, '0', '.');
+    __subst(buffer, '0', '.');
     printf("%s%s\n", header, buffer);
 
     for (list_elem *elem = object->instances->first; elem != NULL; elem = elem->next) {
@@ -444,174 +420,3 @@ void DUMP_ALL(lwm2m_context *context) {
         DUMP_OBJECT(object);
     }
 }
-
-//static int check_object_access(lwm2m_server *server, lwm2m_object *object) {
-//    if (!lwm2m_check_object_access_control(server, object)) {
-//        return ACCESS_RIGHT_PERMISSION_DENIED;
-//    }
-//    return 0;
-//}
-//
-//static int check_instance_access(lwm2m_server *server, lwm2m_instance *instance, int operation) {
-//    if (!lwm2m_check_instance_access_control(server, instance, READ)) {
-//        return ACCESS_RIGHT_PERMISSION_DENIED;
-//    }
-//    return 0;
-//}
-//
-
-//
-//static int on_lwm2m_node_write_attributes(lwm2m_server *server, lwm2m_node *node, lwm2m_type type, char *message) {
-//    lwm2m_map *parsed_attributes = deserialize_lwm2m_attributes(message);
-//    lwm2m_map *attributes = get_node_attributes(node, type);
-//
-//    char **attribute_names = (char **) malloc(sizeof(char) * 10 * parsed_attributes->size);
-//    lwm2m_map_get_keys_string(parsed_attributes, attribute_names);
-//    for (int i = 0; i < parsed_attributes->size; i++) {
-//        lwm2m_attribute *parsed_attribute = (lwm2m_attribute *) lwm2m_map_get_string(parsed_attributes,
-//                                                                                     attribute_names[i]);
-//        lwm2m_attribute *attribute = (lwm2m_attribute *) lwm2m_map_get_string(attributes, attribute_names[i]);
-//
-//        if (!is_notify_attribute(parsed_attribute->name)) {
-//            return STRANGE_ERROR;
-//        }
-//        int error = lwm2m_check_attribute_access(parsed_attribute, READ);
-//        if (error) {
-//            return error;
-//        }
-//
-//        if (attribute == NULL) {
-//            lwm2m_map_put_string(attributes, attribute_names[i], parsed_attribute);
-//        }
-//        else {
-//            attribute->numeric_value = parsed_attribute->numeric_value;
-//        }
-//    }
-//    return 0;
-//}
-//
-//static lwm2m_map *get_node_attributes(lwm2m_node *node, lwm2m_type type) {
-//    if (type == OBJECT) {
-//        return node->object.attributes;
-//    }
-//    if (type == INSTANCE) {
-//        return node->instance.attributes;
-//    }
-//    if (type == RESOURCE) {
-//        return node->resource.attributes;
-//    }
-//    return NULL;
-//}
-//
-/////////////////////// READ /////////////////////////
-//
-//int on_lwm2m_object_read(lwm2m_server *server, lwm2m_object *object, char **message) {
-//    serialize_lwm2m_object(server, object, message, NULL); // todo what here
-//    return 0;
-//}
-//
-//int on_lwm2m_instance_read(lwm2m_server *server, lwm2m_instance *instance, char **message) {
-//    int access_error = check_instance_access(server, instance, READ);
-//    if (access_error) {
-//        return access_error;
-//    }
-//    serialize_lwm2m_instance(server, instance, message, NULL); // todo what here
-//    return 0;
-//}
-//
-//
-//int on_lwm2m_resource_read(lwm2m_server *server, lwm2m_resource *resource, char **message) {
-//    int access_error = check_resource_access(server, resource, READ);
-//    if (access_error) {
-//        return access_error;
-//    }
-//    resource->read_callback(resource);
-//    serialize_lwm2m_resource(server, resource, message, NULL, TLV_FORMAT); // todo what here
-//    return 0;
-//}
-//
-/////////////////////// WRITE ////////////////////////
-//// TODO also sending notification
-//
-//int on_lwm2m_instance_write(lwm2m_server *server, lwm2m_instance *instance, char *message) {
-//    int access_error = check_instance_access(server, instance, WRITE);
-//    if (access_error) {
-//        return access_error;
-//    }
-//    deserialize_lwm2m_instance(instance, message, strlen(message));
-//    return 0;
-//}
-//
-//int on_lwm2m_resource_write(lwm2m_server *server, lwm2m_resource *resource, char *message) {
-//    int access_error = check_resource_access(server, resource, WRITE);
-//    if (access_error) {
-//        return access_error;
-//    }
-//    deserialize_lwm2m_resource(resource, message, strlen(message), TEXT_FORMAT); // TODO what format ? based on multiple/single?
-//    return 0;
-//}
-//
-/////////////////////////// DELETE //////////////////////
-//
-//int on_lwm2m_instance_delete(lwm2m_server *server, lwm2m_instance *instance) {
-//    int access_error = check_instance_access(server, instance, DELETE);
-//    if (access_error) {
-//        return access_error;
-//    }
-//    lwm2m_delete_instance(instance);
-//}
-//
-/////////////////////////// CREATE //////////////////////
-//
-//// TODO move
-//int get_next_id(lwm2m_object *object) {
-//    return 5;
-//}
-//
-//int on_lwm2m_instance_create(lwm2m_server *server, lwm2m_object *object, char *message, int *created_instance_id) {
-//    // todo server-chosen id is in payload
-//    int access_error = check_object_access(server, object); // todo create aco instance
-//    if (access_error) {
-//        return access_error;
-//    }
-//    lwm2m_instance *instance = lwm2m_instance_new(object);
-//    deserialize_lwm2m_instance(instance, message, strlen(message));
-//    instance->aco_instance = lwm2m_instance_create_aco_instance(server, instance);
-//    instance->id = get_next_id(object); // TODO if message contains id - use it
-//    *created_instance_id = instance->id;
-//}
-//
-//
-/////////////////////////// DISCOVER //////////////////////
-//
-//
-//int on_lwm2m_object_discover(lwm2m_server *server, lwm2m_object *object, char **message) {
-//    serialize_lwm2m_object_discover(object, message);
-//    return 0;
-//}
-//
-//int on_lwm2m_instance_discover(lwm2m_server *server, lwm2m_instance *instance, char **message) {
-//    serialize_lwm2m_instance_discover(instance, message);
-//    return 0;
-//}
-//
-//int on_lwm2m_resource_discover(lwm2m_server *server, lwm2m_resource *resource, char **message) {
-//    serialize_lwm2m_resource_discover(resource, message);
-//    return 0;
-//}
-//
-//
-////////////////////// WRITE ATTRIBUTES ////////////////////
-//
-//
-//int on_lwm2m_object_write_attributes(lwm2m_server *server, lwm2m_object *object, char *message) {
-//    return on_lwm2m_node_write_attributes(server, (lwm2m_node*) object, OBJECT, message);
-//}
-//
-//int on_lwm2m_instance_write_attributes(lwm2m_server *server, lwm2m_instance *instance, char *message) {
-//    return on_lwm2m_node_write_attributes(server, (lwm2m_node*) instance, INSTANCE, message);
-//}
-//
-//int on_lwm2m_resource_write_attributes(lwm2m_server *server, lwm2m_resource *resource, char *message) {
-//    return on_lwm2m_node_write_attributes(server, (lwm2m_node*) resource, RESOURCE, message);
-//}

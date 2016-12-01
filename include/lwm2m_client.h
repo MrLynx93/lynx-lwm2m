@@ -3,7 +3,6 @@
 
 #include "lwm2m.h"
 #include "lwm2m_object.h"
-#include "map.h"
 
 
 ///////////////// MAIN ENDPOINT FUNCTIONS ///////////////////

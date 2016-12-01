@@ -6,7 +6,7 @@
 #include "lwm2m_parser.h"
 #include "scheduler.h"
 
-static bool has_server_instances(lwm2m_context *context) {
+static bool __has_server_instances(lwm2m_context *context) { // todo extract?
     lwm2m_object *server_object = lfind(context->object_tree, SERVER_OBJECT_ID);
     return server_object->instances->size > 0;
 }
@@ -27,17 +27,15 @@ static char *get_binding_mode(lwm2m_instance *server_instance) {
     return ((lwm2m_resource*) lfind(server_instance->resources, BINDING_RESOURCE_ID))->value->string_value;
 }
 
-static char *get_endpoint_client_name(lwm2m_instance *server_instance) {
-    return ((lwm2m_resource*) lfind(server_instance->resources, BINDING_RESOURCE_ID))->value->string_value;
-}
-
 static char *serialize_registration_params(lwm2m_server *server) {
     char *params = (char *) malloc(sizeof(char *) * 100);
     strcat(params, "ep=");
     strcat(params, server->context->endpoint_client_name);
     if (get_lifetime(server->server_instance) > 0) {
         strcat(params, "&lt=");
-        strcat(params, itoa(get_lifetime(server->server_instance)));
+        char *lt = itoa(get_lifetime(server->server_instance));
+        strcat(params, lt);
+        free(lt);
     }
     if (get_binding_mode(server->server_instance) != NULL) {
         strcat(params, "&b=");
@@ -181,7 +179,7 @@ int lwm2m_register(lwm2m_context *context) {
     context->register_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
     context->register_finished_condition = (pthread_cond_t) PTHREAD_COND_INITIALIZER;
 
-    if (has_server_instances(context)) {
+    if (__has_server_instances(context)) {
         context->state = REGISTERING;
 
         // Register on all servers in context asynchronously

@@ -79,92 +79,16 @@ regardless of an existence of the targeting Object Instance(s) or Resource and a
  *
  *
  *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
  * @param context
  * @param object_id
  * @return
  */
 
 
-static bool has_server_instances(lwm2m_context *context) {
+static bool __has_server_instances(lwm2m_context *context) {
     lwm2m_object *server_object = lfind(context->object_tree, SERVER_OBJECT_ID);
     return server_object->instances->size > 0;
 }
-
-// TODO move
-
-static void free_value(lwm2m_value *value, lwm2m_type type) {
-//    if (type == OPAQUE) {
-//        free(value.opaque_value);
-//    }
-//    if (type == STRING) {
-//        free(value.string_value);
-//    }
-}
-
-//static void lwm2m_attribute_free(lwm2m_attribute *attribute) {
-//    free_value(attribute->numeric_value, attribute->type);
-//    free(attribute);
-//}
-
-//static void free_attributes(lwm2m_map *attributes) {
-//    char **keys = (char **) malloc(sizeof(char *) * attributes->size);
-//    lwm2m_map_get_keys_string(attributes, keys);
-//
-//    for (int i = 0; i < attributes->size; ++i) {
-//        lwm2m_attribute *attribute = lwm2m_map_get_string(attributes, keys[i]);
-//        lwm2m_attribute_free(attribute);
-//    }
-//    lwm2m_map_free(attributes);
-//}
-
-//static void delete_resource(lwm2m_context *context, lwm2m_resource *resource) {
-//    if (!resource->multiple) {
-//        free_value(resource->value, resource->type);
-//    }
-//    if (resource->multiple) {
-//        lwm2m_map *instances = resource->instances;
-//        int keys[instances->size];
-//
-//        for (int i = 0; i < instances->size; ++i) {
-//            free_value(lwm2m_map_get(instances, keys[i]), resource->type);
-//        }
-//    }
-//    if (resource->attributes != NULL) {
-//        free_attributes(resource->attributes);
-//    }
-//}
-
-//static void delete_instance(lwm2m_context *context, lwm2m_instance *instance) {
-//    int keys[instance->resources->size];
-//    lwm2m_map_get_keys(instance->resources, keys);
-//
-//    __free_parsed_resources(instance->resources);
-//
-//
-//
-//    for (int i = 0; i < instance->resources->size; ++i) {
-//        lwm2m_resource *resource = lwm2m_map_get_resource(instance->resources, keys[i]);
-//        delete_resource(context, resource);
-//    }
-////    if (instance->attributes != NULL) {
-////        free_attributes(instance->attributes);
-////    }
-//}
-//
-//static void delete_object(lwm2m_context *context, lwm2m_object *object) {
-//    __free_instances(object->instances);
-//}
-
 
 static int __bootstrap_create_instance(lwm2m_object *object, lwm2m_instance *parsed_instance, int instance_id) {
     lwm2m_instance *instance = lwm2m_instance_new_with_id(object, instance_id);
@@ -227,6 +151,8 @@ int on_bootstrap_resource_write(lwm2m_resource *resource, char *message, int mes
     lwm2m_resource *parsed_resource;
     if (resource->multiple) {
         parsed_resource = (lwm2m_resource *) malloc(sizeof(lwm2m_resource));
+        parsed_resource->id = resource->id;
+        parsed_resource->multiple = true;
         parsed_resource->instances = parse_multiple_resource(resource->instance->object, resource->id, message, message_len);
     } else {
         parsed_resource = parse_resource(resource->instance->object, resource->id, message, message_len);
@@ -290,6 +216,7 @@ int initiate_bootstrap(lwm2m_context *context) {
             .payload_len = 0
     };
     perform_bootstrap_request(context, topic, request);
+    return 0;
 }
 
 int lwm2m_bootstrap(lwm2m_context *context) {
@@ -297,11 +224,11 @@ int lwm2m_bootstrap(lwm2m_context *context) {
     context->is_bootstrap_ready = false;
 
     if (context->has_smartcard && context->smartcard_bootstrap_callback != NULL) {
-        if (context->smartcard_bootstrap_callback(context) == 0 && has_server_instances(context)) {
+        if (context->smartcard_bootstrap_callback(context) == 0 && __has_server_instances(context)) {
             context->state = BOOTSTRAPPED;
         }
     } else if (context->factory_bootstrap_callback != NULL) {
-        if (context->factory_bootstrap_callback(context) == 0 && has_server_instances(context)) {
+        if (context->factory_bootstrap_callback(context) == 0 && __has_server_instances(context)) {
             context->state = BOOTSTRAPPED;
         }
     }

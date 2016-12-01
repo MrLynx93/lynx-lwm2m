@@ -152,6 +152,9 @@ static lwm2m_value parse_value(char *message, int message_len, lwm2m_type type) 
             value.link_value = link;
             break;
         }
+        default:
+            value.int_value = -1;
+            break;
     }
     return value;
 }
@@ -201,6 +204,7 @@ list *parse_instance(lwm2m_object *object, char *message, int message_len) {
 
         if (resource_header.type == MULTIPLE_RESOURCE_TYPE) {
             resource->instances = parse_multiple_resource(object, resource->id, curr, resource_header.length);
+            resource->multiple = true;
         } else {
             lwm2m_value value = parse_value(curr, resource_header.length, resource->type);
             __set_value(resource, &value, resource_header.length);

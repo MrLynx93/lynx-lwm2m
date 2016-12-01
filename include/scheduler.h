@@ -64,4 +64,5 @@ void execute(lwm2m_scheduler *scheduler, scheduler_task *task, void *arg);
 void cancel(lwm2m_scheduler *scheduler, scheduler_task *task);
 
 void stop_scheduler(lwm2m_scheduler *scheduler);
+
 #endif //LYNX_LWM2M_SCHEDULER_H
