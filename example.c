@@ -72,7 +72,9 @@ int main(int argc, char *argv[]) {
     context->factory_bootstrap_callback = perform_factory_bootstrap;
     context->smartcard_bootstrap_callback = NULL;
     context->client_id = "lynx_ep";
-    context->broker_address = "tcp://localhost:1883";
+
+    context->broker_address = "tcp://ec2-52-212-253-117.eu-west-1.compute.amazonaws.com:1883";
+//    context->broker_address = "tcp://localhost:1883";
     context->endpoint_client_name = "lynx_ep";
 
     lwm2m_start_client(context);

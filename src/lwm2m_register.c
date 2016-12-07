@@ -29,6 +29,8 @@ static char *get_binding_mode(lwm2m_instance *server_instance) {
 
 static char *serialize_registration_params(lwm2m_server *server) {
     char *params = (char *) malloc(sizeof(char *) * 100);
+    params[0] = 0;
+
     strcat(params, "ep=");
     strcat(params, server->context->endpoint_client_name);
     if (get_lifetime(server->server_instance) > 0) {
@@ -46,6 +48,7 @@ static char *serialize_registration_params(lwm2m_server *server) {
 
 static char *serialize_update_params(lwm2m_server *server) {
     char *params = (char *) malloc(sizeof(char *) * 100);
+    params[0] = 0;
     bool firstParam = true;
 
     if (strcmp(server->context->endpoint_client_name, server->last_update_data.endpoint_client_name)) {

@@ -21,6 +21,8 @@ static lwm2m_resource *create_security_object_resources() {
     resources[0].type = STRING;
     resources[0].mandatory = true;
     resources[0].operations = NOOP;
+    resources[0].read_callback = NULL;
+    resources[0].write_callback = NULL;
 
     resources[1].multiple = false;
     resources[1].id = 1;
@@ -28,6 +30,8 @@ static lwm2m_resource *create_security_object_resources() {
     resources[1].type = BOOLEAN;
     resources[1].mandatory = true;
     resources[1].operations = NOOP;
+    resources[1].read_callback = NULL;
+    resources[1].write_callback = NULL;
 
     resources[2].multiple = false;
     resources[2].id = 2;
@@ -35,76 +39,98 @@ static lwm2m_resource *create_security_object_resources() {
     resources[2].type = INTEGER;
     resources[2].mandatory = false; // TODO FOR NOW ONLY
     resources[2].operations = NOOP;
-    
+    resources[2].read_callback = NULL;
+    resources[2].write_callback = NULL;
+
     resources[3].multiple = false;
     resources[3].id = 3;
     resources[3].name = "Public Key or Identity";
     resources[3].type = OPAQUE;
     resources[3].mandatory = false; // TODO FOR NOW ONLY
     resources[3].operations = NOOP;
-    
+    resources[3].read_callback = NULL;
+    resources[3].write_callback = NULL;
+
     resources[4].multiple = false;
     resources[4].id = 4;
     resources[4].name = "Server Public Key";
     resources[4].type = OPAQUE;
     resources[4].mandatory = false; // TODO FOR NOW ONLY
     resources[4].operations = NOOP;
-    
+    resources[4].read_callback = NULL;
+    resources[4].write_callback = NULL;
+
     resources[5].multiple = false;
     resources[5].id = 5;
     resources[5].name = "Secret Key";
     resources[5].type = OPAQUE;
     resources[5].mandatory = false; // TODO FOR NOW ONLY
     resources[5].operations = NOOP;
-    
+    resources[5].read_callback = NULL;
+    resources[5].write_callback = NULL;
+
     resources[6].multiple = false;
     resources[6].id = 6;
     resources[6].name = "SMS Security Mode";
     resources[6].type = INTEGER;
     resources[6].mandatory = false;
     resources[6].operations = NOOP;
-    
+    resources[6].read_callback = NULL;
+    resources[6].write_callback = NULL;
+
     resources[7].multiple = false;
     resources[7].id = 7;
     resources[7].name = "SMS Key Binding Parameters";
     resources[7].type = OPAQUE;
     resources[7].mandatory = false;
     resources[7].operations = NOOP;
-    
+    resources[7].read_callback = NULL;
+    resources[7].write_callback = NULL;
+
     resources[8].multiple = false;
     resources[8].id = 8;
     resources[8].name = "SMS Binding Secret Key(s)";
     resources[8].type = OPAQUE;
     resources[8].mandatory = false;
     resources[8].operations = NOOP;
-    
+    resources[8].read_callback = NULL;
+    resources[8].write_callback = NULL;
+
     resources[9].multiple = false;
     resources[9].id = 9;
     resources[9].name = "LWM2M Server SMS Number";
     resources[9].type = STRING;
     resources[9].mandatory = false;
     resources[9].operations = NOOP;
-    
+    resources[9].read_callback = NULL;
+    resources[9].write_callback = NULL;
+
     resources[10].multiple = false;
     resources[10].id = 10;
     resources[10].name = "Short Server ID";
     resources[10].type = INTEGER;
     resources[10].mandatory = false;
     resources[10].operations = NOOP;
-    
+    resources[10].read_callback = NULL;
+    resources[10].write_callback = NULL;
+
     resources[11].multiple = false;
     resources[11].id = 11;
     resources[11].name = "Client Hold Off Time";
     resources[11].type = INTEGER;
     resources[11].mandatory = false;
     resources[11].operations = NOOP;
-    
+    resources[11].read_callback = NULL;
+    resources[11].write_callback = NULL;
+
     resources[12].multiple = false;
     resources[12].id = 12;
     resources[12].name = "Bootstrap Server Account Timeout";
     resources[12].type = INTEGER;
     resources[12].mandatory = false;
     resources[12].operations = NOOP;
+    resources[12].read_callback = NULL;
+    resources[12].write_callback = NULL;
 
     return resources;
 }
@@ -118,6 +144,8 @@ static lwm2m_resource *create_server_object_resources() {
     resources[0].type = INTEGER;
     resources[0].mandatory = true;
     resources[0].operations = READ;
+    resources[0].read_callback = NULL;
+    resources[0].write_callback = NULL;
 
     resources[1].multiple = false;
     resources[1].id = 1;
@@ -125,6 +153,8 @@ static lwm2m_resource *create_server_object_resources() {
     resources[1].type = INTEGER;
     resources[1].mandatory = true;
     resources[1].operations = READ | WRITE;
+    resources[1].read_callback = NULL;
+    resources[1].write_callback = NULL;
 
     resources[2].multiple = false;
     resources[2].id = 2;
@@ -132,6 +162,8 @@ static lwm2m_resource *create_server_object_resources() {
     resources[2].type = INTEGER;
     resources[2].mandatory = false;
     resources[2].operations = READ | WRITE;
+    resources[2].read_callback = NULL;
+    resources[2].write_callback = NULL;
 
     resources[3].multiple = false;
     resources[3].id = 3;
@@ -139,6 +171,8 @@ static lwm2m_resource *create_server_object_resources() {
     resources[3].type = INTEGER;
     resources[3].mandatory = false;
     resources[3].operations = READ | WRITE;
+    resources[3].read_callback = NULL;
+    resources[3].write_callback = NULL;
 
     resources[4].multiple = false;
     resources[4].id = 4;
@@ -146,6 +180,8 @@ static lwm2m_resource *create_server_object_resources() {
     resources[4].type = NONE;
     resources[4].mandatory = false;
     resources[4].operations = EXECUTE;
+    resources[4].read_callback = NULL;
+    resources[4].write_callback = NULL;
 
     resources[5].multiple = false;
     resources[5].id = 5;
@@ -153,6 +189,8 @@ static lwm2m_resource *create_server_object_resources() {
     resources[5].type = INTEGER;
     resources[5].mandatory = false;
     resources[5].operations = READ | WRITE;
+    resources[5].read_callback = NULL;
+    resources[5].write_callback = NULL;
 
     resources[6].multiple = false;
     resources[6].id = 6;
@@ -160,6 +198,8 @@ static lwm2m_resource *create_server_object_resources() {
     resources[6].type = BOOLEAN;
     resources[6].mandatory = true;
     resources[6].operations = READ | WRITE;
+    resources[6].read_callback = NULL;
+    resources[6].write_callback = NULL;
 
     resources[7].multiple = false;
     resources[7].id = 7;
@@ -167,6 +207,8 @@ static lwm2m_resource *create_server_object_resources() {
     resources[7].type = STRING;
     resources[7].mandatory = true;
     resources[7].operations = READ | WRITE;
+    resources[7].read_callback = NULL;
+    resources[7].write_callback = NULL;
 
     resources[8].multiple = false;
     resources[8].id = 8;
@@ -174,6 +216,8 @@ static lwm2m_resource *create_server_object_resources() {
     resources[8].type = NONE;
     resources[8].mandatory = true;
     resources[8].operations = EXECUTE;
+    resources[8].read_callback = NULL;
+    resources[8].write_callback = NULL;
 
     return resources;
 }
@@ -187,6 +231,8 @@ static lwm2m_resource *create_access_control_object_resources() {
     resources[0].type = INTEGER;
     resources[0].mandatory = true;
     resources[0].operations = READ;
+    resources[0].read_callback = NULL;
+    resources[0].write_callback = NULL;
 
     resources[1].multiple = false;
     resources[1].id = 1;
@@ -194,12 +240,16 @@ static lwm2m_resource *create_access_control_object_resources() {
     resources[1].type = INTEGER;
     resources[1].mandatory = true;
     resources[1].operations = READ;
+    resources[1].read_callback = NULL;
+    resources[1].write_callback = NULL;
 
     resources[2].id = 2;
     resources[2].name = "ACL";
     resources[2].type = INTEGER;
     resources[2].mandatory = false;
     resources[2].operations = READ | WRITE;
+    resources[2].read_callback = NULL;
+    resources[2].write_callback = NULL;
 
     resources[3].multiple = false;
     resources[3].id = 3;
@@ -207,6 +257,8 @@ static lwm2m_resource *create_access_control_object_resources() {
     resources[3].type = INTEGER;
     resources[3].mandatory = true;
     resources[3].operations = READ | WRITE;
+    resources[3].read_callback = NULL;
+    resources[3].write_callback = NULL;
 
     return resources;
 }

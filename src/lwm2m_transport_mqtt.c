@@ -138,7 +138,7 @@ static void subscribe_init(lwm2m_context *context) {
 }
 
 static void on_publish_success(void *context, MQTTAsync_successData *response) {
-    ; // TODO
+    printf("Success\n"); // TODO
 }
 
 static void on_publish_failure(void* context,  MQTTAsync_failureData* response) {
