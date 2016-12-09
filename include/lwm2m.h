@@ -71,7 +71,7 @@ typedef struct lwm2m_context {
     int is_bootstrap_ready;
     int is_bootstrapped;
 
-    lwm2m_create_objects_callback *create_objects_callback;
+    list *objects;
 
     /* Used bootstrap to provide client with LWM2M instances */
     int (*factory_bootstrap_callback)(struct lwm2m_context *);

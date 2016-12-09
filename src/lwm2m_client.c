@@ -283,7 +283,7 @@ static list *create_standard_objects() {
     security_object->mandatory = true;
     security_object->multiple = true;
     security_object->object_urn = "urn:oma:lwm2m:oma:0";
-    security_object->attributes = list_new();
+    security_object->attributes = list_new(); // todo memory leak?
     security_object->resource_def = create_standard_resources(SECURITY_OBJECT_ID);
     security_object->resource_def_len = 13;
 
@@ -309,6 +309,7 @@ static list *create_standard_objects() {
 
     // Create list with objects
     list *objects = list_new();
+
     ladd(objects, 0, security_object);
     ladd(objects, 1, server_object);
     ladd(objects, 2, access_control_object);
@@ -317,7 +318,7 @@ static list *create_standard_objects() {
 
 static int create_object_tree(lwm2m_context *context) {
     list *standard_objects = create_standard_objects();
-    list *user_defined_objects = context->create_objects_callback();
+    list *user_defined_objects = context->objects;
 
     for (list_elem *elem = standard_objects->first; elem != NULL; elem = elem->next) {
         lwm2m_object *object = elem->value;
@@ -358,7 +359,6 @@ int lwm2m_start_client(lwm2m_context *context) {
     create_object_tree(context);
 
     start_mqtt(context);
-    publish_connected(context);
     lwm2m_bootstrap(context);
 
     context->scheduler = (lwm2m_scheduler *) malloc(sizeof(lwm2m_scheduler));

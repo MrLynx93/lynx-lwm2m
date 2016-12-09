@@ -12,6 +12,9 @@
 
 list *__parse_args(lwm2m_request request) {
     list *args = list_new();
+    if (request.payload_len == 0) {
+        return args;
+    }
 
     int count = 0;
     char *elems[10];

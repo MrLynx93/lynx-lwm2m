@@ -1,5 +1,6 @@
 #include <lwm2m_transport.h>
 #include <lwm2m_access_control.h>
+#include <lwm2m_transport_mqtt.h>
 #include "lwm2m.h"
 #include "lwm2m_bootstrap.h"
 #include "lwm2m_parser.h"
@@ -166,8 +167,8 @@ int on_bootstrap_resource_write(lwm2m_resource *resource, char *message, int mes
 int on_bootstrap_delete_all(lwm2m_context *context) {
     for (list_elem *elem = context->object_tree->first; elem != NULL; elem = elem->next) {
         lwm2m_object *object = elem->value;
-        __free_instances(object->instances);
-    }
+        __free_instances(object->instances); // TODO ALSO REMOVE FROM LIST!!!
+    } // TODO bootstrap write error when object not implemented
     return 0;
 }
 
@@ -233,7 +234,9 @@ int lwm2m_bootstrap(lwm2m_context *context) {
         }
     }
 
-    if (context->state != BOOTSTRAPPED) {
+    publish_connected(context);
+
+//    if (context->state != BOOTSTRAPPED) {
         // Server initiated bootstrap
         lwm2m_wait_for_server_bootstrap(context);
         if (context->state != BOOTSTRAPPED) {
@@ -245,6 +248,6 @@ int lwm2m_bootstrap(lwm2m_context *context) {
                 return -1;
             }
         }
-    }
+//    }
     return 0;
 }
