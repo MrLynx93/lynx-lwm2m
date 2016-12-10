@@ -35,7 +35,7 @@ list *__parse_args(lwm2m_request request) {
         /**** String parameter - begins and ends with ' ****/
         if (buf[0] == '\'' && buf[strlen(buf) - 1] == '\'') {
             param->string_value = (char *) malloc(sizeof(char) * strlen(buf));
-            memcpy(param->string_value, buf + 1, strlen(buf) - 2);
+            memcpy(param->string_value, buf + 1, strlen(buf) - 1);
         }
         /**** Float parameter - contains '.' ****/
         else if(strchr(buf, '.') != NULL) {
