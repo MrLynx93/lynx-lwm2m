@@ -42,9 +42,14 @@ static void __free_parsed_resources(list *resources) {
     list_free(resources);
 }
 
-
-
-
+static void __free_instances_to_parse(list *instances) {
+    for (list_elem *elem = instances->first; elem != NULL; elem = elem->next) {
+        lwm2m_instance *instance = elem->value;
+        list_free(instance->resources);
+        free(instance);
+    }
+    list_free(instances);
+}
 
 
 
@@ -108,7 +113,7 @@ int on_instance_write(lwm2m_server *server, lwm2m_instance *instance, char *mess
 
 lwm2m_response on_resource_read(lwm2m_server *server, lwm2m_resource *resource) {
     lwm2m_response response = {
-            .payload = (char *) malloc(sizeof(char) * 100),
+            .payload = (char *) malloc(sizeof(char) * 5000),
     };
 
     if (!lwm2m_check_instance_access_control(server, resource->instance, READ)) {
@@ -122,6 +127,12 @@ lwm2m_response on_resource_read(lwm2m_server *server, lwm2m_resource *resource) 
         return response;
     }
 
+    /** Call read callback to update value of resource **/
+    if (resource->read_callback != NULL) {
+        resource->read_callback(resource);
+    }
+
+    /** Serialize resource into response **/
     if (resource->multiple) {
         serialize_multiple_resource(resource->instances, response.payload, &response.payload_len);
         response.content_type = CONTENT_TYPE_TLV;
@@ -135,7 +146,7 @@ lwm2m_response on_resource_read(lwm2m_server *server, lwm2m_resource *resource) 
 
 lwm2m_response on_instance_read(lwm2m_server *server, lwm2m_instance *instance) {
     lwm2m_response response = {
-            .payload = (char *) malloc(sizeof(char) * 100),
+            .payload = (char *) malloc(sizeof(char) * 5000),
     };
 
     if (!lwm2m_check_instance_access_control(server, instance, READ)) {
@@ -146,11 +157,18 @@ lwm2m_response on_instance_read(lwm2m_server *server, lwm2m_instance *instance) 
 
     list *resources_to_parse = list_new();
 
-    /**** Parse only resources that are readable ****/
+    /**** Serialize only resources that are readable****/
     for (list_elem *elem = instance->resources->first; elem != NULL; elem = elem->next) {
         lwm2m_resource *resource = elem->value;
         if (lwm2m_check_resource_operation_supported(resource, READ)) {
-            ladd(resources_to_parse, resource->id, resource);
+            /** Call read callback to update value of resource **/
+            if (resource->read_callback != NULL) {
+                resource->read_callback(resource);
+            }
+            /** Serialize only resources that are not NULL **/
+            if (resource->value != NULL) {
+                ladd(resources_to_parse, resource->id, resource);
+            }
         }
     }
     serialize_instance(resources_to_parse, response.payload, &response.payload_len);
@@ -161,18 +179,9 @@ lwm2m_response on_instance_read(lwm2m_server *server, lwm2m_instance *instance) 
     return response;
 }
 
-static void __free_instances_to_parse(list *instances) {
-    for (list_elem *elem = instances->first; elem != NULL; elem = elem->next) {
-        lwm2m_instance *instance = elem->value;
-        list_free(instance->resources);
-        free(instance);
-    }
-    list_free(instances);
-}
-
 lwm2m_response on_object_read(lwm2m_server *server, lwm2m_object *object) {
     lwm2m_response response = {
-            .payload = (char *) malloc(sizeof(char) * 1000),
+            .payload = (char *) malloc(sizeof(char) * 5000),
             .content_type = CONTENT_TYPE_TLV,
             .response_code = RESPONSE_CODE_CHANGED,
     };
@@ -181,7 +190,7 @@ lwm2m_response on_object_read(lwm2m_server *server, lwm2m_object *object) {
     for (list_elem *elem_i = object->instances->first; elem_i != NULL; elem_i = elem_i->next) {
         lwm2m_instance *instance = elem_i->value;
 
-        /**** Parse only instances, that have granted READ access ****/
+        /**** Serialize only instances, that have granted READ access ****/
         if (lwm2m_check_instance_access_control(server, instance, READ)) {
             lwm2m_instance *instance_to_parse = (lwm2m_instance *) malloc(sizeof(lwm2m_instance));
             instance_to_parse->resources = list_new();
@@ -190,12 +199,22 @@ lwm2m_response on_object_read(lwm2m_server *server, lwm2m_object *object) {
             for (list_elem *elem_r = instance->resources->first; elem_r != NULL; elem_r = elem_r->next) {
                 lwm2m_resource *resource = elem_r->value;
 
-                /**** Parse only resources that are readable ****/
+                /**** Serialize only resources that are readable ****/
                 if (lwm2m_check_resource_operation_supported(resource, READ)) {
-                    ladd(instance_to_parse->resources, resource->id, resource);
+                    /** Call read callback to update value of resource **/
+                    if (resource->read_callback != NULL) {
+                        resource->read_callback(resource);
+                    }
+                    /** Serialize only resources that are not NULL **/
+                    if (resource->value != NULL) {
+                        ladd(instance_to_parse->resources, resource->id, resource);
+                    }
                 }
             }
-            ladd(instances_to_parse, instance_to_parse->id, instance_to_parse);
+            /** Serialize only instances, that have resources **/
+            if (instance_to_parse->resources->size > 0) {
+                ladd(instances_to_parse, instance_to_parse->id, instance_to_parse);
+            }
         }
     }
     serialize_object(instances_to_parse, response.payload, &response.payload_len);
@@ -243,15 +262,15 @@ lwm2m_response on_instance_create(lwm2m_server *server, lwm2m_object *object, in
     for (list_elem *elem = instance->resources->first; elem != NULL; elem = elem->next) {
         lwm2m_resource *template_resource = elem->value;
         lwm2m_resource *parsed_resource = lfind(all_parsed_resources, elem->key);
-
+        
         /***** Error id not all mandatory resources are provided  ******/
         if (template_resource->mandatory && parsed_resource == NULL) {
             response.response_code = RESPONSE_CODE_METHOD_NOT_ALLOWED; // TODO check
             return response; // TODO free payload?
         }
 
-        /***** Ignore read-only resource *******/
-        if (parsed_resource != NULL && template_resource->operations & WRITE) {
+        /***** DONT Ignore read-only resource - its create op. *******/
+        if (parsed_resource != NULL && template_resource->type != NONE) {
             ladd(parsed_instance.resources, parsed_resource->id, parsed_resource);
         }
         // TODO Can resource be mandatory and read-only?

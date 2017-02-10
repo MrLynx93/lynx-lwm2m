@@ -21,6 +21,8 @@ link_directories(lib/${ARCH})
 
 add_library(lynx SHARED ${LYNX_LWM2M_SRC})
 add_executable(testapp example.c)
+add_executable(testaaa test/test.c)
 
 target_link_libraries(lynx paho-mqtt3a)
-target_link_libraries(testapp lynx)
+target_link_libraries(testapp lynx ssl crypto)
+target_link_libraries(testaaa lynx ssl crypto)

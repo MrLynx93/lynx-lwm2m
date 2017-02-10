@@ -34,12 +34,12 @@ static void serialize_header(int id, int type, int value_len, char *message, int
     char *length;
     // Identifier
     if (id < 0xFF) {
-        message[1] = (char) id;
+        message[1] = (unsigned char) id;
         length = message + 2;
         *message_len = 2;
     } else {
-        message[1] = (char) id;
-        message[2] = (char) (id >> 8);
+        message[1] = (unsigned char) id;
+        message[2] = (unsigned char) (id >> 8);
         length = message + 3;
         *message_len = 3;
     }
@@ -53,18 +53,18 @@ static void serialize_header(int id, int type, int value_len, char *message, int
 
         // Length field
         if (bytes_required == 1) {
-            length[0] = (char) value_len;
+            length[0] = (unsigned char) value_len;
             *message_len += 1;
         }
         if (bytes_required == 2) {
-            length[0] = (char) value_len;
-            length[1] = (char) value_len >> 8;
+            length[0] = (unsigned char) value_len >> 8;
+            length[1] = (unsigned char) value_len;
             *message_len += 2;
         }
         if (bytes_required == 3) {
-            length[0] = (char) value_len;
-            length[1] = (char) value_len >> 8;
-            length[2] = (char) value_len >> 16;
+            length[0] = (unsigned char) value_len >> 16;
+            length[1] = (unsigned char) value_len >> 8;
+            length[2] = (unsigned char) value_len;
             *message_len += 3;
         }
     }
@@ -124,7 +124,13 @@ void serialize_resource_text(lwm2m_resource *resource, char *message, int *messa
 
     if (resource->type == STRING) {
         *message_len = resource->length;
-        strcpy(message, resource->value->string_value);
+        if (*message_len > 30) {
+            memcpy(message, resource->value->string_value, 27);
+            memcpy(message + 27, "...", 3);
+            message[30] = 0;
+        } else {
+            strcpy(message, resource->value->string_value);
+        }
     }
     if (resource->type == OPAQUE) {
         *message_len = resource->length;
@@ -193,7 +199,7 @@ void serialize_multiple_resource(list *resources, char *message, int *message_le
  * 2. Resources are already filtered out so they support READ operation
  */
 void serialize_instance(list *resources, char *message, int *message_len) {
-    char *value_buffer = malloc(sizeof(char) * 1000);
+    char *value_buffer = malloc(sizeof(char) * 5000);
     char *header_buffer = malloc(sizeof(char) * 20);
     int header_length, value_length;
     int total_length = 0;
@@ -229,7 +235,7 @@ void serialize_instance(list *resources, char *message, int *message_len) {
  * 2. Resources are already filtered out so they support READ operation
  */
 void serialize_object(list *instances, char *message, int* message_len) {
-    char *value_buffer = malloc(sizeof(char) * 1000);
+    char *value_buffer = malloc(sizeof(char) * 5000);
     char *header_buffer = malloc(sizeof(char) * 20);
     int header_length, value_length;
     int total_length = 0;

@@ -66,55 +66,21 @@ lwm2m_resource *create_example_resources(int object_id);
 int perform_factory_bootstrap(lwm2m_context *context);
 
 int main(int argc, char *argv[]) {
+    char *client_id = argc > 1 ? argv[1] : "local1";
+
     lwm2m_context *context = lwm2m_create_context();
     context->has_smartcard = false;
     context->objects = create_example_objects();
     context->factory_bootstrap_callback = perform_factory_bootstrap;
     context->smartcard_bootstrap_callback = NULL;
-    context->client_id = "lynx_ep";
+    context->client_id = client_id;
+    context->tls = 1;
 
 //    context->broker_address = "tcp://ec2-52-212-253-117.eu-west-1.compute.amazonaws.com:1883";
-    context->broker_address = "tcp://localhost:1883";
-    context->endpoint_client_name = "lynx_ep";
+    context->broker_address = "127.0.0.1:1883";
+    context->endpoint_client_name = client_id;
 
     lwm2m_start_client(context);
-    // This should not exit, as new threads are created
-
-
-//    lwm2m_object *example_obj = lwm2m_map_get_object(context->object_tree, 123);
-//    lwm2m_instance *example_instance = lwm2m_map_get_instance(example_obj->instances, 20);
-//    lwm2m_resource *int_resource = lwm2m_map_get(example_instance->resources, 0);
-//    lwm2m_resource *string_resource = lwm2m_map_get(example_instance->resources, 2);
-
-//    printf("Setting value. Should notify all\n");
-//    set_value_int(int_resource, 11);
-//    sleep(6);
-//
-//    printf("Setting value. Should notify object\n");
-//    set_value_int(int_resource, 12);
-//    sleep(6);
-//
-//    printf("Setting value. Should notify object and instance\n");
-//    set_value_int(int_resource, 13);
-//    sleep(16);
-//
-//
-//    printf("Setting value. Should notify object and instance and resource\n");
-//    set_value_int(int_resource, 14);
-//    sleep(30);
-//
-//    printf("Setting value. Should not notify (lt)\n");
-//    set_value_int(int_resource, 17);
-//    getchar();
-
-//    printf("Set value float\n");
-//    set_value_double(float_resource, 512.2);
-//    getchar();
-
-
-//    printf("Set value string\n");
-//    set_value_string(string_resource, "new value");
-//    getchar();
 
     getchar();
     printf("Stopping...\n");
@@ -149,7 +115,7 @@ void switch_light(lwm2m_resource *resource) {
 void update_firmwire(lwm2m_resource *resource, list *args) {
     char *url = ((execute_param*) lfind(args, 0))->string_value;
     int times = ((execute_param *) lfind(args, 1))->int_value;
-    printf("[res %s] I would execute ping on %s %d times, but I cant for now :(", resource->name, url, times);
+   // printf("[res %s] I would execute ping on %s %d times, but I cant for now :(", resource->name, url, times);
 }
 
 

@@ -245,6 +245,7 @@ static lwm2m_resource *create_access_control_object_resources() {
 
     resources[2].id = 2;
     resources[2].name = "ACL";
+    resources[2].multiple = true;
     resources[2].type = INTEGER;
     resources[2].mandatory = false;
     resources[2].operations = READ | WRITE;
@@ -345,6 +346,8 @@ lwm2m_context *lwm2m_create_context() {
     context->update_tasks = list_new();
     context->is_bootstrap_ready = true;
     context->is_bootstrapped = false;
+    context->has_smartcard = false;
+    context->tls = 0;
 
     context->bootstrap_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
     context->bootstrap_finished_condition = (pthread_cond_t) PTHREAD_COND_INITIALIZER;

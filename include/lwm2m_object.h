@@ -10,6 +10,7 @@
 
 // Security object
 #define SECURITY_OBJECT_ID 0
+#define SERVER_URI_RESOURCE_ID 0
 
 // Server object
 #define SERVER_OBJECT_ID 1
@@ -55,6 +56,7 @@ typedef union lwm2m_value {
     char* string_value;
 } lwm2m_value;
 
+
 ////////////// ATTRIBUTE //////////////////////
 
 list *merge_resource(lwm2m_resource *old_resource, lwm2m_resource *new_resource, bool call_callback, bool notify);
@@ -83,7 +85,6 @@ struct lwm2m_object {
     lwm2m_context *context;
     list *instances;
     list *attributes;
-    lwm2m_instance *aco_instance;
     char *object_urn;
     bool multiple;
     bool mandatory;
@@ -108,7 +109,6 @@ struct lwm2m_instance {
     list *resources;
     list *attributes;
     list *observers;
-    lwm2m_instance *aco_instance;
 };
 
 /* Constructor */

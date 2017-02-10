@@ -8,3 +8,11 @@ char *itoa(int num) {
     sprintf(buffer, "%d", num);
     return buffer;
 }
+
+char *copy_str(char *str) {
+    int len = strlen(str);
+    char *copy = malloc(len + 1);
+    copy[0] = copy[len] = 0;
+    memcpy(copy, str, len);
+    return copy;
+}

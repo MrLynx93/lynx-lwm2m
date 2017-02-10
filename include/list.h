@@ -12,6 +12,7 @@ typedef struct list_elem {
 typedef struct list {
     list_elem *first;
     int size;
+    int greatest_key;
 } list;
 
 list *list_new();

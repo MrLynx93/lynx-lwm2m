@@ -4,6 +4,7 @@
 
 list *list_new() {
     list *list = malloc(sizeof(list));
+    list->greatest_key = -1;
     list->first = NULL;
     list->size = 0;
     return list;
@@ -41,6 +42,9 @@ void ladd(list *l, int key, void *value) {
     }
     l->first = elem;
     l->size++;
+    if (key > l->greatest_key) {
+        l->greatest_key = key;
+    }
 }
 
 void *lfind(list *l, int key) {
@@ -60,6 +64,7 @@ void lremove(list *l, int key) {
             l->first = to_remove->next;
             free(to_remove);
             l->size--;
+            l->greatest_key = -1;
             return;
         }
     }
@@ -75,5 +80,14 @@ void lremove(list *l, int key) {
         prev->next = next->next;
         free(next);
         l->size--;
+    }
+
+    if (key == l->greatest_key) {
+        l->greatest_key = -1;
+        for (list_elem *elem = l->first; elem != NULL; elem = elem->next) {
+            if (elem->key > l->greatest_key) {
+                l->greatest_key = elem->key;
+            }
+        }
     }
 }

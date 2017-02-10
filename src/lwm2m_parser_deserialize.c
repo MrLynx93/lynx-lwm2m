@@ -48,14 +48,14 @@ static char* parse_tlv_header(char* input, tlv_header* header) {
         input = input + 1;
     }
     if (length_len == 2) {
-        header->length = (int) input[1] << 8;
-        header->length += (int) input[0];
+        header->length = (unsigned char) input[0] << 8;
+        header->length += (unsigned char) input[1];
         input = input +2;
     }
     if (length_len == 3) {
-        header->length = (int) input[2] << 16;
-        header->length += (int) input[1] << 8;
-        header->length += (int) input[0];
+        header->length = (unsigned char) input[0] << 16;
+        header->length += (unsigned char) input[1] << 8;
+        header->length += (unsigned char) input[2];
         input = input + 3;
     }
     return input;
@@ -64,7 +64,7 @@ static char* parse_tlv_header(char* input, tlv_header* header) {
 static int parse_int(char *message, int message_len) {
     int int_value = 0;
     for (int i = 0; i < message_len; ++i) {
-        int_value |= (message[message_len - i - 1] << (i * 8));
+        int_value +=  (int) ((unsigned char) message[message_len - i - 1]) << (i * 8);
     }
     return int_value;
 }

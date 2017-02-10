@@ -99,6 +99,7 @@ static int __bootstrap_create_instance(lwm2m_object *object, lwm2m_instance *par
         instance->id = 0;
     }
 
+    // TODO should somehow indicate whats wrong
     for (list_elem *elem = instance->resources->first; elem != NULL; elem = elem->next) {
         lwm2m_resource *template_resource = elem->value;
         lwm2m_resource *parsed_resource =  lfind(parsed_instance->resources, elem->key);
@@ -199,9 +200,10 @@ void lwm2m_wait_for_server_bootstrap(lwm2m_context *context) {
     pthread_mutex_unlock(&context->bootstrap_mutex);
 }
 
+// TODO later
 int initiate_bootstrap(lwm2m_context *context) {
     lwm2m_topic topic = {
-            .operation = LWM2M_OPERATION_DEREGISTER,
+            .operation = LWM2M_OPERATION_DEREGISTER, // TODO why deregister???
             .type = "req",
             .token = generate_token(),
             .client_id = context->client_id,

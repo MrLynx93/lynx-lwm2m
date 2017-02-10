@@ -35,6 +35,8 @@
 
 char *itoa(int number);
 
+char *copy_str(char *str);
+
 ///////////////////// STATE  //////////////////////
 
 typedef enum lwm2m_state {
@@ -70,6 +72,7 @@ typedef struct lwm2m_context {
     int has_smartcard;
     int is_bootstrap_ready;
     int is_bootstrapped;
+    int tls;
 
     list *objects;
 
@@ -99,6 +102,7 @@ typedef struct lwm2m_context {
 
 typedef struct lwm2m_server {
     int short_server_id;
+    char *name;
     lwm2m_context *context;
     lwm2m_register_data last_update_data;
     lwm2m_instance *server_instance;

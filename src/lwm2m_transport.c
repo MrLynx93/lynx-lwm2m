@@ -35,7 +35,8 @@ list *__parse_args(lwm2m_request request) {
         /**** String parameter - begins and ends with ' ****/
         if (buf[0] == '\'' && buf[strlen(buf) - 1] == '\'') {
             param->string_value = (char *) malloc(sizeof(char) * strlen(buf));
-            memcpy(param->string_value, buf + 1, strlen(buf) - 1);
+            param->string_value[strlen(buf) - 2] = 0;
+            memcpy(param->string_value, buf + 1, strlen(buf) - 2);
         }
         /**** Float parameter - contains '.' ****/
         else if(strchr(buf, '.') != NULL) {
@@ -63,7 +64,13 @@ char *serialize_response(lwm2m_response response, char* message, int *message_le
 }
 
 static lwm2m_server *__resolve_server(lwm2m_context *context, lwm2m_topic topic) {
-    return (lwm2m_server *) lfind(context->servers, atoi(topic.server_id));
+    for (list_elem *elem = context->servers->first; elem != NULL; elem = elem->next) {
+        lwm2m_server *server = elem->value;
+        if (!strcmp(server->name, topic.server_id)) {
+            return server;
+        }
+    }
+    return NULL;
 }
 
 static lwm2m_object *__resolve_object(lwm2m_context *context, lwm2m_topic topic) {
@@ -151,16 +158,15 @@ lwm2m_response handle_bootstrap_delete_request(lwm2m_context *context, lwm2m_top
 }
 
 lwm2m_response handle_bootstrap_write_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
-    lwm2m_object *object = lfind(context->object_tree, topic.object_id);
+    lwm2m_object *object = __resolve_object(context, topic);
     if (topic.instance_id != -1 && topic.resource_id != -1) {
-        lwm2m_instance *instance = lfind(object->instances, topic.instance_id);
-        lwm2m_resource *resource = lfind(instance->resources, topic.resource_id);
+        lwm2m_instance *instance = __resolve_instance(object, topic);
+        lwm2m_resource *resource =__resolve_resource(instance, topic);
         on_bootstrap_resource_write(resource, request.payload, (int) request.payload_len);
-    }
-    else if (topic.instance_id != -1) {
+
+    } else if (topic.instance_id != -1) {
         on_bootstrap_instance_write(object, topic.instance_id, request.payload, (int) request.payload_len);
-    }
-    else {
+    } else {
         on_bootstrap_object_write(object, request.payload, (int) request.payload_len);
     }
 
@@ -192,9 +198,9 @@ lwm2m_response handle_write_request(lwm2m_context *context, lwm2m_topic topic, l
             .payload_len = 0,
     };
 
-    lwm2m_server *server = (lwm2m_server *) lfind(context->servers, atoi(topic.server_id));
-    lwm2m_object *object = lfind(context->object_tree, topic.object_id);
-    lwm2m_instance *instance = lfind(object->instances, topic.instance_id);
+    lwm2m_server *server = __resolve_server(context, topic);
+    lwm2m_object *object = __resolve_object(context, topic);
+    lwm2m_instance *instance = __resolve_instance(object, topic);
 
     if (topic.resource_id != -1) {
         lwm2m_resource *resource = lfind(instance->resources, topic.resource_id);
@@ -206,8 +212,8 @@ lwm2m_response handle_write_request(lwm2m_context *context, lwm2m_topic topic, l
 }
 
 lwm2m_response handle_read_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
-    lwm2m_server *server = (lwm2m_server *) lfind(context->servers, atoi(topic.server_id));
-    lwm2m_object *object = lfind(context->object_tree, topic.object_id);
+    lwm2m_server *server = __resolve_server(context, topic);
+    lwm2m_object *object = __resolve_object(context, topic);
 
     if (topic.instance_id != -1 && topic.resource_id != -1) {
         lwm2m_instance *instance = lfind(object->instances, topic.instance_id);
@@ -332,7 +338,7 @@ static void __free_topic(lwm2m_topic *topic) {
 }
 
 void perform_bootstrap_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
-    char message[1000];
+    char message[5000];
     char topic_str[100];
     int message_len;
 
@@ -345,7 +351,7 @@ void perform_bootstrap_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_
 }
 
 void perform_deregister_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
-    char message[1000];
+    char message[5000];
     char topic_str[100];
     int message_len;
 
@@ -358,7 +364,7 @@ void perform_deregister_request(lwm2m_context *context, lwm2m_topic topic, lwm2m
 }
 
 void perform_register_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_register_request request) {
-    char message[1000];
+    char message[5000];
     char topic_str[100];
     int message_len;
 
@@ -371,7 +377,7 @@ void perform_register_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_r
 }
 
 void perform_update_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_register_request request) {
-    char message[1000];
+    char message[5000];
     char topic_str[100];
     int message_len;
 
@@ -384,7 +390,7 @@ void perform_update_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_reg
 }
 
 void perform_notify_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response response) {
-    char message[1000];
+    char message[5000];
     char topic_str[100];
     int message_len;
 
@@ -396,16 +402,16 @@ void perform_notify_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_re
 }
 
 void handle_deregister_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response response) {
-    lwm2m_server *server = lfind(context->servers, atoi(topic.server_id));
+    lwm2m_server *server = __resolve_server(context, topic);
     on_server_deregister(server, response.response_code);
 }
 
 void handle_register_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response response) {
-    lwm2m_server *server = lfind(context->servers, atoi(topic.server_id));
+    lwm2m_server *server = __resolve_server(context, topic);
     on_server_register(server, response.response_code);
 }
 
 void handle_update_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response response) {
-    lwm2m_server *server = lfind(context->servers, atoi(topic.server_id));
+    lwm2m_server *server = __resolve_server(context, topic);
     on_server_update(server, response.response_code);
 }

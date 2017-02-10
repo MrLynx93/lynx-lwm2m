@@ -80,7 +80,7 @@ void deregister_on_server(lwm2m_context *context, lwm2m_server *server) {
             .operation   = LWM2M_OPERATION_DEREGISTER,
             .type        = "req",
             .client_id   = context->client_id,
-            .server_id   = itoa(server->short_server_id),
+            .server_id   = copy_str(server->name),
             .token       = generate_token(),
             .object_id   = -1,
             .instance_id = -1,
@@ -94,13 +94,31 @@ void deregister_on_server(lwm2m_context *context, lwm2m_server *server) {
 
     perform_deregister_request(context, topic, request);
 }
+
+
+static lwm2m_instance *find_security_instance(lwm2m_context *context, int short_server_id) {
+    lwm2m_object *security_object = lfind(context->object_tree, SECURITY_OBJECT_ID);
+    list *security_object_instances = security_object->instances;
+    for (list_elem *elem = security_object_instances->first; elem != NULL; elem = elem->next) {
+        lwm2m_instance *security_instance = elem->value;
+        lwm2m_resource *id_resource = lfind(security_instance->resources, 10);
+        if (id_resource->value != NULL && id_resource->value->int_value == short_server_id) {
+            return security_instance;
+        }
+    }
+    return NULL;
+}
+
 void register_on_server(lwm2m_context *context, lwm2m_instance *server_instance) {
-    lwm2m_resource *id_resource = lfind(server_instance->resources, SHORT_SERVER_ID_RESOURCE_ID);
+    int short_server_id = ((lwm2m_resource*) lfind(server_instance->resources, SHORT_SERVER_ID_RESOURCE_ID))->value->int_value;
+    lwm2m_instance *security_instance = find_security_instance(context, short_server_id);
+    char *server_name = ((lwm2m_resource *) lfind(security_instance->resources, SERVER_URI_RESOURCE_ID))->value->string_value;
 
     lwm2m_server *server = (lwm2m_server *) malloc(sizeof(lwm2m_server));
     server->context = context;
     server->server_instance = server_instance;
-    server->short_server_id = id_resource->value->int_value;
+    server->short_server_id = short_server_id;
+    server->name = copy_str(server_name);
     subscribe_server(context, server);
 
     char *objects_and_instances = serialize_lwm2m_objects_and_instances(context);
@@ -120,7 +138,7 @@ void register_on_server(lwm2m_context *context, lwm2m_instance *server_instance)
             .operation   = LWM2M_OPERATION_REGISTER,
             .type        = "req",
             .client_id   = context->client_id,
-            .server_id   = itoa(server->short_server_id),
+            .server_id   = copy_str(server->name),
             .token       = generate_token(),
             .object_id   = -1,
             .instance_id = -1,
@@ -162,7 +180,7 @@ void update_on_server(lwm2m_context *context, lwm2m_server *server) {
             .operation   = LWM2M_OPERATION_UPDATE,
             .type        = "req",
             .client_id   = context->client_id,
-            .server_id   = itoa(server->short_server_id),
+            .server_id   = copy_str(server->name),
             .token       = generate_token(),
             .object_id   = -1,
             .instance_id = -1,
@@ -185,7 +203,7 @@ int lwm2m_register(lwm2m_context *context) {
     if (__has_server_instances(context)) {
         context->state = REGISTERING;
 
-        // Register on all servers in context asynchronously
+        // Register on all servers in context asynchronously // TODO find security here too
         lwm2m_object *server_object = lfind(context->object_tree, SERVER_OBJECT_ID);
         list *server_object_instances = server_object->instances;
 
@@ -208,7 +226,7 @@ void on_server_deregister(lwm2m_server* server, int response_code) {
     lremove(server->context->servers, server->short_server_id);
     scheduler_task *update_task = lfind(server->context->update_tasks, server->short_server_id);
     cancel(server->context->scheduler, update_task);
-    printf("Deregistered from server=%d\n", server->short_server_id);
+    printf("%s Deregistered from server=%d\n", server->context->endpoint_client_name, server->short_server_id);
     // TODO free task
     // TODO free server
 }
@@ -235,5 +253,5 @@ void on_server_register(lwm2m_server *server, int success) {
 }
 
 void on_server_update(lwm2m_server *server, int success) {
-    printf("Updated on server=%d\n", server->short_server_id);
+   // printf("Updated on server=%d\n", server->short_server_id);
 }

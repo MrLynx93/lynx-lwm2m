@@ -17,7 +17,7 @@ static void __print_time() {
     time(&timer);
     tm_info = localtime(&timer);
     strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
-    printf("[%s] ", buffer);
+  //  printf("[%s] ", buffer);
 }
 
 ////////////////////////// INTERNAL //////////////////////////////
@@ -138,7 +138,7 @@ static void subscribe_init(lwm2m_context *context) {
 }
 
 static void on_publish_success(void *context, MQTTAsync_successData *response) {
-    printf("Success\n"); // TODO
+//    printf("Success\n"); // TODO
 }
 
 static void on_publish_failure(void* context,  MQTTAsync_failureData* response) {
@@ -173,7 +173,7 @@ void publish_connected(lwm2m_context *context) {
     sprintf(message, "1");
 
     MQTTAsync_send(*(context->mqtt_client), topic, 1, message, 1, 0, &opts);
-    printf("[%s] Received  %s\n", buffer, topic);
+    //printf("[%s] Received  %s\n", buffer, topic);
 }
 
 static void on_connect(void *context, MQTTAsync_successData *response) {
@@ -193,7 +193,7 @@ static int on_message(void *context, char *topicName, int topicLen, MQTTAsync_me
     time(&timer);
     tm_info = localtime(&timer);
     strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
-    printf("[%s] Received  %s\n", buffer, topicName);
+    //printf("[%s] Received  %s\n", buffer, topicName);
     receive_message((lwm2m_context *) context, topicName, (char *) message->payload, message->payloadlen);
     return 1; // TODO check if payload is correct (void -> char)
 }
@@ -213,14 +213,14 @@ void publish_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response 
             .context = context
     };
     int message_len;
-    char message[1000];
+    char message[5000];
     char topic_str[100];
     serialize_topic(topic, topic_str);
     serialize_response(response, message, &message_len);
 
     MQTTAsync_send(*(context->mqtt_client), topic_str, message_len, message, 1, 0, &opts);
     __print_time();
-    printf("Published %s\n", topic_str);
+   // printf("Published %s\n", topic_str);
 
 
 }
@@ -231,35 +231,35 @@ void receive_request(lwm2m_context *context, lwm2m_topic topic, char *message, i
 
     if (!strcmp(LWM2M_OPERATION_BOOTSTRAP_DELETE, topic.operation)) {
         response = handle_bootstrap_delete_request(context, topic, request);
-        DUMP_ALL(context);
+//        DUMP_ALL(context);
     }
     if (!strcmp(LWM2M_OPERATION_BOOTSTRAP_WRITE, topic.operation)) {
         response = handle_bootstrap_write_request(context, topic, request);
-        DUMP_ALL(context);
+//        DUMP_ALL(context);
     }
     if (!strcmp(LWM2M_OPERATION_BOOTSTRAP_FINISH, topic.operation)) {
         response = handle_bootstrap_finish_request(context, topic, request);
-        DUMP_ALL(context);
+//        DUMP_ALL(context);
     }
     if (!strcmp(LWM2M_OPERATION_WRITE, topic.operation)) {
         response = handle_write_request(context, topic, request);
-        DUMP_ALL(context);
+//        DUMP_ALL(context);
     }
     if (!strcmp(LWM2M_OPERATION_READ, topic.operation)) {
         response = handle_read_request(context, topic, request);
-        DUMP_ALL(context);
+//        DUMP_ALL(context);
     }
     if (!strcmp(LWM2M_OPERATION_CREATE, topic.operation)) {
         response = handle_create_request(context, topic, request);
-        DUMP_ALL(context);
+//        DUMP_ALL(context);
     }
     if (!strcmp(LWM2M_OPERATION_DELETE, topic.operation)) {
         response = handle_delete_request(context, topic, request);
-        DUMP_ALL(context);
+//        DUMP_ALL(context);
     }
     if (!strcmp(LWM2M_OPERATION_DISCOVER, topic.operation)) {
         response = handle_discover_request(context, topic, request);
-        DUMP_ALL(context);
+//        DUMP_ALL(context);
     }
     if (!strcmp(LWM2M_OPERATION_OBSERVE, topic.operation)) {
         response = handle_observe_request(context, topic, request);
@@ -322,47 +322,47 @@ void subscribe_server(lwm2m_context *context, lwm2m_server *server) {
     opts.context = context;
 
     // Update
-    sprintf(topic_server, "lynx/ru/res/+/%s/%d", context->client_id, server->short_server_id);
+    sprintf(topic_server, "lynx/ru/res/+/%s/%s", context->client_id, server->name);
     MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
 
     // Deregister
-    sprintf(topic_server, "lynx/rd/res/+/%s/%d", context->client_id, server->short_server_id);
+    sprintf(topic_server, "lynx/rd/res/+/%s/%s", context->client_id, server->name);
     MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
 
     // Read
-    sprintf(topic_server, "lynx/mr/req/+/%s/%d/#", context->client_id, server->short_server_id);
+    sprintf(topic_server, "lynx/mr/req/+/%s/%s/#", context->client_id, server->name);
     MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
 
     // Write
-    sprintf(topic_server, "lynx/mw/req/+/%s/%d/#", context->client_id, server->short_server_id);
+    sprintf(topic_server, "lynx/mw/req/+/%s/%s/#", context->client_id, server->name);
     MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
 
     // Execute
-    sprintf(topic_server, "lynx/me/req/+/%s/%d/+/+/+", context->client_id, server->short_server_id);
+    sprintf(topic_server, "lynx/me/req/+/%s/%s/+/+/+", context->client_id, server->name);
     MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
 
     // Create
-    sprintf(topic_server, "lynx/mc/req/+/%s/%d/#", context->client_id, server->short_server_id);
+    sprintf(topic_server, "lynx/mc/req/+/%s/%s/#", context->client_id, server->name);
     MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
 
     // Delete
-    sprintf(topic_server, "lynx/md/req/+/%s/%d/+/+", context->client_id, server->short_server_id);
+    sprintf(topic_server, "lynx/md/req/+/%s/%s/+/+", context->client_id, server->name);
     MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
 
     // Write attributes
-    sprintf(topic_server, "lynx/ma/req/+/%s/%d/#", context->client_id, server->short_server_id);
+    sprintf(topic_server, "lynx/ma/req/+/%s/%s/#", context->client_id, server->name);
     MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
 
     // Discover
-    sprintf(topic_server, "lynx/mm/req/+/%s/%d/#", context->client_id, server->short_server_id);
+    sprintf(topic_server, "lynx/mm/req/+/%s/%s/#", context->client_id, server->name);
     MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
 
     // Observe
-    sprintf(topic_server, "lynx/io/req/+/%s/%d/#", context->client_id, server->short_server_id);
+    sprintf(topic_server, "lynx/io/req/+/%s/%s/#", context->client_id, server->name);
     MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
 
     // Cancel observe
-    sprintf(topic_server, "lynx/ic/req/+/%s/%d/#", context->client_id, server->short_server_id);
+    sprintf(topic_server, "lynx/ic/req/+/%s/%s/#", context->client_id, server->name);
     MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
 }
 
@@ -375,11 +375,36 @@ void publish(lwm2m_context *context, char* topic, char* message, int message_len
     };
     MQTTAsync_send(*(context->mqtt_client), topic, message_len, message, 1, 0, &opts);
     __print_time();
-    printf("Published %s\n", topic);
+   // printf("Published %s\n", topic);
 }
+
+
+static void on_connect_fail(void* context,  MQTTAsync_failureData* response) {
+    printf("failed to conn\n");
+    printf(response->message);
+    exit(1);
+}
+
 
 int start_mqtt(lwm2m_context *context) {
     pthread_mutex_lock(&started_lock);
+
+    ////////////////// TLS ////////////////////
+    MQTTAsync_SSLOptions ssl_opts = MQTTAsync_SSLOptions_initializer;
+    if (context->tls) {
+        ssl_opts.trustStore = "ca.crt";
+        char *url = malloc(strlen(context->broker_address) + 7);
+        url[0] = 0;
+        strcat(url, "ssl://");
+        strcat(url, context->broker_address);
+        context->broker_address = url;
+    } else {
+        char *url = malloc(strlen(context->broker_address) + 7);
+        url[0] = 0;
+        strcat(url, "tcp://");
+        strcat(url, context->broker_address);
+        context->broker_address = url;
+    }
 
     context->mqtt_client = (MQTTAsync *) malloc(sizeof(MQTTAsync));
     int res;
@@ -398,16 +423,19 @@ int start_mqtt(lwm2m_context *context) {
     MQTTAsync_willOptions will_opts = MQTTAsync_willOptions_initializer;
     will_opts.topicName = topic;
     will_opts.message = "0";
-    will_opts.retained = 1;
+    will_opts.retained = 0;
     will_opts.qos = 1;
 
     MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
     conn_opts.keepAliveInterval = 10;
     conn_opts.cleansession = 1;
     conn_opts.onSuccess = on_connect;
-    conn_opts.onFailure = NULL;
+    conn_opts.onFailure = on_connect_fail;
     conn_opts.context = context;
     conn_opts.will = &will_opts;
+    if (context->tls) {
+        conn_opts.ssl = &ssl_opts;
+    }
 
     res = MQTTAsync_connect(*(context->mqtt_client), &conn_opts);
     pthread_cond_wait(&started_condition, &started_lock);

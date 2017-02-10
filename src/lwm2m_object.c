@@ -1,5 +1,6 @@
 #include <lwm2m_information_reporting.h>
 #include <lwm2m_attribute.h>
+#include <lwm2m_access_control.h>
 
 static bool __fulfill_PMIN(int pmin, scheduler_task *task) {
     if (task == NULL) {
@@ -407,18 +408,19 @@ lwm2m_instance *lwm2m_instance_new_with_id(lwm2m_object *object, int instance_id
 }
 
 lwm2m_instance *lwm2m_instance_new(lwm2m_object *object) {
-    int newId = 6; // TODO
+    int newId = object->instances->greatest_key + 1;
     return lwm2m_instance_new_with_id(object, newId);
 }
 
 void lwm2m_delete_instance(lwm2m_instance *instance) {
     /**** If instance is not ACO instance, then delete associated ACO instance ****/
     /**** If ACO instance exists, then remove (it may not exist if there is only one server??) ****/
-    if (instance->object->id != ACCESS_CONTROL_OBJECT_ID && instance->aco_instance != NULL) {
+    if (instance->object->id != ACCESS_CONTROL_OBJECT_ID && aco_for_instance(instance) != NULL) {
         list *object_tree = instance->object->context->object_tree;
         list *aco_instances = ((lwm2m_object *) lfind(object_tree, ACCESS_CONTROL_OBJECT_ID))->instances;
-        lremove(aco_instances, instance->aco_instance->id);
-        free_lwm2m_instance(instance->aco_instance);
+        lwm2m_instance *aco_instance = aco_for_instance(instance);
+        lremove(aco_instances, aco_instance->id);
+        free_lwm2m_instance(aco_instance);
     }
 
     // delete all resources in instance

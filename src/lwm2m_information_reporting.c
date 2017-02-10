@@ -94,14 +94,14 @@ static void notify_instance_on_server(scheduler_task *task, lwm2m_server *server
     lwm2m_response response = {
             .content_type = CONTENT_TYPE_TLV,
             .response_code = RESPONSE_CODE_CONTENT,
-            .payload = malloc(sizeof(char) * 1000),
+            .payload = malloc(sizeof(char) * 5000),
     };
 
     lwm2m_topic topic = {
             .operation   = LWM2M_OPERATION_OBSERVE,
             .type        = "res",
             .client_id   = server->context->client_id,
-            .server_id   = itoa(server->short_server_id),
+            .server_id   = copy_str(server->name),  // TODO convert ID to name
             .token       = token,
             .object_id   = instance->object->id,
             .instance_id = instance->id,
@@ -131,7 +131,7 @@ static void notify_resource_on_server(scheduler_task *task, lwm2m_server *server
             .operation   = LWM2M_OPERATION_OBSERVE,
             .type        = "res",
             .client_id   = server->context->client_id,
-            .server_id   = itoa(server->short_server_id),
+            .server_id   = copy_str(server->name),
             .token       = token,
             .object_id   = resource->instance->object->id,
             .instance_id = resource->instance->id,
