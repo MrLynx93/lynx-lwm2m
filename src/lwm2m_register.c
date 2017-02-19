@@ -28,7 +28,7 @@ static char *get_binding_mode(lwm2m_instance *server_instance) {
 }
 
 static char *serialize_registration_params(lwm2m_server *server) {
-    char *params = (char *) malloc(sizeof(char *) * 100);
+    char *params = (char *) malloc(sizeof(char *) * 5000);
     params[0] = 0;
 
     strcat(params, "ep=");
@@ -47,7 +47,7 @@ static char *serialize_registration_params(lwm2m_server *server) {
 }
 
 static char *serialize_update_params(lwm2m_server *server) {
-    char *params = (char *) malloc(sizeof(char *) * 100);
+    char *params = (char *) malloc(sizeof(char *) * 5000);
     params[0] = 0;
     bool firstParam = true;
 
@@ -76,6 +76,10 @@ void update_func(void *task, void *server, void *context, void *nothing, void *n
 ///////////////////////// REGISTER ////////////////////////////
 
 void deregister_on_server(lwm2m_context *context, lwm2m_server *server) {
+    pthread_mutex_lock(&server->server_mutex);
+    pthread_cond_wait(&server->no_pending_request_condition, &server->server_mutex);
+    server->register_state = 0;
+
     lwm2m_topic topic = {
             .operation   = LWM2M_OPERATION_DEREGISTER,
             .type        = "req",
@@ -91,8 +95,12 @@ void deregister_on_server(lwm2m_context *context, lwm2m_server *server) {
             .payload      = "",
             .payload_len  = 0,
     };
+    // TODO stop thread
+    scheduler_task *update_task = lfind(server->context->update_tasks, server->short_server_id);
+    cancel(server->context->scheduler, update_task);
 
     perform_deregister_request(context, topic, request);
+    pthread_mutex_unlock(&server->server_mutex);
 }
 
 
@@ -115,9 +123,13 @@ void register_on_server(lwm2m_context *context, lwm2m_instance *server_instance)
     char *server_name = ((lwm2m_resource *) lfind(security_instance->resources, SERVER_URI_RESOURCE_ID))->value->string_value;
 
     lwm2m_server *server = (lwm2m_server *) malloc(sizeof(lwm2m_server));
+    server->register_state = 1; // 1 - registered 2 - deregistering 0 - deregistered
     server->context = context;
     server->server_instance = server_instance;
     server->short_server_id = short_server_id;
+    server->server_mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+    server->no_pending_request_condition = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
+    server->pending_requests = 0;
     server->name = copy_str(server_name);
     subscribe_server(context, server);
 
@@ -156,6 +168,8 @@ void register_on_server(lwm2m_context *context, lwm2m_instance *server_instance)
 };
 
 void update_on_server(lwm2m_context *context, lwm2m_server *server) {
+    sem_wait(&context->object_tree_lock);
+
     char *objects_and_instances = serialize_lwm2m_objects_and_instances(context);
     char *update_params = serialize_update_params(server);
 
@@ -193,7 +207,11 @@ void update_on_server(lwm2m_context *context, lwm2m_server *server) {
             .payload_len  = strlen(request_payload),
     };
 
-    perform_update_request(context, topic, request);
+    sem_post(&context->object_tree_lock);
+
+    if (server->register_state == 1) {
+        perform_update_request(context, topic, request);
+    }
 }
 
 int lwm2m_register(lwm2m_context *context) {
@@ -224,8 +242,8 @@ int lwm2m_register(lwm2m_context *context) {
 
 void on_server_deregister(lwm2m_server* server, int response_code) {
     lremove(server->context->servers, server->short_server_id);
-    scheduler_task *update_task = lfind(server->context->update_tasks, server->short_server_id);
-    cancel(server->context->scheduler, update_task);
+//    scheduler_task *update_task = lfind(server->context->update_tasks, server->short_server_id);
+//    cancel(server->context->scheduler, update_task);
     printf("%s Deregistered from server=%d\n", server->context->endpoint_client_name, server->short_server_id);
     // TODO free task
     // TODO free server

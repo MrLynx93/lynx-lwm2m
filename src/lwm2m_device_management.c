@@ -70,10 +70,14 @@ execute_param *param_new() {
 }
 
 int on_resource_write(lwm2m_server *server, lwm2m_resource *resource, char *message, int message_len) {
+    sem_wait(&server->context->object_tree_lock);
+
     if (!lwm2m_check_instance_access_control(server, resource->instance, WRITE)) {
+        sem_post(&server->context->object_tree_lock);
         return RESPONSE_CODE_UNAUTHORIZED;
     }
     if (!lwm2m_check_resource_operation_supported(resource, WRITE)) {
+        sem_post(&server->context->object_tree_lock);
         return RESPONSE_CODE_METHOD_NOT_ALLOWED;
     }
 
@@ -85,10 +89,13 @@ int on_resource_write(lwm2m_server *server, lwm2m_resource *resource, char *mess
     list_free(servers_to_notify);
     __free_parsed_resource(parsed_resource);
 
+    sem_post(&server->context->object_tree_lock);
     return RESPONSE_CODE_CHANGED;
 }
 
 int on_instance_write(lwm2m_server *server, lwm2m_instance *instance, char *message, int message_len) {
+    sem_wait(&server->context->object_tree_lock);
+
     if (!lwm2m_check_instance_access_control(server, instance, WRITE)) {
         return RESPONSE_CODE_UNAUTHORIZED;
     }
@@ -108,10 +115,13 @@ int on_instance_write(lwm2m_server *server, lwm2m_instance *instance, char *mess
     merge_resources(instance, &parsed_instance, true, true);
     __free_parsed_resources(parsed_resources);
 
+    sem_post(&server->context->object_tree_lock);
     return RESPONSE_CODE_CHANGED;
 }
 
 lwm2m_response on_resource_read(lwm2m_server *server, lwm2m_resource *resource) {
+    sem_wait(&server->context->object_tree_lock);
+
     lwm2m_response response = {
             .payload = (char *) malloc(sizeof(char) * 5000),
     };
@@ -141,10 +151,14 @@ lwm2m_response on_resource_read(lwm2m_server *server, lwm2m_resource *resource) 
         response.content_type = resource->type == OPAQUE ? CONTENT_TYPE_OPAQUE : CONTENT_TYPE_TEXT;
     }
     response.response_code = RESPONSE_CODE_CHANGED;
+
+    sem_post(&server->context->object_tree_lock);
     return response;
 }
 
 lwm2m_response on_instance_read(lwm2m_server *server, lwm2m_instance *instance) {
+    sem_wait(&server->context->object_tree_lock);
+
     lwm2m_response response = {
             .payload = (char *) malloc(sizeof(char) * 5000),
     };
@@ -176,10 +190,13 @@ lwm2m_response on_instance_read(lwm2m_server *server, lwm2m_instance *instance) 
 
     response.content_type = CONTENT_TYPE_TLV;
     response.response_code = RESPONSE_CODE_CHANGED;
+    sem_post(&server->context->object_tree_lock);
     return response;
 }
 
 lwm2m_response on_object_read(lwm2m_server *server, lwm2m_object *object) {
+    sem_wait(&server->context->object_tree_lock);
+
     lwm2m_response response = {
             .payload = (char *) malloc(sizeof(char) * 5000),
             .content_type = CONTENT_TYPE_TLV,
@@ -221,12 +238,16 @@ lwm2m_response on_object_read(lwm2m_server *server, lwm2m_object *object) {
 
     /**** Free parsed instances ****/
     __free_instances_to_parse(instances_to_parse);
+
+    sem_post(&server->context->object_tree_lock);
     return response;
 }
 
 #define CREATE_RESPONSE {CONTENT_TYPE_NO_FORMAT, RESPONSE_CODE_CREATED, 1, NULL, 0}
 
-lwm2m_response on_instance_create(lwm2m_server *server, lwm2m_object *object, int instance_id, char *message, int message_len) {
+lwm2m_response on_instance_create(lwm2m_server *server, lwm2m_object *object, int *instance_id, char *message, int message_len) {
+    sem_wait(&server->context->object_tree_lock);
+
     lwm2m_context *context = server->context;
     lwm2m_response response = CREATE_RESPONSE;
 
@@ -242,17 +263,18 @@ lwm2m_response on_instance_create(lwm2m_server *server, lwm2m_object *object, in
     }
 
     /***** Error if ID already exists *****/
-    lwm2m_instance *old_instance = lfind(object->instances, instance_id);
+    lwm2m_instance *old_instance = lfind(object->instances, *instance_id);
     if (old_instance != NULL) {
         response.response_code = RESPONSE_CODE_METHOD_NOT_ALLOWED;
         return response;
     }
 
     /***** Create instance and add to object *******/
-    lwm2m_instance *instance = instance_id == -1
+    lwm2m_instance *instance = *instance_id == -1
                                ? lwm2m_instance_new(object)
-                               : lwm2m_instance_new_with_id(object, instance_id);
+                               : lwm2m_instance_new_with_id(object, *instance_id);
 
+    *instance_id = instance->id;
     list *all_parsed_resources = parse_instance(object, message, message_len);
     lwm2m_instance parsed_instance = {
             .resources = list_new()
@@ -262,7 +284,7 @@ lwm2m_response on_instance_create(lwm2m_server *server, lwm2m_object *object, in
     for (list_elem *elem = instance->resources->first; elem != NULL; elem = elem->next) {
         lwm2m_resource *template_resource = elem->value;
         lwm2m_resource *parsed_resource = lfind(all_parsed_resources, elem->key);
-        
+
         /***** Error id not all mandatory resources are provided  ******/
         if (template_resource->mandatory && parsed_resource == NULL) {
             response.response_code = RESPONSE_CODE_METHOD_NOT_ALLOWED; // TODO check
@@ -287,10 +309,14 @@ lwm2m_response on_instance_create(lwm2m_server *server, lwm2m_object *object, in
     merge_resources(instance, &parsed_instance, true, true);
     __free_parsed_resources(all_parsed_resources);
     list_free(parsed_instance.resources);
+
+    sem_post(&server->context->object_tree_lock);
     return response;
 }
 
 lwm2m_response on_instance_delete(lwm2m_server *server, lwm2m_instance *instance) {
+    sem_wait(&server->context->object_tree_lock);
+
     lwm2m_response response = {
             .content_type = CONTENT_TYPE_NO_FORMAT,
             .payload = NULL,
@@ -300,11 +326,13 @@ lwm2m_response on_instance_delete(lwm2m_server *server, lwm2m_instance *instance
     /**** Check access for DELETE operation ****/
     if (!lwm2m_check_instance_access_control(server, instance, DELETE)) {
         response.response_code = RESPONSE_CODE_UNAUTHORIZED;
+        sem_post(&server->context->object_tree_lock);
         return response;
     }
 
     lwm2m_delete_instance(instance);
     response.response_code = RESPONSE_CODE_DELETED;
+    sem_post(&server->context->object_tree_lock);
     return response;
 }
 

@@ -130,7 +130,9 @@ char *serialize_topic(lwm2m_topic topic, char *message) {
 }
 
 char *generate_token() {
-    srand(time(0));
+    struct timeval time;
+    gettimeofday(&time,NULL);
+    srand((time.tv_sec * 1000) + (time.tv_usec / 1000));
     char* token = (char *) malloc(TOKEN_LENGTH + 1);
     for (int i = 0; i < TOKEN_LENGTH; ++i) {
         token[i] = CHARSET[rand() % CHARSET_LENGTH];
@@ -228,10 +230,10 @@ lwm2m_response handle_read_request(lwm2m_context *context, lwm2m_topic topic, lw
     }
 }
 
-lwm2m_response handle_create_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
-    lwm2m_server *server = __resolve_server(context, topic);
-    lwm2m_object *object = __resolve_object(context, topic);
-    return on_instance_create(server, object, topic.instance_id, request.payload, (int) request.payload_len);
+lwm2m_response handle_create_request(lwm2m_context *context, lwm2m_topic *topic, lwm2m_request request) {
+    lwm2m_server *server = __resolve_server(context, *topic);
+    lwm2m_object *object = __resolve_object(context, *topic);
+    return on_instance_create(server, object, &topic->instance_id, request.payload, (int) request.payload_len);
 }
 
 lwm2m_response handle_delete_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request) {
@@ -378,13 +380,13 @@ void perform_register_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_r
 
 void perform_update_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_register_request request) {
     char message[5000];
-    char topic_str[100];
+    char topic_str[1000];
     int message_len;
 
     serialize_topic(topic, topic_str);
     serialize_register_request(request, message, &message_len);
     __free_register_request(&request);
-    __free_topic(&topic);
+//    __free_topic(&topic);
 
     publish(context, topic_str, message, message_len);
 }

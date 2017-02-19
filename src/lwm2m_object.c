@@ -52,7 +52,7 @@ lwm2m_value *__set_value_string(lwm2m_resource *resource, char *value) {
     lwm2m_value *old_value = resource->value;
     resource->value = (lwm2m_value *) malloc(sizeof(lwm2m_value));
     resource->length = (int) strlen(value);
-    resource->value->string_value = malloc(sizeof(char) *resource->length + 1);
+    resource->value->string_value = malloc((size_t) (resource->length + 1));
     strcpy(resource->value->string_value, value);
     return old_value;
 }
@@ -349,7 +349,7 @@ void merge_resources(lwm2m_instance *old_instance, lwm2m_instance *new_instance,
 ///////////// FREE MEMORY /////////////////
 
 static void free_lwm2m_instance(lwm2m_instance *instance) {
-    list_free(instance->resources);
+    list_free(instance->resources); // TODO should I use free_resource here?
     list_free(instance->observers);
     free(instance);
 }

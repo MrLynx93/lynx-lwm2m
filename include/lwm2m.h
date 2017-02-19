@@ -98,6 +98,8 @@ typedef struct lwm2m_context {
     pthread_mutex_t bootstrap_mutex;
     pthread_cond_t bootstrap_finished_condition;
 
+    sem_t object_tree_lock;
+
 } lwm2m_context;
 
 typedef struct lwm2m_server {
@@ -107,6 +109,10 @@ typedef struct lwm2m_server {
     lwm2m_register_data last_update_data;
     lwm2m_instance *server_instance;
 
+    int pending_requests;
+    int register_state;
+    pthread_mutex_t server_mutex;
+    pthread_cond_t no_pending_request_condition;
 } lwm2m_server;
 
 typedef struct execute_param {

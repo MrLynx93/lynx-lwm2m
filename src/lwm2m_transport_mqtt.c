@@ -214,7 +214,7 @@ void publish_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response 
     };
     int message_len;
     char message[5000];
-    char topic_str[100];
+    char topic_str[200];
     serialize_topic(topic, topic_str);
     serialize_response(response, message, &message_len);
 
@@ -225,58 +225,104 @@ void publish_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response 
 
 }
 
+static lwm2m_server *__resolve_server(lwm2m_context *context, lwm2m_topic topic) {
+    for (list_elem *elem = context->servers->first; elem != NULL; elem = elem->next) {
+        lwm2m_server *server = elem->value;
+        if (!strcmp(server->name, topic.server_id)) {
+            return server;
+        }
+    }
+    return NULL;
+}
+
 void receive_request(lwm2m_context *context, lwm2m_topic topic, char *message, int message_len) {
     lwm2m_request request = parse_request(message, message_len);
     lwm2m_response response;
+    bool is_bootstrap = false;
 
     if (!strcmp(LWM2M_OPERATION_BOOTSTRAP_DELETE, topic.operation)) {
         response = handle_bootstrap_delete_request(context, topic, request);
+        is_bootstrap = true;
 //        DUMP_ALL(context);
     }
-    if (!strcmp(LWM2M_OPERATION_BOOTSTRAP_WRITE, topic.operation)) {
+    else if (!strcmp(LWM2M_OPERATION_BOOTSTRAP_WRITE, topic.operation)) {
         response = handle_bootstrap_write_request(context, topic, request);
+        is_bootstrap = true;
 //        DUMP_ALL(context);
     }
-    if (!strcmp(LWM2M_OPERATION_BOOTSTRAP_FINISH, topic.operation)) {
+    else if (!strcmp(LWM2M_OPERATION_BOOTSTRAP_FINISH, topic.operation)) {
         response = handle_bootstrap_finish_request(context, topic, request);
+        is_bootstrap = true;
 //        DUMP_ALL(context);
-    }
-    if (!strcmp(LWM2M_OPERATION_WRITE, topic.operation)) {
-        response = handle_write_request(context, topic, request);
+    } else {
+        lwm2m_server *server = __resolve_server(context, topic);
+        if (server == NULL) {
+            char topic_str[100];
+            serialize_topic(topic, topic_str);
+            printf("Received request %s for non-existing server %s. Ignoring\n", topic_str, topic.server_id);
+            return;
+        }
+
+        pthread_mutex_lock(&server->server_mutex);
+        server->pending_requests++;
+
+        if (server->register_state != 1) {
+            char topic_str[100];
+            serialize_topic(topic, topic_str);
+            printf("Received request %s for deregistering server %s. Ignoring\n", topic_str, topic.server_id);
+            return;
+        }
+
+        if (!strcmp(LWM2M_OPERATION_WRITE, topic.operation)) {
+            response = handle_write_request(context, topic, request);
 //        DUMP_ALL(context);
-    }
-    if (!strcmp(LWM2M_OPERATION_READ, topic.operation)) {
-        response = handle_read_request(context, topic, request);
+        }
+        if (!strcmp(LWM2M_OPERATION_READ, topic.operation)) {
+            response = handle_read_request(context, topic, request);
 //        DUMP_ALL(context);
-    }
-    if (!strcmp(LWM2M_OPERATION_CREATE, topic.operation)) {
-        response = handle_create_request(context, topic, request);
+        }
+        if (!strcmp(LWM2M_OPERATION_CREATE, topic.operation)) {
+            response = handle_create_request(context, &topic, request);
 //        DUMP_ALL(context);
-    }
-    if (!strcmp(LWM2M_OPERATION_DELETE, topic.operation)) {
-        response = handle_delete_request(context, topic, request);
+        }
+        if (!strcmp(LWM2M_OPERATION_DELETE, topic.operation)) {
+            response = handle_delete_request(context, topic, request);
 //        DUMP_ALL(context);
-    }
-    if (!strcmp(LWM2M_OPERATION_DISCOVER, topic.operation)) {
-        response = handle_discover_request(context, topic, request);
+        }
+        if (!strcmp(LWM2M_OPERATION_DISCOVER, topic.operation)) {
+            response = handle_discover_request(context, topic, request);
 //        DUMP_ALL(context);
-    }
-    if (!strcmp(LWM2M_OPERATION_OBSERVE, topic.operation)) {
-        response = handle_observe_request(context, topic, request);
-    }
-    if (!strcmp(LWM2M_OPERATION_CANCEL_OBSERVE, topic.operation)) {
-        response = handle_cancel_observe_request(context, topic, request);
-    }
-    if (!strcmp(LWM2M_OPERATION_WRITE_ATTRIBUTES, topic.operation)) {
-        response = handle_write_attributes_request(context, topic, request);
-    }
-    if (!strcmp(LWM2M_OPERATION_EXECUTE, topic.operation)) {
-        response = handle_execute_request(context, topic, request);
+        }
+        if (!strcmp(LWM2M_OPERATION_OBSERVE, topic.operation)) {
+            response = handle_observe_request(context, topic, request);
+        }
+        if (!strcmp(LWM2M_OPERATION_CANCEL_OBSERVE, topic.operation)) {
+            response = handle_cancel_observe_request(context, topic, request);
+        }
+        if (!strcmp(LWM2M_OPERATION_WRITE_ATTRIBUTES, topic.operation)) {
+            response = handle_write_attributes_request(context, topic, request);
+        }
+        if (!strcmp(LWM2M_OPERATION_EXECUTE, topic.operation)) {
+            response = handle_execute_request(context, topic, request);
+        }
+
+        /** Publish response **/
+        topic.type = "res";
+        publish_response(context, topic, response);
+        __free_response(&response);
+
+        /** Server can deregister only if all requests ended **/
+        if (--server->pending_requests == 0) {
+            pthread_cond_signal(&server->no_pending_request_condition);
+        }
+        pthread_mutex_unlock(&server->server_mutex);
     }
 
-    topic.type = "res";
-    publish_response(context, topic, response);
-    __free_response(&response);
+    if (is_bootstrap) {
+        topic.type = "res";
+        publish_response(context, topic, response);
+        __free_response(&response);
+    }
 }
 
 void receive_response(lwm2m_context *context, lwm2m_topic topic, char *message, int message_len) {
@@ -381,7 +427,7 @@ void publish(lwm2m_context *context, char* topic, char* message, int message_len
 
 static void on_connect_fail(void* context,  MQTTAsync_failureData* response) {
     printf("failed to conn\n");
-    printf(response->message);
+//    printf(response->message);
     exit(1);
 }
 

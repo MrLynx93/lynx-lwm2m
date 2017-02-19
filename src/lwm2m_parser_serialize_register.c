@@ -8,7 +8,7 @@ static void create_object_string(lwm2m_object* object, char *message) {
 }
 
 static void create_object_with_instances_string(lwm2m_object* object , char *message) {
-    char buf[20] = {0};
+    char buf[5000] = {0};
 
     for (list_elem *elem = object->instances->first; elem != NULL; elem = elem->next) {
         sprintf(buf, "</%d/%d>", object->id, elem->key);
@@ -21,7 +21,7 @@ static void create_object_with_instances_string(lwm2m_object* object , char *mes
 }
 
 char *serialize_lwm2m_objects_and_instances(lwm2m_context *context) {
-    char buffer[100] = {0};
+    char buffer[5000] = {0};
     char *message = (char *) calloc(200, sizeof(char));
 
     for (list_elem *elem = context->object_tree->first; elem != NULL; elem = elem->next) {

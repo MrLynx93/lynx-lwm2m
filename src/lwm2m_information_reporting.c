@@ -124,7 +124,7 @@ static void notify_instance_on_server(scheduler_task *task, lwm2m_server *server
 static void notify_resource_on_server(scheduler_task *task, lwm2m_server *server, lwm2m_resource *resource, char* token) {
     lwm2m_response response = {
             .response_code = RESPONSE_CODE_CONTENT,
-            .payload = malloc(sizeof(char) * 100),
+            .payload = malloc(sizeof(char) * 1000),
     };
 
     lwm2m_topic topic = {

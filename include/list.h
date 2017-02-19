@@ -2,6 +2,7 @@
 #define PROJECT_LIST_H
 
 #include <stdbool.h>
+#include "semaphore.h"
 
 typedef struct list_elem {
     int key;
@@ -13,6 +14,7 @@ typedef struct list {
     list_elem *first;
     int size;
     int greatest_key;
+    sem_t guard;
 } list;
 
 list *list_new();

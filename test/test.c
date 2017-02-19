@@ -84,6 +84,10 @@ int main(int argc, char *argv[]) {
     char *broker = argc > 3 ? argv[3] : "localhost:8883";
     int times = argc > 4 ? atoi(argv[4]) : 1000;
 
+
+    printf("hello\n");
+    fflush(stdout);
+
     /** Configure client from arguments **/
     lwm2m_context *context = lwm2m_create_context();
     context->factory_bootstrap_callback = perform_factory_bootstrap;
@@ -99,6 +103,8 @@ int main(int argc, char *argv[]) {
     /** Wait for number of read executed **/
     while (1) {
         printf("%s Reads executed: %d\n", client_id, reads_executed);
+        fflush(stdout);
+
         if (reads_executed >= times) {
             /** Deregister from all servers **/
             for (list_elem *elem = context->servers->first; elem != NULL; elem = elem->next) {

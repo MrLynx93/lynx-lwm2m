@@ -348,6 +348,7 @@ lwm2m_context *lwm2m_create_context() {
     context->is_bootstrapped = false;
     context->has_smartcard = false;
     context->tls = 0;
+    sem_init(&context->object_tree_lock, 0, 1);
 
     context->bootstrap_mutex = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
     context->bootstrap_finished_condition = (pthread_cond_t) PTHREAD_COND_INITIALIZER;

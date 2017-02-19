@@ -1,3 +1,4 @@
+#include <lwm2m_device_management.h>
 #include "lwm2m.h"
 #include "lwm2m_access_control.h"
 
@@ -105,9 +106,12 @@ lwm2m_instance *lwm2m_instance_create_aco_instance(lwm2m_server *server, lwm2m_i
 
 lwm2m_instance *aco_for_instance(lwm2m_instance *instance) {
     lwm2m_context *context = instance->object->context;
-    for (list_elem *elem = __aco_object(context)->instances->first; elem != NULL; elem = elem->next) {
+//    DUMP_ALL(context);
+    lwm2m_object *pObject = __aco_object(context);
+    for (list_elem *elem = pObject->instances->first; elem != NULL; elem = elem->next) {
         lwm2m_instance *aco_instance = elem->value;
-        int object_id = ((lwm2m_resource *) lfind(aco_instance->resources, OBJECT_ID_RESOURCE_ID))->value->int_value;
+        lwm2m_resource *resource = (lwm2m_resource *) lfind(aco_instance->resources, OBJECT_ID_RESOURCE_ID);
+        int object_id = resource->value->int_value;
         int instance_id = ((lwm2m_resource *) lfind(aco_instance->resources, INSTANCE_ID_RESOURCE_ID))->value->int_value;
         if (object_id == instance->object->id && instance_id == instance->id) {
             return aco_instance;
@@ -117,10 +121,13 @@ lwm2m_instance *aco_for_instance(lwm2m_instance *instance) {
 }
 
 lwm2m_instance *aco_for_object(lwm2m_object *object) {
+//    DUMP_ALL(object->context);
     lwm2m_context *context = object->context;
-    for (list_elem *elem = __aco_object(context)->instances->first; elem != NULL; elem = elem->next) {
+    lwm2m_object *aco_object = __aco_object(context);
+    for (list_elem *elem = aco_object->instances->first; elem != NULL; elem = elem->next) {
         lwm2m_instance *aco_instance = elem->value;
-        int object_id = ((lwm2m_resource *)lfind(aco_instance->resources, OBJECT_ID_RESOURCE_ID))->value->int_value;
+        lwm2m_resource *resource = (lwm2m_resource *)lfind(aco_instance->resources, OBJECT_ID_RESOURCE_ID);
+        int object_id = resource->value->int_value;
         int instance_id = ((lwm2m_resource *)lfind(aco_instance->resources, INSTANCE_ID_RESOURCE_ID))->value->int_value;
         if (object_id == object->id && instance_id == MAX_ID) {
             return aco_instance;

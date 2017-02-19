@@ -170,7 +170,7 @@ void serialize_single_resource(lwm2m_resource *resource, char *message, int *mes
  * Resource is already checked and READABLE
  */
 void serialize_multiple_resource(list *resources, char *message, int *message_len) {
-    char *value_buffer = malloc(sizeof(char) * 100);
+    char *value_buffer = malloc(sizeof(char) * 5000);
     char *header_buffer = malloc(sizeof(char) * 20);
     int header_length, value_length;
     int total_length = 0;

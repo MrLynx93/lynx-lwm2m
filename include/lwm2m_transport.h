@@ -87,7 +87,7 @@ lwm2m_response handle_write_request(lwm2m_context *context, lwm2m_topic topic, l
 
 lwm2m_response handle_read_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
 
-lwm2m_response handle_create_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
+lwm2m_response handle_create_request(lwm2m_context *context, lwm2m_topic *topic, lwm2m_request request);
 
 lwm2m_response handle_delete_request(lwm2m_context *context, lwm2m_topic topic, lwm2m_request request);
 
