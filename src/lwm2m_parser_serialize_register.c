@@ -20,9 +20,9 @@ static void create_object_with_instances_string(lwm2m_object* object , char *mes
     }
 }
 
-char *serialize_lwm2m_objects_and_instances(lwm2m_context *context) {
+char *serialize_lwm2m_objects_and_instances(lwm2m_context *context) { // TODO
     char buffer[5000] = {0};
-    char *message = (char *) calloc(200, sizeof(char));
+    char *message = (char *) calloc(5000, sizeof(char)); // za male :)
 
     for (list_elem *elem = context->object_tree->first; elem != NULL; elem = elem->next) {
         lwm2m_object *object = elem->value;

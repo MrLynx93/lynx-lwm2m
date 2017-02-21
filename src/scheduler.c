@@ -42,26 +42,30 @@ int generate_task_id() {
 }
 
 
-time_t find_earliest_waking_time(task_list *list) {
-    task_element *curr = list->first;
-    time_t earliest_time = curr->task->waking_time;
-
-    while (curr != NULL) {
-        if (difftime(earliest_time, curr->task->waking_time) > 0) {
-            earliest_time = curr->task->waking_time;
+time_t find_earliest_waking_time(list *l) {
+    time_t *earliest_time = NULL;
+    for (list_elem *elem = l->first; elem != NULL; elem = elem->next) {
+        scheduler_task* task = elem->value;
+        if (earliest_time == NULL) {
+            earliest_time = malloc(sizeof(time_t));
+            *earliest_time = task->waking_time;
         }
-        curr = curr->next;
+        if (difftime(*earliest_time, task->waking_time) > 0) {
+            *earliest_time = task->waking_time;
+        }
     }
-    return earliest_time;
+    time_t time = *earliest_time;
+    free(earliest_time);
+    return time;
 }
 
 
 void await(lwm2m_scheduler *scheduler) {
-    if (scheduler->queue->first == NULL) {
+    if (scheduler->l->size == 0) {
         pthread_cond_wait(&scheduler->condition, &scheduler->lock);
     } else {
         sem_wait(&scheduler->guard);
-        time_t waking_time = find_earliest_waking_time(scheduler->queue);
+        time_t waking_time = find_earliest_waking_time(scheduler->l);
         sem_post(&scheduler->guard);
 
         struct timespec waking_time_spec;
@@ -77,7 +81,7 @@ void schedule(lwm2m_scheduler *scheduler, scheduler_task *task) {
 
     sem_wait(&scheduler->guard);
     task->waking_time = time(0) + task->period;
-    list_add(scheduler->queue, task);
+    ladd(scheduler->l, task->id, task);
     sem_post(&scheduler->guard);
 
     pthread_cond_signal(&scheduler->condition);
@@ -87,8 +91,11 @@ void schedule(lwm2m_scheduler *scheduler, scheduler_task *task) {
 void cancel(lwm2m_scheduler *scheduler, scheduler_task *task) {
     pthread_mutex_lock(&scheduler->lock);
 
+    printf("Cancel\n");
+    fflush(stdout);
+
     sem_wait(&scheduler->guard);
-    list_remove(scheduler->queue, task->id);
+    lremove(scheduler->l, task->id);
     sem_post(&scheduler->guard);
 
     pthread_cond_signal(&scheduler->condition);
@@ -107,16 +114,15 @@ void execute(lwm2m_scheduler *scheduler, scheduler_task *task, void* arg) {
 }
 
 void process_tasks(lwm2m_scheduler *scheduler) {
-    task_element *curr = scheduler->queue->first;
     time_t now = time(0);
 
-    while (curr != NULL) {
-        if (difftime(curr->task->waking_time, now) <= 0) {
+    for (list_elem *elem = scheduler->l->first; elem != NULL; elem = elem->next) {
+        scheduler_task *task = elem->value;
+        if (difftime(task->waking_time, now) <= 0) {
             // Execute without waking - we are already awake here
-            curr->task->function(curr->task->arg0, curr->task->arg1, curr->task->arg2, curr->task->arg3, NULL);
-            curr->task->waking_time = time(0) + curr->task->period;
+            task->function(task->arg0, task->arg1, task->arg2, task->arg3, NULL);
+            task->waking_time = time(0) + task->period;
         }
-        curr = curr->next;
     }
 }
 
@@ -141,14 +147,14 @@ void *scheduler_thread(void *scheduler_void) {
         process_tasks(scheduler);
         sem_post(&scheduler->guard);
 
+        pthread_cond_signal(&scheduler->condition);
         pthread_mutex_unlock(&scheduler->lock);
     }
     return NULL;
 }
 
 void scheduler_start(lwm2m_scheduler *scheduler) {
-    scheduler->queue = (task_list *) malloc(sizeof(task_list));
-    scheduler->queue->first = NULL;
+    scheduler->l = list_new();
     scheduler->lock = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
     scheduler->condition = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
     scheduler->stop = false;

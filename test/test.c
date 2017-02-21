@@ -1,14 +1,17 @@
 #include <lwm2m_client.h>
-#include <unistd.h>
 #include <lwm2m_transport_mqtt.h>
 
 #define TEST_OBJECT_ID 20004
 
 volatile int reads_executed = 0;
 char *client_id;
+int times;
+
+pthread_mutex_t lock = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;;
+pthread_cond_t condition = (pthread_cond_t) PTHREAD_COND_INITIALIZER;;
 
 static lwm2m_resource *create_test_object_resources() {
-    lwm2m_resource *resources = (lwm2m_resource*) malloc(3 * sizeof(lwm2m_resource));
+    lwm2m_resource *resources = (lwm2m_resource *) malloc(3 * sizeof(lwm2m_resource));
 
     resources[0].multiple = false;
     resources[0].id = 0;
@@ -40,7 +43,7 @@ static lwm2m_resource *create_test_object_resources() {
     return resources;
 }
 
-static list* create_objects() {
+static list *create_objects() {
     lwm2m_object *test_object = lwm2m_object_new();
     test_object->id = TEST_OBJECT_ID;
     test_object->mandatory = false;
@@ -51,12 +54,17 @@ static list* create_objects() {
     test_object->resource_def_len = 3;
 
     list *objects = list_new();
-    ladd(objects, test_object->id, (void*) test_object);
+    ladd(objects, test_object->id, (void *) test_object);
     return objects;
 }
 
 void on_read(lwm2m_resource *resource) {
+    pthread_mutex_lock(&lock);
     reads_executed += 1;
+    if (reads_executed >= times) {
+        pthread_cond_signal(&condition);
+    }
+    pthread_mutex_unlock(&lock);
 }
 
 // TODO FACTORY BOOTSTRAP IN COAP TEST (AND INCREASE COUNTER)
@@ -79,10 +87,10 @@ int perform_factory_bootstrap(lwm2m_context *context) {
  * Factory bootstrap creates instance of TestObject. When it was read 1000 times, test stops.
  */
 int main(int argc, char *argv[]) {
-    client_id = argc > 1 ? argv[1] : "local_test";
+    client_id = argc > 1 ? argv[1] : "local_test_1";
     char *tls = argc > 2 ? argv[2] : "0";
-    char *broker = argc > 3 ? argv[3] : "localhost:8883";
-    int times = argc > 4 ? atoi(argv[4]) : 1000;
+    char *broker = argc > 3 ? argv[3] : "ec2-34-250-196-139.eu-west-1.compute.amazonaws.com:1883";
+    times = argc > 4 ? atoi(argv[4]) : 20;
 
 
     printf("hello\n");
@@ -101,23 +109,23 @@ int main(int argc, char *argv[]) {
     lwm2m_start_client(context);
 
     /** Wait for number of read executed **/
-    while (1) {
-        printf("%s Reads executed: %d\n", client_id, reads_executed);
-        fflush(stdout);
-
-        if (reads_executed >= times) {
-            /** Deregister from all servers **/
-            for (list_elem *elem = context->servers->first; elem != NULL; elem = elem->next) {
-                lwm2m_server *server = elem->value;
-                deregister(server);
-            }
-            /** Stop transport **/
-            sleep(1);
-            stop_mqtt(context);
-            stop_scheduler(context->scheduler);
-            break;
-        }
-        sleep(5);
+    pthread_mutex_lock(&lock);
+    while (reads_executed < times) {
+        pthread_cond_wait(&condition, &lock);
     }
+
+    printf("Reads executed: %d\n", reads_executed);
+    fflush(stdout);
+    if (reads_executed >= times) {
+        /** Deregister from all servers **/
+        for (list_elem *elem = context->servers->first; elem != NULL; elem = elem->next) {
+            lwm2m_server *server = elem->value;
+            deregister(server);
+        }
+        /** Stop transport **/
+        stop_mqtt(context);
+        stop_scheduler(context->scheduler);
+    }
+    pthread_mutex_unlock(&lock);
     printf("Stopped test for client %s\n", client_id);
 }

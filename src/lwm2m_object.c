@@ -60,7 +60,7 @@ lwm2m_value *__set_value_string(lwm2m_resource *resource, char *value) {
 lwm2m_value *__set_value_opaque(lwm2m_resource *resource, char *value, int length) {
     lwm2m_value *old_value = resource->value;
     resource->value = (lwm2m_value *) malloc(sizeof(lwm2m_value));
-    resource->value->opaque_value = malloc(sizeof(char) * length);
+    resource->value->opaque_value = malloc(sizeof(char) * length) + 1;
     resource->length = length;
     memcpy(resource->value->opaque_value, value, length);
     return old_value;

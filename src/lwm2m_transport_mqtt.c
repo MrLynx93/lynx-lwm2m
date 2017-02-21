@@ -218,7 +218,7 @@ void publish_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response 
     serialize_topic(topic, topic_str);
     serialize_response(response, message, &message_len);
 
-    MQTTAsync_send(*(context->mqtt_client), topic_str, message_len, message, 1, 0, &opts);
+    MQTTAsync_send(*(context->mqtt_client), topic_str, message_len, message, 0, 0, &opts);
     __print_time();
    // printf("Published %s\n", topic_str);
 
@@ -270,6 +270,11 @@ void receive_request(lwm2m_context *context, lwm2m_topic topic, char *message, i
             char topic_str[100];
             serialize_topic(topic, topic_str);
             printf("Received request %s for deregistering server %s. Ignoring\n", topic_str, topic.server_id);
+
+            if (--server->pending_requests == 0) {
+                pthread_cond_signal(&server->no_pending_request_condition);
+            }
+            pthread_mutex_unlock(&server->server_mutex);
             return;
         }
 
@@ -419,7 +424,7 @@ void publish(lwm2m_context *context, char* topic, char* message, int message_len
             .onFailure = on_publish_failure,
             .context = context
     };
-    MQTTAsync_send(*(context->mqtt_client), topic, message_len, message, 1, 0, &opts);
+    MQTTAsync_send(*(context->mqtt_client), topic, message_len, message, 0, 0, &opts);
     __print_time();
    // printf("Published %s\n", topic);
 }
@@ -438,7 +443,7 @@ int start_mqtt(lwm2m_context *context) {
     ////////////////// TLS ////////////////////
     MQTTAsync_SSLOptions ssl_opts = MQTTAsync_SSLOptions_initializer;
     if (context->tls) {
-        ssl_opts.trustStore = "ca.crt";
+        ssl_opts.trustStore = "/home/mateusz/ca.crt";
         char *url = malloc(strlen(context->broker_address) + 7);
         url[0] = 0;
         strcat(url, "ssl://");
@@ -470,7 +475,7 @@ int start_mqtt(lwm2m_context *context) {
     will_opts.topicName = topic;
     will_opts.message = "0";
     will_opts.retained = 0;
-    will_opts.qos = 1;
+    will_opts.qos = 0;
 
     MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
     conn_opts.keepAliveInterval = 10;

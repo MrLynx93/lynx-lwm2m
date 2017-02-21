@@ -6,6 +6,7 @@
 #include <time.h>
 #include <semaphore.h>
 #include <stdbool.h>
+#include <list.h>
 
 /********* LIST **********/
 
@@ -21,6 +22,7 @@ typedef void (*scheduler_func)(void *, void *, void *, void *, void *);
 
 typedef struct scheduler_task {
     int id;
+    int short_server_id;
     int period; /* period in seconds */
     time_t waking_time;
     time_t last_waking_time;
@@ -40,7 +42,8 @@ typedef struct lwm2m_scheduler {
     sem_t guard;
     bool stop;
 
-    task_list *queue;
+    list *l;
+//    task_list *queue;
 } lwm2m_scheduler;
 
 struct task_element {

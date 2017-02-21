@@ -109,7 +109,7 @@ typedef struct lwm2m_server {
     lwm2m_register_data last_update_data;
     lwm2m_instance *server_instance;
 
-    int pending_requests;
+    volatile int pending_requests;
     int register_state;
     pthread_mutex_t server_mutex;
     pthread_cond_t no_pending_request_condition;

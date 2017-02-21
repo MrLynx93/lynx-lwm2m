@@ -124,7 +124,7 @@ static void notify_instance_on_server(scheduler_task *task, lwm2m_server *server
 static void notify_resource_on_server(scheduler_task *task, lwm2m_server *server, lwm2m_resource *resource, char* token) {
     lwm2m_response response = {
             .response_code = RESPONSE_CODE_CONTENT,
-            .payload = malloc(sizeof(char) * 1000),
+            .payload = malloc(sizeof(char) * 5000),
     };
 
     lwm2m_topic topic = {
@@ -207,6 +207,7 @@ lwm2m_response on_resource_observe(lwm2m_server *server, lwm2m_resource *resourc
 
     scheduler_task *notify_task = (scheduler_task *) malloc(sizeof(scheduler_task));
     notify_task->id = generate_task_id();
+    notify_task->short_server_id = -1;
     notify_task->period = *get_resource_pmax(server, resource, 2);
     notify_task->function = notify_resource_func;
     notify_task->last_waking_time = 0;
@@ -241,6 +242,7 @@ lwm2m_response on_instance_observe(lwm2m_server *server, lwm2m_instance *instanc
 
     scheduler_task *notify_task = (scheduler_task *) malloc(sizeof(scheduler_task));
     notify_task->id = generate_task_id();
+    notify_task->short_server_id = -1;
     notify_task->period = *get_instance_pmax(server, instance, 2);
     notify_task->function = notify_instance_func;
     notify_task->last_waking_time = 0;
@@ -269,6 +271,7 @@ lwm2m_response on_object_observe(lwm2m_server *server, lwm2m_object *object, cha
 
     scheduler_task *notify_task = (scheduler_task *) malloc(sizeof(scheduler_task));
     notify_task->id = generate_task_id();
+    notify_task->short_server_id = -1;
     notify_task->period = *get_object_pmax(server, object, 2);
     notify_task->function = notify_object_func;
     notify_task->last_waking_time = 0;
