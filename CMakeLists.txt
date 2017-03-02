@@ -25,4 +25,4 @@ add_executable(testaaa test/test.c)
 
 target_link_libraries(lynx paho-mqtt3a)
 target_link_libraries(testapp lynx ssl crypto)
-target_link_libraries(testaaa lynx ssl crypto)
+target_link_libraries(testaaa lynx ssl crypto pthread)

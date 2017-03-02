@@ -77,16 +77,10 @@ void update_func(void *task, void *server, void *context, void *nothing, void *n
 
 void deregister_on_server(lwm2m_context *context, lwm2m_server *server) {
     pthread_mutex_lock(&server->server_mutex);
-    printf("111111111111\n");
-    fflush(stdout);
     while (server->pending_requests > 0) {
         pthread_cond_wait(&server->no_pending_request_condition, &server->server_mutex);
     }
     sem_wait(&context->object_tree_lock);
-
-
-    printf("2222222222222\n");
-    fflush(stdout);
     server->register_state = 0;
 
     lwm2m_topic topic = {

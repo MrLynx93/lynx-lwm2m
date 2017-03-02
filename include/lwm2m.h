@@ -88,6 +88,7 @@ typedef struct lwm2m_context {
     lwm2m_scheduler *scheduler;
 
     MQTTAsync *mqtt_client;
+    int qos;
 
     pthread_mutex_t register_mutex;
     pthread_cond_t register_finished_condition;
@@ -110,7 +111,7 @@ typedef struct lwm2m_server {
     lwm2m_instance *server_instance;
 
     volatile int pending_requests;
-    int register_state;
+    volatile int register_state;
     pthread_mutex_t server_mutex;
     pthread_cond_t no_pending_request_condition;
 } lwm2m_server;

@@ -10,14 +10,19 @@
 pthread_mutex_t started_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t started_condition = PTHREAD_COND_INITIALIZER;
 
-static void __print_time() {
+static void __print_time(char *buffer) {
     time_t timer;
-    char buffer[26];
     struct tm* tm_info;
     time(&timer);
     tm_info = localtime(&timer);
     strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
-  //  printf("[%s] ", buffer);
+
+    char buff2[8];
+    struct timeval now;
+    gettimeofday(&now, NULL);
+
+    sprintf(buff2, ".%03ld", now.tv_usec / 1000);
+    strcat(buffer, buff2);
 }
 
 ////////////////////////// INTERNAL //////////////////////////////
@@ -114,27 +119,27 @@ static void subscribe_init(lwm2m_context *context) {
 
     // Boostrap request
     sprintf(topic_server, "lynx/br/res/+/%s/+", context->client_id);
-    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 
     // Boostrap write
     sprintf(topic_server, "lynx/bw/req/+/%s/+/#", context->client_id);
-    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 
     // Bootstrap delete
     sprintf(topic_server, "lynx/bd/req/+/%s/+/#", context->client_id);
-    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 
     // Bootstrap delete all
     sprintf(topic_server, "lynx/bd/req/+/%s/+", context->client_id);
-    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 
     // Bootstrap finish
     sprintf(topic_server, "lynx/bf/req/+/%s/+", context->client_id);
-    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 
     // Register
     sprintf(topic_server, "lynx/rr/res/+/%s/+", context->client_id);
-    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 }
 
 static void on_publish_success(void *context, MQTTAsync_successData *response) {
@@ -172,7 +177,7 @@ void publish_connected(lwm2m_context *context) {
     char message[2];
     sprintf(message, "1");
 
-    MQTTAsync_send(*(context->mqtt_client), topic, 1, message, 1, 0, &opts);
+    MQTTAsync_send(*(context->mqtt_client), topic, 1, message, context->qos, 0, &opts);
     //printf("[%s] Received  %s\n", buffer, topic);
 }
 
@@ -188,16 +193,16 @@ static void on_connect(void *context, MQTTAsync_successData *response) {
 
 static int on_message(void *context, char *topicName, int topicLen, MQTTAsync_message *message) {
     time_t timer;
-    char buffer[26];
+    char buffer[33];
     struct tm* tm_info;
     time(&timer);
     tm_info = localtime(&timer);
-    strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
-    //printf("[%s] Received  %s\n", buffer, topicName);
+    __print_time(buffer);//strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
+    printf("[%s] Received  %s\n", buffer, topicName);
+    fflush(stdout);
     receive_message((lwm2m_context *) context, topicName, (char *) message->payload, message->payloadlen);
     return 1; // TODO check if payload is correct (void -> char)
 }
-
 
 static void __free_response(lwm2m_response* response) {
     if (response->payload != NULL && response->payload_len > 0) {
@@ -218,8 +223,8 @@ void publish_response(lwm2m_context *context, lwm2m_topic topic, lwm2m_response 
     serialize_topic(topic, topic_str);
     serialize_response(response, message, &message_len);
 
-    MQTTAsync_send(*(context->mqtt_client), topic_str, message_len, message, 0, 0, &opts);
-    __print_time();
+    MQTTAsync_send(*(context->mqtt_client), topic_str, message_len, message, context->qos, 0, &opts);
+//    __print_time();
    // printf("Published %s\n", topic_str);
 
 
@@ -374,47 +379,47 @@ void subscribe_server(lwm2m_context *context, lwm2m_server *server) {
 
     // Update
     sprintf(topic_server, "lynx/ru/res/+/%s/%s", context->client_id, server->name);
-    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 
     // Deregister
     sprintf(topic_server, "lynx/rd/res/+/%s/%s", context->client_id, server->name);
-    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 
     // Read
     sprintf(topic_server, "lynx/mr/req/+/%s/%s/#", context->client_id, server->name);
-    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 
     // Write
     sprintf(topic_server, "lynx/mw/req/+/%s/%s/#", context->client_id, server->name);
-    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 
     // Execute
     sprintf(topic_server, "lynx/me/req/+/%s/%s/+/+/+", context->client_id, server->name);
-    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 
     // Create
     sprintf(topic_server, "lynx/mc/req/+/%s/%s/#", context->client_id, server->name);
-    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 
     // Delete
     sprintf(topic_server, "lynx/md/req/+/%s/%s/+/+", context->client_id, server->name);
-    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 
     // Write attributes
     sprintf(topic_server, "lynx/ma/req/+/%s/%s/#", context->client_id, server->name);
-    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 
     // Discover
     sprintf(topic_server, "lynx/mm/req/+/%s/%s/#", context->client_id, server->name);
-    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 
     // Observe
     sprintf(topic_server, "lynx/io/req/+/%s/%s/#", context->client_id, server->name);
-    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 
     // Cancel observe
     sprintf(topic_server, "lynx/ic/req/+/%s/%s/#", context->client_id, server->name);
-    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, 1, &opts);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 }
 
 void publish(lwm2m_context *context, char* topic, char* message, int message_len) {
@@ -424,8 +429,8 @@ void publish(lwm2m_context *context, char* topic, char* message, int message_len
             .onFailure = on_publish_failure,
             .context = context
     };
-    MQTTAsync_send(*(context->mqtt_client), topic, message_len, message, 0, 0, &opts);
-    __print_time();
+    MQTTAsync_send(*(context->mqtt_client), topic, message_len, message, context->qos, 0, &opts);
+//    __print_time();
    // printf("Published %s\n", topic);
 }
 
@@ -475,7 +480,7 @@ int start_mqtt(lwm2m_context *context) {
     will_opts.topicName = topic;
     will_opts.message = "0";
     will_opts.retained = 0;
-    will_opts.qos = 0;
+    will_opts.qos = context->qos;
 
     MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
     conn_opts.keepAliveInterval = 10;

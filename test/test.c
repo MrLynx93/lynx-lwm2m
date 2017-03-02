@@ -4,9 +4,11 @@
 #define TEST_OBJECT_ID 20004
 
 volatile int reads_executed = 0;
+volatile int finished = 0;
 char *client_id;
 int times;
 
+pthread_t exit_thread;
 pthread_mutex_t lock = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;;
 pthread_cond_t condition = (pthread_cond_t) PTHREAD_COND_INITIALIZER;;
 
@@ -79,6 +81,32 @@ int perform_factory_bootstrap(lwm2m_context *context) {
     return 0;
 }
 
+void deregister_all(lwm2m_context *context) {
+    printf("Reads executed: %d\n", reads_executed);
+    fflush(stdout);
+    if (reads_executed >= times || finished) {
+        /** Deregister from all servers **/
+        for (list_elem *elem = context->servers->first; elem != NULL; elem = elem->next) {
+            lwm2m_server *server = elem->value;
+            deregister(server);
+        }
+        /** Stop transport **/
+        stop_mqtt(context);
+        stop_scheduler(context->scheduler);
+    }
+}
+
+void *exit_func(void *context_void) {
+    pthread_mutex_lock(&lock);
+    while (reads_executed < times && !finished) {
+        pthread_cond_wait(&condition, &lock);
+    }
+    deregister_all(context_void);
+    pthread_mutex_unlock(&lock);
+    printf("Stopped test for client %s\n", client_id);
+    exit(0);
+}
+
 /**
  * Usage:
  * ./test local_test_1 1 42.12.2.1:1883    <- test with TLS on port 1883
@@ -104,28 +132,19 @@ int main(int argc, char *argv[]) {
     context->endpoint_client_name = client_id;
     context->tls = !strcmp(tls, "1");
     context->broker_address = broker;
+    context->qos = 0;
 
     /** Start client from arguments **/
     lwm2m_start_client(context);
 
-    /** Wait for number of read executed **/
-    pthread_mutex_lock(&lock);
-    while (reads_executed < times) {
-        pthread_cond_wait(&condition, &lock);
-    }
+    /** Wait for reads_executed **/
+    pthread_create(&exit_thread, NULL, exit_func, context);
 
-    printf("Reads executed: %d\n", reads_executed);
+    /** Wait for cancel **/
+    getchar();
+    finished = 1;
+    printf("Canceled test\n");
     fflush(stdout);
-    if (reads_executed >= times) {
-        /** Deregister from all servers **/
-        for (list_elem *elem = context->servers->first; elem != NULL; elem = elem->next) {
-            lwm2m_server *server = elem->value;
-            deregister(server);
-        }
-        /** Stop transport **/
-        stop_mqtt(context);
-        stop_scheduler(context->scheduler);
-    }
-    pthread_mutex_unlock(&lock);
+    deregister_all(context);
     printf("Stopped test for client %s\n", client_id);
 }
