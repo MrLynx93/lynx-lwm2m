@@ -22,7 +22,7 @@ typedef void (*scheduler_func)(void *, void *, void *, void *, void *);
 
 typedef struct scheduler_task {
     int id;
-    int short_server_id;
+    int short_server_id; // todo czy to jest potrzebne?
     int period; /* period in seconds */
     time_t waking_time;
     time_t last_waking_time;

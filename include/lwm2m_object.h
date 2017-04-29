@@ -196,7 +196,7 @@ void set_value(lwm2m_resource *resource, lwm2m_value *value, int length);
 void set_null(lwm2m_resource *resource);
 
 
-/////////////// NODE ///////////////////
+/////////////// NODE /////////////////// TOdO REMOVE THIS?
 
 typedef union lwm2m_node {
     lwm2m_object object;

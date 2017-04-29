@@ -74,10 +74,10 @@ int main(int argc, char *argv[]) {
     context->factory_bootstrap_callback = perform_factory_bootstrap;
     context->smartcard_bootstrap_callback = NULL;
     context->client_id = client_id;
-    context->tls = 1;
+    context->tls = 0;
 
 //    context->broker_address = "tcp://ec2-52-212-253-117.eu-west-1.compute.amazonaws.com:1883";
-    context->broker_address = "127.0.0.1:1883";
+    context->broker_address = "34.250.196.139:1883";
     context->endpoint_client_name = client_id;
 
     lwm2m_start_client(context);

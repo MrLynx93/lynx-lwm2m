@@ -20,28 +20,34 @@ $(OBJ_ARM): $(SRC)
 
 bin/lib/x64/liblynx.a: $(OBJ_X64)
 	ar -x lib/x64/libpaho-mqtt3a.a
+	ar -x lib/x64/libssl.a
+	ar -x lib/x64/libcrypto.a
 	mv *.o obj/x64
 	ar rcs $@ obj/x64/*.o
 	cp -r include/* bin/include
+	cp -r lib/x64/* bin/lib/x64
 
 bin/lib/armeabi-v7a/liblynx.a: $(OBJ_ARM)
 	$(NDK_AR) -x lib/armeabi-v7a/libpaho-mqtt3a.a
+	$(NDK_AR) -x lib/armeabi-v7a/libssl.a
+	$(NDK_AR) -x lib/armeabi-v7a/libcrypto.a
 	mv *.o obj/armeabi-v7a
 	$(NDK_AR) rcs $@ obj/armeabi-v7a/*.o
 	cp -r include/* bin/include
+	cp -r lib/armeabi-v7a/* bin/lib/armeabi-v7a
 
 arm: bin/lib/armeabi-v7a/liblynx.a
 
 x64: bin/lib/x64/liblynx.a
 
 example: x64
-	gcc -L/usr/lib/x86_64-linux-gnu -Lbin/x64 -g -Llib/x64  -Iinclude -o bin/lib/x64/example example.c $(CFLAGS) bin/lib/x64/liblynx.a -lssl -lcrypto
+	gcc -L/usr/lib/x86_64-linux-gnu -Lbin/x64 -g -Llib/x64  -Iinclude -o bin/lib/x64/example example.c $(CFLAGS) bin/lib/x64/liblynx.a -ldl
 
 run: example
 	cp crt/ca.crt bin/lib/x64; cd bin/lib/x64; ./example ${ARGS}
 
 test: x64
-	gcc -L/usr/lib/x86_64-linux-gnu -Lbin/x64 -g -Llib/x64  -Iinclude -o bin/lib/x64/test test/test.c $(CFLAGS) bin/lib/x64/liblynx.a -lssl -lcrypto
+	gcc -L/usr/lib/x86_64-linux-gnu -Lbin/x64 -g -Llib/x64  -Iinclude -o bin/lib/x64/test test/test.c $(CFLAGS) bin/lib/x64/liblynx.a -ldl
 
 runtest: test
 	cp crt/ca.crt bin/lib/x64; cd bin/lib/x64; ./test ${ARGS}
