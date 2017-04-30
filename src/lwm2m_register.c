@@ -253,6 +253,7 @@ void on_server_deregister(lwm2m_server* server, int response_code) {
 //    scheduler_task *update_task = lfind(server->context->update_tasks, server->short_server_id);
 //    cancel(server->context->scheduler, update_task);
     printf("%s Deregistered from server=%d\n", server->context->endpoint_client_name, server->short_server_id);
+    fflush(stdout);
     // TODO free task
     // TODO free server
 }

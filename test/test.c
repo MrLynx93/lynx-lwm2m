@@ -6,7 +6,9 @@
 volatile int reads_executed = 0;
 volatile int finished = 0;
 char *client_id;
-int times;
+char *broker;
+int times = 10;
+int QoS = 0;
 
 pthread_t exit_thread;
 pthread_mutex_t lock = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;;
@@ -103,26 +105,32 @@ void *exit_func(void *context_void) {
     }
     deregister_all(context_void);
     pthread_mutex_unlock(&lock);
-    printf("Stopped test for client %s\n", client_id);
+    printf("Stopped client %s\n", client_id);
+    finished = true;
     exit(0);
 }
 
 /**
  * Usage:
- * ./test local_test_1 1 42.12.2.1:1883    <- test with TLS on port 1883
- * ./test local_test_2 0 localhost:8883    <- test without TLS on port 8883
+ * ./test [clientIdx] [?tls]
  *
- * Factory bootstrap creates instance of TestObject. When it was read 1000 times, test stops.
  */
 int main(int argc, char *argv[]) {
-    client_id = argc > 1 ? argv[1] : "local_test_1";
-    char *tls = argc > 2 ? argv[2] : "0";
-    char *broker = argc > 3 ? argv[3] : "ec2-34-250-196-139.eu-west-1.compute.amazonaws.com:1883";
-    times = argc > 4 ? atoi(argv[4]) : 20;
+    /** Parse arguments **/
+    if (argc < 1) {
+        return 1;
+    }
+    client_id = malloc(100);
+    broker = malloc(100);
 
+    int tls = argc > 2 && !strcmp(argv[2], "tls");
+    sprintf(client_id, "clientmqtt_%s", argv[1]);
 
-    printf("hello\n");
-    fflush(stdout);
+    if (tls) {
+        sprintf(broker, "%s:%s", "34.250.196.139", "8883");
+    } else {
+        sprintf(broker, "%s:%s", "34.250.196.139", "1883");
+    }
 
     /** Configure client from arguments **/
     lwm2m_context *context = lwm2m_create_context();
@@ -130,21 +138,23 @@ int main(int argc, char *argv[]) {
     context->objects = create_objects();
     context->client_id = client_id;
     context->endpoint_client_name = client_id;
-    context->tls = !strcmp(tls, "1");
+    context->tls = tls;
     context->broker_address = broker;
-    context->qos = 0;
+    context->qos = QoS;
 
     /** Start client from arguments **/
+    printf("Started client %s\n", client_id);
     lwm2m_start_client(context);
 
     /** Wait for reads_executed **/
     pthread_create(&exit_thread, NULL, exit_func, context);
 
     /** Wait for cancel **/
-    getchar();
-    finished = 1;
-    printf("Canceled test\n");
-    fflush(stdout);
-    deregister_all(context);
-    printf("Stopped test for client %s\n", client_id);
+    while (1) {
+        getchar();
+    }
+//    finished = 1;
+//    printf("Canceled test\n");
+//    deregister_all(context);
+//    printf("Stopped client %s\n", client_id);
 }

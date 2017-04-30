@@ -258,7 +258,7 @@ void receive_request(lwm2m_context *context, lwm2m_topic topic, char *message, i
     else if (!strcmp(LWM2M_OPERATION_BOOTSTRAP_FINISH, topic.operation)) {
         response = handle_bootstrap_finish_request(context, topic, request);
         is_bootstrap = true;
-        DUMP_ALL(context);
+//        DUMP_ALL(context);
     } else {
         lwm2m_server *server = __resolve_server(context, topic);
         if (server == NULL) {

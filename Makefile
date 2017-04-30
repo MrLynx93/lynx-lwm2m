@@ -41,16 +41,16 @@ arm: bin/lib/armeabi-v7a/liblynx.a
 x64: bin/lib/x64/liblynx.a
 
 example: x64
-	gcc -L/usr/lib/x86_64-linux-gnu -Lbin/x64 -g -Llib/x64  -Iinclude -o bin/lib/x64/example example.c $(CFLAGS) bin/lib/x64/liblynx.a -ldl
+	gcc -L/usr/lib/x86_64-linux-gnu -Lbin/x64 -g -Llib/x64  -Iinclude -o bin/lib/x64/example example.c $(CFLAGS) bin/lib/x64/liblynx.a -ldl; cp crt/ca.crt bin/lib/x64;
 
 run: example
 	cp crt/ca.crt bin/lib/x64; cd bin/lib/x64; ./example ${ARGS}
 
 test: x64
-	gcc -L/usr/lib/x86_64-linux-gnu -Lbin/x64 -g -Llib/x64  -Iinclude -o bin/lib/x64/test test/test.c $(CFLAGS) bin/lib/x64/liblynx.a -ldl
+	gcc -L/usr/lib/x86_64-linux-gnu -Lbin/x64 -g -Llib/x64  -Iinclude -o bin/lib/x64/test test/test.c $(CFLAGS) bin/lib/x64/liblynx.a -ldl; cp crt/ca.crt bin/lib/x64;
 
-runtest: test
-	cp crt/ca.crt bin/lib/x64; cd bin/lib/x64; ./test ${ARGS}
+runtest:
+	cd bin/lib/x64; ./test ${ARGS}
 
 testmem: example
 	cd bin/lib/x64; valgrind --tool=massif --massif-out-file=massif.out --threshold=0.01 ./example
@@ -63,7 +63,7 @@ lines:
 	find src -name '*.c' | xargs wc -l
 	find include -name '*.h' | xargs wc -l
 
-all: clean arm x64 example
+all: clean arm x64 example test
 
 
 #x64: bin/x64/liblynx.so

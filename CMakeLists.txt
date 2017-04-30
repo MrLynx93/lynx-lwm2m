@@ -19,14 +19,18 @@ set_target_properties(ssl PROPERTIES IMPORTED_LOCATION lib/x64/libssl.a)
 
 add_library(lynx STATIC ${LYNX_LWM2M_SRC})
 add_executable(example example.c)
-add_executable(testaaa test/test.c)
+add_executable(start_test_client test/test.c)
 
 target_link_libraries(
         example
         ${PROJECT_SOURCE_DIR}/bin/lib/x64/liblynx.a
-        ${PROJECT_SOURCE_DIR}/lib/x64/libpaho-mqtt3a.a
-        ${PROJECT_SOURCE_DIR}/lib/x64/libcrypto.a
-        ${PROJECT_SOURCE_DIR}/lib/x64/libssl.a
+        pthread
+        dl
+)
+
+target_link_libraries(
+        start_test_client
+        ${PROJECT_SOURCE_DIR}/bin/lib/x64/liblynx.a
         pthread
         dl
 )
