@@ -393,12 +393,24 @@ void subscribe_server(lwm2m_context *context, lwm2m_server *server) {
     sprintf(topic_server, "lynx/mw/req/+/%s/%s/#", context->client_id, server->name);
     MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 
+    // ReadAll
+    sprintf(topic_server, "lynx/mr/req/+/%%/%s/#", server->name);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
+
+    // WriteAll
+    sprintf(topic_server, "lynx/mw/req/+/%%/%s/#", server->name);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
+
     // Execute
     sprintf(topic_server, "lynx/me/req/+/%s/%s/+/+/+", context->client_id, server->name);
     MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 
     // Create
     sprintf(topic_server, "lynx/mc/req/+/%s/%s/#", context->client_id, server->name);
+    MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
+
+    // CreateAll
+    sprintf(topic_server, "lynx/mc/req/+/%%/%s/#", server->name);
     MQTTAsync_subscribe(*(context->mqtt_client), topic_server, context->qos, &opts);
 
     // Delete

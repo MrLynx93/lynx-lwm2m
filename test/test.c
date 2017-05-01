@@ -8,7 +8,7 @@ volatile int finished = 0;
 char *client_id;
 char *broker;
 int times = 10;
-int QoS = 0;
+int QoS = 1;
 
 pthread_t exit_thread;
 pthread_mutex_t lock = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;;
