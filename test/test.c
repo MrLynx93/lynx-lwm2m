@@ -7,7 +7,7 @@ volatile int reads_executed = 0;
 volatile int finished = 0;
 char *client_id;
 char *broker;
-int times = 10;
+int times = 100;
 int QoS = 1;
 
 pthread_t exit_thread;
