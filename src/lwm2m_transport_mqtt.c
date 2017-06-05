@@ -489,18 +489,18 @@ int start_mqtt(lwm2m_context *context) {
     sprintf(topic, "lynx/clients/%s", context->endpoint_client_name);
 
     MQTTAsync_willOptions will_opts = MQTTAsync_willOptions_initializer;
-    will_opts.topicName = topic;
-    will_opts.message = "0";
-    will_opts.retained = 0;
-    will_opts.qos = context->qos;
+//    will_opts.topicName = topic;
+//    will_opts.message = "0";
+//    will_opts.retained = 0;
+//    will_opts.qos = context->qos;
 
     MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
-    conn_opts.keepAliveInterval = 10;
+    conn_opts.keepAliveInterval = 3600;
     conn_opts.cleansession = 1;
     conn_opts.onSuccess = on_connect;
     conn_opts.onFailure = on_connect_fail;
     conn_opts.context = context;
-    conn_opts.will = &will_opts;
+    conn_opts.will = NULL;
     if (context->tls) {
         conn_opts.ssl = &ssl_opts;
     }

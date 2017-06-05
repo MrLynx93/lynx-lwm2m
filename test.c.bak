@@ -3,10 +3,11 @@
 
 #define TEST_OBJECT_ID 20004
 
-//volatile int reads_executed = 0;
-//volatile int finished = 0;
+volatile int reads_executed = 0;
+volatile int finished = 0;
 char *client_id;
 char *broker;
+int times = 100000;
 int QoS = 1;
 
 pthread_t exit_thread;
@@ -61,32 +62,14 @@ static list *create_objects() {
     return objects;
 }
 
-static void __print_time(char *buffer) {
-    time_t timer;
-    struct tm* tm_info;
-    time(&timer);
-    tm_info = localtime(&timer);
-    strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
-
-    char buff2[8];
-    struct timeval now;
-    gettimeofday(&now, NULL);
-
-    sprintf(buff2, ".%03ld", now.tv_usec / 1000);
-    strcat(buffer, buff2);
+void on_read(lwm2m_resource *resource) {
+    pthread_mutex_lock(&lock);
+    reads_executed += 1;
+    if (reads_executed >= times) {
+        pthread_cond_signal(&condition);
+    }
+    pthread_mutex_unlock(&lock);
 }
-
-//void on_read(lwm2m_resource *resource) {
-//    time_t timer;
-//    char buffer[33];
-//    struct tm* tm_info;
-//    time(&timer);
-//    tm_info = localtime(&timer);
-//    __print_time(buffer);
-//
-//    printf("Last read received: %s\n", buffer);
-//    fflush(stdout);
-//}
 
 // TODO FACTORY BOOTSTRAP IN COAP TEST (AND INCREASE COUNTER)
 int perform_factory_bootstrap(lwm2m_context *context) {
@@ -94,39 +77,38 @@ int perform_factory_bootstrap(lwm2m_context *context) {
     lwm2m_instance *instance = lwm2m_instance_new_with_id(test_object, 0);
     lwm2m_resource *client_id_resource = lfind(instance->resources, 0);
     lwm2m_resource *server_id_resource = lfind(instance->resources, 1);
-    lwm2m_resource *payload_resource = lfind(instance->resources, 2);
     __set_value_string(client_id_resource, client_id);
     __set_value_string(server_id_resource, "global");
-    payload_resource->read_callback = NULL;
+    client_id_resource->read_callback = on_read;
     return 0;
 }
 
-//void deregister_all(lwm2m_context *context) {
-//    printf("Reads executed: %d\n", reads_executed);
-//    fflush(stdout);
-//    if (finished) {
-//        /** Deregister from all servers **/
-//        for (list_elem *elem = context->servers->first; elem != NULL; elem = elem->next) {
-//            lwm2m_server *server = elem->value;
-//            deregister(server);
-//        }
-//        /** Stop transport **/
-//        stop_mqtt(context);
-//        stop_scheduler(context->scheduler);
-//    }
-//}
-//
-//void *exit_func(void *context_void) {
-//    pthread_mutex_lock(&lock);
-//    while (!finished) {
-//        pthread_cond_wait(&condition, &lock);
-//    }
-//    deregister_all(context_void);
-//    pthread_mutex_unlock(&lock);
-//    printf("Stopped client %s\n", client_id);
-//    finished = true;
-//    exit(0);
-//}
+void deregister_all(lwm2m_context *context) {
+    printf("Reads executed: %d\n", reads_executed);
+    fflush(stdout);
+    if (reads_executed >= times || finished) {
+        /** Deregister from all servers **/
+        for (list_elem *elem = context->servers->first; elem != NULL; elem = elem->next) {
+            lwm2m_server *server = elem->value;
+            deregister(server);
+        }
+        /** Stop transport **/
+        stop_mqtt(context);
+        stop_scheduler(context->scheduler);
+    }
+}
+
+void *exit_func(void *context_void) {
+    pthread_mutex_lock(&lock);
+    while (reads_executed < times && !finished) {
+        pthread_cond_wait(&condition, &lock);
+    }
+    deregister_all(context_void);
+    pthread_mutex_unlock(&lock);
+    printf("Stopped client %s\n", client_id);
+    finished = true;
+    exit(0);
+}
 
 /**
  * Usage:
@@ -142,7 +124,7 @@ int main(int argc, char *argv[]) {
     broker = malloc(100);
 
     int tls = argc > 2 && !strcmp(argv[2], "tls");
-    sprintf(client_id, "client_1");
+    sprintf(client_id, "clientmqtt_%s", argv[1]);
 
     if (tls) {
         sprintf(broker, "%s:%s", "34.250.196.139", "8883");
@@ -165,10 +147,14 @@ int main(int argc, char *argv[]) {
     lwm2m_start_client(context);
 
     /** Wait for reads_executed **/
-//    pthread_create(&exit_thread, NULL, exit_func, context);
+    pthread_create(&exit_thread, NULL, exit_func, context);
 
     /** Wait for cancel **/
     while (1) {
         getchar();
     }
+//    finished = 1;
+//    printf("Canceled test\n");
+//    deregister_all(context);
+//    printf("Stopped client %s\n", client_id);
 }

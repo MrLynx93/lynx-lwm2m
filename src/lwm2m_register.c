@@ -68,9 +68,33 @@ static char *serialize_update_params(lwm2m_server *server) {
     return params;
 }
 
+static void __print_time(char *buffer) {
+    time_t timer;
+    struct tm* tm_info;
+    time(&timer);
+    tm_info = localtime(&timer);
+    strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
+
+    char buff2[8];
+    struct timeval now;
+    gettimeofday(&now, NULL);
+
+    sprintf(buff2, ".%03ld", now.tv_usec / 1000);
+    strcat(buffer, buff2);
+}
 
 void update_func(void *task, void *server, void *context, void *nothing, void *nothing2) {
     update_on_server((lwm2m_context *) context, (lwm2m_server *) server);
+
+    time_t timer;
+    char buffer[33];
+    struct tm* tm_info;
+    time(&timer);
+    tm_info = localtime(&timer);
+    __print_time(buffer);
+
+    printf("Last update received: %s\n", buffer);
+    fflush(stdout);
 }
 
 ///////////////////////// REGISTER ////////////////////////////
@@ -263,7 +287,7 @@ void on_server_register(lwm2m_server *server, int success) {
     scheduler_task *update_task = (scheduler_task *) malloc(sizeof(scheduler_task));
     update_task->short_server_id = server->short_server_id;
     update_task->id = generate_task_id();
-    update_task->period = get_lifetime(server->server_instance) / 2;
+    update_task->period = get_lifetime(server->server_instance);
     update_task->function = update_func;
     update_task->arg0 = update_task;
     update_task->arg1 = server;
